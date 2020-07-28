@@ -1,0 +1,14 @@
+{
+    "id": 88,
+    "name": null,
+    "sample": "Easter1B",
+    "technique": "ECMS",
+    "isotope": null,
+    "measurement_date": "19D30",
+    "analysis_date": null,
+    "measurement_dir": "C:\\Users\\scott\\Dropbox (Spectro Inlets)\\Soren_DTU\\DTU-MIT RuO2\\pyOER20\\measurements",
+    "copied_at": null,
+    "old_data_path": "C:\\Users\\scott\\Dropbox (Spectro Inlets)\\Soren_DTU\\DTU-MIT RuO2\\Analysis\\19D30_Easter_and_Goof\\pickles\\Easter1B_corrected.pkl",
+    "new_data_path": "None",
+    "linked_measurements": null
+}

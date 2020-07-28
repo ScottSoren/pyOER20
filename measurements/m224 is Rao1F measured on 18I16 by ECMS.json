@@ -1,0 +1,14 @@
+{
+    "id": 224,
+    "name": null,
+    "sample": "Rao1F",
+    "technique": "ECMS",
+    "isotope": "18",
+    "measurement_date": "18I16",
+    "analysis_date": null,
+    "measurement_dir": "C:\\Users\\scott\\Dropbox (Spectro Inlets)\\Soren_DTU\\DTU-MIT RuO2\\pyOER20\\measurements",
+    "copied_at": null,
+    "old_data_path": "C:\\Users\\scott\\Dropbox (Spectro Inlets)\\Soren_DTU\\DTU-MIT RuO2\\Data\\ECMS\\18I16_Rao1F_18O\\second_sample_probably_Reshma1D\\01 Rao1F 18I16 18I13_IrO2_RuO2_18O.pkl",
+    "new_data_path": "None",
+    "linked_measurements": null
+}

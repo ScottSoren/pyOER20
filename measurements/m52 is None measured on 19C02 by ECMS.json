@@ -1,0 +1,14 @@
+{
+    "id": 52,
+    "name": null,
+    "sample": null,
+    "technique": "ECMS",
+    "isotope": "16",
+    "measurement_date": "19C02",
+    "analysis_date": null,
+    "measurement_dir": "C:\\Users\\scott\\Dropbox (Spectro Inlets)\\Soren_DTU\\DTU-MIT RuO2\\pyOER20\\measurements",
+    "copied_at": null,
+    "old_data_path": "C:\\Users\\scott\\Dropbox (Spectro Inlets)\\Soren_DTU\\DTU-MIT RuO2\\Analysis\\19C02_catching_up\\pickles\\19B10_Evans_16O_03_raw.pkl",
+    "new_data_path": "None",
+    "linked_measurements": null
+}
