@@ -1,0 +1,102 @@
+# I'm reading this manually, because the notes are not well-formatted enough for writing and debugging a parser to speed things up.
+# I've filtered the elog by Author=Scott, Project Name=OER, so I'll miss anything not there.
+# I won't copy metadata like RE_vs_RHE because writing a parser for that, when needed, shouldn't be so bad.
+
+# format: 
+
+#<elog_Id>, <date>
+#	01... <sample name>
+#	02... <sample name>
+
+
+127, 18H27
+	18H27_Reshma2A_18O/01... Reshma2A
+
+128, 18H28  # Jazz4, Reshma4A, Reshma1A, Reshma3A
+	# not listed, hope it was in the pkl file names
+
+129, 18H29
+	18H29_Reshma2B_O18/01.. Reshma2B #presumably
+	01... Powd1A
+	# Reshma2B is in file name
+
+131, 18H31  # Powder IrO2, Reshma1B, Reshma1A
+	# not listed
+
+132, 18I04  # Reshma1B
+	# not listed
+
+133, 18I12 # Reshma1B
+
+134, 18I12  # Folk1
+	# Samples seem to be grouped into folders
+	# Folk1 notes go up to 06...
+	# Reshma3B on 01...
+	# Reshma4B to 03...
+
+135, 18I13  # Reshma1C
+	# not listed
+
+136, 18I15
+	# not listed
+
+137, 18I15
+	# Folk5 goes to 04...
+	# Rao1D goes to 02...
+
+138, 18I17  # Reshma1F
+
+139, 18I17  # Yang1, Rao1F, Melih1
+	# Melih1 goes to 04...
+
+140, 18I18  # Jazz4, Reshma1B
+	# Reshma1B goes to 01...
+
+141, 18I18  # Folk5, Reshma1B, Rao1D, Trimi1
+	
+144, 18J20  
+	01... Choongman0
+	02... Choongman1
+	03... Choongman2
+
+158, 19A07
+	01... Nancy1
+	02... Nancy2
+	03... Nancy2
+	04... Nancy3
+	05... Trimi1
+
+159, 19A08
+	01... Nancy4
+	# 02 to 05 not listed but Nancy5 is named
+	06... Evans1
+	07... Evans1
+	08... Evans1
+
+160, 19A09
+	01... Evans1
+	02... Evans1
+	03... Evans1
+	04... Trimi1
+	05... Trimi1
+	06... Nancy1
+	07... Nancy5
+	08... Nancy5
+	09... Nancy5
+	10... Nancy6
+	# Jazz2 is mentioned after that
+	
+162, 19A26  # Trimi1, Evans4, Evans5, Evans6
+	01... Trimi1
+	02... Trimi1
+	03... Trimi1
+	04... Trimi1
+	05... Trimi1
+	06... Evans4
+
+163, 19A27  # Evans
+	01... Evans6
+	02... Evans6
+	03... Evans7
+	04... Evans8
+	05... Evans9 
