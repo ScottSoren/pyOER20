@@ -4,6 +4,7 @@
 
 from pathlib import Path
 import json
+import re
 import time
 import datetime
 from EC_MS import Dataset
@@ -54,6 +55,7 @@ class Measurement:
         dataset=None,
         linked_measurements=None,
         elog_number=None,
+        elog=None,
         EC_tag=None,
         **kwargs,
     ):
@@ -90,6 +92,7 @@ class Measurement:
         self.linked_measurements = linked_measurements
         self.extra_stuff = kwargs
         self.elog_number = elog_number
+        self.elog = elog
         self.EC_tag = EC_tag
 
     def as_dict(self):
@@ -171,3 +174,29 @@ class Measurement:
     def save_dataset(self):
         self.dataset.save(self.new_data_path)
         self.copied_at = time.time()
+
+    def plot_experiment(self, *args, **kwargs):
+        if not self.dataset:
+            self.load_dataset()
+        self.dataset.plot_experiment(*args, **kwargs)
+
+    def open_elog(self):
+        from .elog import ElogEntry
+
+        self.elog = ElogEntry.open(self.elog_number)
+
+    def print_notes(self):
+        if not self.elog:
+            self.open_elog()
+        notes = self.elog.notes
+        if self.EC_tag:
+            EC_tag_match = re.search(fr"\n{self.EC_tag}...", notes)
+            if EC_tag_match:
+                notes = (
+                    notes[0 : EC_tag_match.start()]
+                    + "\n# ======================================== #\n"
+                    + "# ===   MEASUREMENT NOTES START HERE   === #\n"
+                    + "# vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv #"
+                    + notes[EC_tag_match.start() :]
+                )
+        print(notes)
