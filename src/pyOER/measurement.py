@@ -53,6 +53,8 @@ class Measurement:
         new_data_path=None,
         dataset=None,
         linked_measurements=None,
+        elog_number=None,
+        EC_tag=None,
         **kwargs,
     ):
         """Initiate Measurement object
@@ -87,6 +89,8 @@ class Measurement:
         self.dataset = dataset
         self.linked_measurements = linked_measurements
         self.extra_stuff = kwargs
+        self.elog_number = elog_number
+        self.EC_tag = EC_tag
 
     def as_dict(self):
         self_as_dict = dict(
@@ -101,7 +105,9 @@ class Measurement:
             copied_at=self.copied_at,
             old_data_path=str(self.old_data_path),
             new_data_path=str(self.new_data_path),
-            linked_measurements=self.linked_measurements
+            linked_measurements=self.linked_measurements,
+            elog_number=self.elog_number,
+            EC_tag=self.EC_tag,
             # do not put the dataset into self.dict!
         )
         if self.copied_at:  # just for human-readability of measurement .json
@@ -123,12 +129,20 @@ class Measurement:
         if save_dataset:
             self.save_dataset()
 
+    def save_with_rename(self, file_name=None):
+        if "file_loaded_from" in self.extra_stuff:
+            Path(str(self.extra_stuff["file_loaded_from"])).unlink()
+        self.save(file_name=file_name)
+
     @classmethod
     def load(cls, file_name, measurement_dir=MEASUREMENT_DIR):
         """Loads the measurement given its file path"""
         path_to_file = Path(measurement_dir) / file_name
         with open(path_to_file, "r") as f:
             self_as_dict = json.load(f)
+        self_as_dict.update(file_loaded_from=path_to_file)
+        if "id" in self_as_dict:
+            self_as_dict["m_id"] = self_as_dict.pop("id")
         return cls(**self_as_dict)
 
     @classmethod

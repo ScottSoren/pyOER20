@@ -86,7 +86,7 @@
 	# Reshma1A
 		m27
 	# Reshma1B
-		m28, m29, m30, m32
+		m28, m29, m30, m31, m32
 
 132, 18I04  # Reshma1B
 	# Reshma1B
@@ -141,7 +141,7 @@
 	# Folk5
 		m74, m75
 	# Jazz4
-		m78
+		m76
 	# Reshma1B goes to 01...
 		m77, m78
 
@@ -267,7 +267,7 @@
 
 170, 19B10  # Evans10
 	# Evans10
-		m130, 131, 132
+		m130, m131, m132
 
 172, 19B12  # Author=Choongman
 	19B12_Reshma4_16O/01... Reshma4
@@ -360,7 +360,7 @@
 	01... Trimi1
 		m175
 	02... Evans12  # seems to be an unlisted 03... through 05...
-		m176, m177, m178
+		m176, m177, m178, m179
 
 220, 19E09  # Trimi1, Evans12  # 16O
 	01... Trimi1
@@ -464,7 +464,7 @@
 	05... Legend4A
 		m224
 	06... Trimi1
-		m226
+		m225
 
 267, 20A06  # Legend4C, Decade1G
 	MS_data
@@ -496,7 +496,7 @@
 	09... John4A
 		m237
 	#John4A  # There's also an unlisted 10
-		m238
+		m238, m239
 
 280, 20A12 
 	01... Stoff4A

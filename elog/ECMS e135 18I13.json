@@ -1,0 +1,15 @@
+{
+    "setup": "ECMS",
+    "number": "135",
+    "date": "18I13",
+    "field_data": null,
+    "sample_measurements": {
+        "Reshma1C": [],
+        "Reshma1D": [
+            54,
+            55
+        ]
+    },
+    "measurement_EC_tags": {},
+    "notes": null
+}

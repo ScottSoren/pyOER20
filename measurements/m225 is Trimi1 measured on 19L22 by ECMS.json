@@ -1,0 +1,16 @@
+{
+    "id": 225,
+    "name": null,
+    "sample": "Trimi1",
+    "technique": "ECMS",
+    "isotope": null,
+    "measurement_date": "19L22",
+    "analysis_date": null,
+    "measurement_dir": "C:\\Users\\scott\\Dropbox (Spectro Inlets)\\Soren_DTU\\DTU-MIT RuO2\\pyOER20\\measurements",
+    "copied_at": null,
+    "old_data_path": "C:\\Users\\scott\\Dropbox (Spectro Inlets)\\Soren_DTU\\DTU-MIT RuO2\\Analysis\\19L22_John_and_Legend\\pickles\\19L21_John_and_Legend_06.pkl",
+    "new_data_path": "None",
+    "linked_measurements": null,
+    "elog_number": "273",
+    "EC_tag": "06..."
+}

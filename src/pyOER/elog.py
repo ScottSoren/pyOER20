@@ -7,7 +7,7 @@ from pathlib import Path
 import re
 import json
 
-ELOG_DIR = Path("../../elog")
+ELOG_DIR = Path("../elog").absolute().resolve()
 SETUP = "ECMS"
 
 FIELD_NAME_MATCHER = r"""<th class="listtitle"><a.*>(.*)</a></th>"""
@@ -16,14 +16,16 @@ ENTRY_NUMBER_MATCHER = (
 )
 FIELD_VALUES_START = r"""<td class="list1"""
 FIELD_VALUE_MATCHER = r"""<td class="list1".*">([^<>]*)<"""
-
 ENTRY_END_MATCHER = r"</pre></td></tr>"
 
 
 def read_elog_html(
     path_to_elog_html, setup=SETUP,
 ):
-    """Return a list of ElogEntry's with data from the html file"""
+    """Return a list of ElogEntry's with data from the html file
+
+    TODO: replace this with something using BeautifulSoup
+    """
     elog_entries = []  # this is what we will return
     field_names = []  # this will list the metadata field_names specified in the elog
     n_elog = None  # this will be the elog entry number
@@ -51,14 +53,15 @@ def read_elog_html(
             entry_number_match = re.search(ENTRY_NUMBER_MATCHER, line)
             if entry_number_match:
                 # then this line starts a new entry and specifies its number
-                n_elog = entry_number_match.group(1)
+                n_elog = int(entry_number_match.group(1))
                 field_values = [n_elog]  # the first field value is ID
                 print(f"working on entry number {n_elog}")
 
             if line.startswith(FIELD_VALUES_START):
-                # then this specifies the values of the fields
-                # dates get their own lines, but follow the same structure.
-                # this will not match the ID, since that line is broken in the html.
+                # ... then this specifies the values of the fields. great.
+                # Dates get their own lines, but follow the same structure.
+                # This will not match the ID, since that line is broken in the html.
+                #     (html is disgusting)
                 field_strings = line.split("</td>")
                 if len(field_strings) > 1:  # will be the case if the line is real.
                     # The last entry is just noise and I want to toss it:
@@ -114,14 +117,16 @@ class ElogEntry:
         date=None,
         field_data=None,
         sample_measurements=None,
+        measurement_EC_tags=None,
         notes=None,
     ):
         self.setup = setup
         self.number = number
         self.date = date
         self.field_data = field_data
-        self.notes = notes
         self.sample_measurements = sample_measurements
+        self.measurement_EC_tags = measurement_EC_tags
+        self.notes = notes
 
     @classmethod
     def load(cls, file_name, measurement_dir=ELOG_DIR):
@@ -134,18 +139,21 @@ class ElogEntry:
     @classmethod
     def open(cls, e_id, setup=SETUP, measurement_dir=ELOG_DIR):
         """Open the elog entry given its id"""
-        path_to_file = next(
-            path
-            for path in Path(measurement_dir).iterdir()
-            if path.stem.startswith(f"{setup} e{e_id}")
-        )
+        try:
+            path_to_file = next(
+                path
+                for path in Path(measurement_dir).iterdir()
+                if path.stem.startswith(f"{setup} e{e_id}")
+            )
+        except StopIteration:
+            raise FileNotFoundError(f"no elog with number={e_id}")
         return cls.load(path_to_file)
 
     def save(self, file_name=None, elog_dir=ELOG_DIR):
         """Save the elog entry, uses self.get_name for file name by default"""
         self_as_dict = self.as_dict()
         if not file_name:
-            file_name = self.get_name
+            file_name = self.get_name()
         path_to_json = (Path(elog_dir) / file_name).with_suffix(".json")
         with open(path_to_json, "w") as f:
             json.dump(self_as_dict, f, indent=4)
@@ -157,10 +165,25 @@ class ElogEntry:
             number=self.number,
             date=self.date,
             field_data=self.field_data,
-            notes=self.notes,
             sample_measurements=self.sample_measurements,
+            measurement_EC_tags=self.measurement_EC_tags,
+            notes=self.notes,
         )
         return self_as_dict
 
     def get_name(self):
         return f"{self.setup} e{self.number} {self.date}"
+
+    def update_with(self, elog_2):
+        """Put non-empty attributes from elog_2 into self, update not replace dicts"""
+        new_attrs = elog_2.as_dict()
+        for attr, value in new_attrs.items():
+            if (
+                hasattr(self, attr)
+                and isinstance(getattr(self, attr), dict)
+                and isinstance(value, dict)
+            ):
+                getattr(self, attr).update(value)
+            elif value:
+                print(f"update is setting {attr} to {value}")
+                setattr(self, attr, value)
