@@ -1,102 +1,516 @@
+
+# This document is a full list of ALL the EC-MS measurements performed under the DTU-MIT OER project.
+
+
 # I'm reading this manually, because the notes are not well-formatted enough for writing and debugging a parser to speed things up.
 # I've filtered the elog by Author=Scott, Project Name=OER, so I'll miss anything not there.
 # I won't copy metadata like RE_vs_RHE because writing a parser for that, when needed, shouldn't be so bad.
 
-# format: 
 
-#<elog_Id>, <date>
+# ----- sample family descriptions ------ #
+# Reshma: Sputtered RuO2. Reshma1 at RT, Reshma2 at 200 C, Reshma3 at 300C and Reshma4 at 400C
+# Jazz: Sputted Ir
+# Trimi: Pt stub
+# Powd: drop-cast ink of RuO2 powder 
+# Ir: drop-cast ink of Ir powder
+# Emil: Sputtered IrO2
+# Folk: Sputtered IrO2
+# Rao: drop-cast ink of RuO2 powder (same as powd)
+# Yang: Yang Shaohorn's "commercial" RuO2 powder (same as Ir?)
+# Choongman: RuO2 sputtered at 400C
+# Nancy: RT-sputtered RuO2 sputered (electrochemically labeled on 19A07 and 19A08)
+# Evans: Ru bubble-template deposition (by Choongman)
+# Bernie: Sputtered Ru (labeled by EC oxidation on 19B27)
+# Melih: Sputtered Ru thermally oxidized in theta probe
+# --- labeled samples, also described in labeled_samples_overview:
+# Easter: RT-Sputtered Ru^{18}O2
+# Goof: RT-Sputtered Ir^{18}O2
+# Champ: 400C-Sputtered Ir^{18}O2
+# Stoff: 400C-Sputtered Ru^{18}O2
+# Taiwan: RT-Sputtered Ru^{18}O2
+# John: 400C-Sputtered Ru^{18}O2
+# Decade: 100C-Sputtered Ir^{18}O2
+
+
+
+
+# ---------- format 1 (samples not named in elog text) ----------- # 
+#<elog_Id>, <date>  # <sample name(s) in field>
+#	# <infered sample 1>
+		<list of measurement_id's>
+#	# <infered sample 2>
+		<list of measurement_id's>
+
+
+# ---------- format 2 (samples named in elog text) ----------- # 
+#<elog_Id>, <date>  # <sample name(s) in field>
 #	01... <sample name>
+#		<measurement_id>
 #	02... <sample name>
+#		<measurement_id>
+
 
 
 127, 18H27
 	18H27_Reshma2A_18O/01... Reshma2A
+		m1, m2, m3, m4
+	# ... Reshma2B
+		m5
 
 128, 18H28  # Jazz4, Reshma4A, Reshma1A, Reshma3A
-	# not listed, hope it was in the pkl file names
+	# not listed, but apparently it was in the pkl file names
+	# Jazz4
+		m6, m7, m8, m9	
+	# Reshma1A
+		m10
+	# Reshma3A
+		m11, m12
+	# Reshma4A
+		m13, m14, m15
 
-129, 18H29
-	18H29_Reshma2B_O18/01.. Reshma2B #presumably
+129, 18H29  # Reshma2B
 	01... Powd1A
-	# Reshma2B is in file name
+		m16
+	# Ir1A
+		m17
+	18H29_Reshma2B_O18/01.. Reshma2B #presumably
+		m18, m19
+
+130, 18H30  # Emil3  # Author=Reshma
+	# Emil3
+		m20, m21, m22, m23, m24
 
 131, 18H31  # Powder IrO2, Reshma1B, Reshma1A
-	# not listed
+	# Ir2B
+		m25, m26
+	# Reshma1A
+		m27
+	# Reshma1B
+		m28, m29, m30, m32
 
 132, 18I04  # Reshma1B
-	# not listed
+	# Reshma1B
+		m33, m34, m35	
 
 133, 18I12 # Reshma1B
+	# Reshma1B
+		m36, m37, m38, m39, m40, m41, m42, m43
 
 134, 18I12  # Folk1
 	# Samples seem to be grouped into folders
 	# Folk1 notes go up to 06...
+		m44, m45, m46, m47, m48, m49
 	# Reshma3B on 01...
+		m50
 	# Reshma4B to 03...
+		m51, m52, m53
 
 135, 18I13  # Reshma1C
-	# not listed
+	# Reshma1D   # Reshma1D in file name. Trusting that.
+		m54, m55
 
-136, 18I15
-	# not listed
+136, 18I15  # Data folder seems to be called 18I14
+	# Emil1
+		m56
+	# Rao1B
+		m57
+	# Reshma4B
+		m58
 
 137, 18I15
 	# Folk5 goes to 04...
+		m59, m60, m61, m62
 	# Rao1D goes to 02...
+		m63
+	# Rao1F
+		m64, m65, m66
 
 138, 18I17  # Reshma1F
+	# Reshma1F
+		m67
 
 139, 18I17  # Yang1, Rao1F, Melih1
 	# Melih1 goes to 04...
+		m68, m69, m70, m71
+	# Rao1H
+		m72
+	# Yang1
+		m73
 
 140, 18I18  # Jazz4, Reshma1B
+	# Folk5
+		m74, m75
+	# Jazz4
+		m78
 	# Reshma1B goes to 01...
+		m77, m78
 
-141, 18I18  # Folk5, Reshma1B, Rao1D, Trimi1
-	
-144, 18J20  
+141, 18I18  # Folk5, Reshma1B, Rao1D, Trimi1  # Folk5 and Jazz4 seem not measured again.
+	# Rao1D
+		m79
+	# Trimi1
+		m80
+
+144, 18J20   # I do not have pickles for these measurements:
 	01... Choongman0
 	02... Choongman1
 	03... Choongman2
 
-158, 19A07
-	01... Nancy1
-	02... Nancy2
-	03... Nancy2
-	04... Nancy3
-	05... Trimi1
 
-159, 19A08
+158, 19A07  # 18O
+	01... Nancy1
+		m84
+	02... Nancy2
+		m85
+	03... Nancy2
+		m86
+	04... Nancy3
+		m87
+	05... Trimi1  # must also be an 06...
+		m93, m94
+
+159, 19A08   # 18O
 	01... Nancy4
-	# 02 to 05 not listed but Nancy5 is named
+		m88
+	# 02 to 05 not listed but Nancy5 is named... twice (2nd must be Nancy6)
+	# Nancy5
+		m89
+	# Nancy6
+		m90, m91, m92
 	06... Evans1
+		m81
 	07... Evans1
+		m82
 	08... Evans1
+		m83
 
 160, 19A09
 	01... Evans1
+		m95
 	02... Evans1
+		m96
 	03... Evans1
+		m97
 	04... Trimi1
+		m104
 	05... Trimi1
+		m105    
 	06... Nancy1
+		m99
 	07... Nancy5
+		m100
 	08... Nancy5
+		m101
 	09... Nancy5
+		m102
 	10... Nancy6
-	# Jazz2 is mentioned after that
+		m103
+	# Jazz2 is mentioned after that. And the pickle is Jazz2_11_raw.pkl :)
+		m98
 	
 162, 19A26  # Trimi1, Evans4, Evans5, Evans6
 	01... Trimi1
+		m116
 	02... Trimi1
+		m117
 	03... Trimi1
+		m118
 	04... Trimi1
+		m119
 	05... Trimi1
+		m120
 	06... Evans4
+		m106
 
-163, 19A27  # Evans
+163, 19A27  # Evans6, Evans7, Evans8
 	01... Evans6
+		m108
 	02... Evans6
+		m109
 	03... Evans7
+		m110
 	04... Evans8
-	05... Evans9 
+		m111
+	05... Evans8
+		m112
+	06... Evans8
+		m113
+	07... Evans8
+		m114
+
+164, 19A28  # Evans9, Evans5
+	# not listed
+	# Evans9
+		m115
+	# Evans5
+		m107
+
+169, 19B05  # Evans9, Evans7, Evans2, Evans8, Evans6
+	01... Evans9
+		m121
+	02... Evans7
+		m122
+	03... Evans7
+		m123
+	04... Evans7
+		m124
+	05... Evans6
+		m125
+	06... Evans2
+		m126
+	07... Evans8
+		m127
+	08... Evans8
+		m128
+	09... Evans6
+		m129
+
+170, 19B10  # Evans10
+	# Evans10
+		m130, 131, 132
+
+172, 19B12  # Author=Choongman
+	19B12_Reshma4_16O/01... Reshma4
+		m133
+	19B13_Reshma4_16O/01... Reshma4
+		m134
+	19B13_Reshma4_16O/02... Reshma4
+		m135
+	19B13_Reshma4_18O/03... Reshma4
+		m136
+	19B13_Reshma4_18O/04... Reshma4
+		m137
+	19B13_Reshma4_18O/05... Reshma4
+		m138
+	19B13_Reshma4_18O/06... Reshma4
+		m139
+	# Additional unlisted Reshma4 by Choongman:
+		m140, m141, m142, m143, m144, m145
+
+174, 19B16  # Evans10
+	# Evans10, not listed
+	m146
+
+180, 19B27  # Bernie  # the files say 19B24... maybe I forgot to submit the log
+	01... Bernie2
+		m147
+	02... Bernie3   # I seem to be missing the pickles for 02-05 here.
+	03... Bernie4
+	04... Bernie5
+	05... Bernie6
+
+183, 19B28  # Bernie
+	01... Bernie4
+		m148
+	02... Bernie4
+		m149
+	03... Bernie5
+		m150
+	04... Bernie5
+		m151
+	05... Bernie5
+		m152
+
+185, 19C01  # Jazz5, Melih2
+	# EC data must be stored in sep folders
+	# Jazz5 goes to 02...
+		m153, m152
+	# Melih2 goes to 02...
+		m155, m156, m157, m158
+
+209, 19D25  # Easter1
+
+210, 19D26  # Reshma4E, Easter1A, Easter1B
+	MS_data
+		m162
+	01... Reshma4E
+		m159
+	02... Easter1A
+		m160
+	03... Easter1B
+		m161, m168, m170  # m168 and m170 are "Easter1B_corrected.pkl"
+
+211, 19D29  # Jazz5, Folk3, Goof1A, Champ4A
+	MS_data
+		m167
+	01... Jazz5
+		m163
+	02... Folk3
+		m164
+	03... Goof1A
+		m165, m169  # seems to be a duplicate
+	04... Champ4A
+		m166
+
+214, 19E06  # Goof1C, Goof1B, Goof1D
+	01... Goof1B
+		m171
+	02... Goof1C
+		m172
+	03... Goof1C
+		m173
+	04... Goof1D
+		m174
+
+216, 19E07  # Trimi1, Evans12  # 16O
+	01... Trimi1
+	02... Evans12
+
+217, 19E07  # Trimi1, Evans12  # 18O
+	01... Trimi1
+		m175
+	02... Evans12  # seems to be an unlisted 03... through 05...
+		m176, m177, m178
+
+220, 19E09  # Trimi1, Evans12  # 16O
+	01... Trimi1
+		m180
+	02... Evans12
+		m181, m182, m183  # seens to be unlisted 02... and 03...
+
+229, 19F07  # Evans13
+	# not listed  # no pickles
+
+257, 19J21  # Reshma4, Trimi1, Stoff4A, Stoff4C, Stoff4E, Stoff4F
+	19J20/MS_data
+		m186
+	19J20/01... Stoff4E
+		m184
+	19J20/02... Stoff4F
+		m185
+	19J21/MS_data
+		m200
+	19J21/01... Reshma4F
+		m187
+	19J21/02... Trimi1
+		m188
+	19J21/03... Trimi1
+		m189
+	19J21/04... Trimi1
+		m190
+	19J21/05... Trimi1
+		m191
+	19J21/06... Stoff4A
+		m192
+	19J21/07... Stoff4B
+		m193
+	19J21/08... Stoff4C
+		m194
+	19J21/09... Easter1C
+		m195
+	19J21/10... Stoff1D
+		m196
+	19J21/11... Easter1B
+		m197
+	19J21/12... Easter1B
+		m198
+	19J21/13... Easter1D
+		m199
+
+262, 19L06  # Taiwan, Jazz  # I don't have these pickles
+	01... Jazz3
+	02... Jazz3
+
+263, 19L07  # Taiwan, Jazz
+	19L07/MS_data
+		m206
+	19L08/MS_data
+		m215
+	01... Jazz1
+		m201
+	02... Jazz1  # missing this one
+	03... Reshma4
+		m202
+	04... Folk3
+		m203
+	05... Taiwan1A
+		m204
+	06... Taiwan1B  # missing this one
+	07... Taiwan1C
+		m207
+	08... Taiwan1C
+		m208
+	09... Taiwan1C
+		m209
+	10... Trimi1
+		m210
+	11... Trimi1
+		m211
+	# Trimi1  # 12-19 are not listed, but there are pickles for a few:
+		 m205, m212, m213, m214
+
+264, 19L09  # Trimi1, Taiwan1G  # Maybe this documents some of those above.
+	12... Trimi1
+	13... Taiwan1G
+
+# I have pickles from 19L17 that seem missing
+	MS_data
+		m219
+	# Taiwan1G or Trimi
+		m216, m217, m218
+
+
+272, 19L21  # Trimi1
+
+273, 19L21  # Trimi, John, Legend
+	01... Trimi1
+		m220
+	02... Trimi1
+		m221
+	03... John4A
+		m222
+	04... John4C
+		m223
+	05... Legend4A
+		m224
+	06... Trimi1
+		m226
+
+267, 20A06  # Legend4C, Decade1G
+	MS_data
+		m228
+	01... Decade1G
+		m226
+	02... Legend4C
+		m227
+
+277, 20A08  # Taiwan1D, Decade, Legend
+	MS_data
+		m237
+	01... Trimi1
+		m229
+	02... Taiwan1D
+		m230
+	03... Decade1A
+		m231
+	04... Legend4C
+		m232
+	05... Decade1G
+		m233
+	06... Reshma4I
+		m234
+	07... Deade1B
+		m235
+	08... Decade1C
+		m236
+	09... John4A
+		m237
+	#John4A  # There's also an unlisted 10
+		m238
+
+280, 20A12 
+	01... Stoff4A
+	02... Reshma4I
+	03... Reshma4I
+	04... Jazz6
+
+293, 20A25  # Trimi1, Jazz6, Jazz7
+	# this is COox, doesn't belong here.
+	01... Trimi1
+	02... Trimi1
+
+330, 20E13  # Author=Choongman
+	# not labeled, but: 
+	01... Mette1
+	02... Mette2
+	03... Mette3 
