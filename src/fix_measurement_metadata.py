@@ -3,12 +3,9 @@
 import re
 from pathlib import Path
 from pyOER import Measurement
+from pyOER.elog import ElogEntry, read_elog_html
 
-CINFELOG_FIELD_SEP = (
-    """</a></td><td class="list1"><a href="https://cinfelog.fysik.dtu.dk/EC-MS/293">"""
-)
-
-ELOG_FILE = Path("../descriptions/full_NOTES_cinfelog.html")
+ELOG_FILE = Path("../elog/full_NOTES_cinfelog.html")
 METADATA_DOC = Path("../descriptions/metadata_from_elog.txt")
 
 MATCHERS = {  # regular expressions to match things from the metadata file
@@ -20,9 +17,6 @@ MATCHERS = {  # regular expressions to match things from the metadata file
 
 def map_elog_sample_measurement():
     """Return a-layer dictionary with d[<elog_number>][<sample_name>] = <m_ids tuple>"""
-
-    with open(ELOG_FILE, "r") as f:
-        elog_lines = f.readlines()
 
     with open(METADATA_DOC, "r") as f:
         metadata_lines = f.readlines()
@@ -49,4 +43,6 @@ def map_elog_sample_measurement():
 
 
 if __name__ == "__main__":
-    elog_sample_measuremnts = map_elog_sample_measurement()
+
+    elog_entries = read_elog_html(ELOG_FILE, setup="ECMS")
+    # elog_sample_measuremnts = map_elog_sample_measurement()
