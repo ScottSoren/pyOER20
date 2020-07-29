@@ -5,8 +5,8 @@ import re
 from pyOER import Measurement, MeasurementCounter
 
 OLD_DATA_DIRECTORIES = [
-    Path("../Analysis").absolute().resolve(),
     Path("../Data/ECMS").absolute().resolve(),
+    Path("../Analysis").absolute().resolve(),
 ]
 NEW_DATA_DIRECTORY = Path("./data/EC_MS_pickles")
 MEASUREMENT_DIR = Path("./measurements")
