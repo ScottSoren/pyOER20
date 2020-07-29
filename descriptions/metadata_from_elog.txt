@@ -73,7 +73,7 @@
 		m16
 	# Ir1A
 		m17
-	18H29_Reshma2B_O18/01.. Reshma2B #presumably
+	18H29_Reshma2B_O18/01... Reshma2B #presumably
 		m18, m19
 
 130, 18H30  # Emil3  # Author=Reshma
