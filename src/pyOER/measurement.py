@@ -23,8 +23,16 @@ if not MEASUREMENT_DIR.exists():
 class MeasurementCounter:
     _id = None
 
+    def last(self):
+        """Return the last measurement id"""
+        if not self._id:
+            with open(MEASUREMENT_ID_FILE, "r") as f:
+                self._id = int(f.read())
+        return self._id
+
     @property
     def id(self):
+        """Iterate measurement id and return the new measurement id"""
         with open(MEASUREMENT_ID_FILE, "r") as f:
             self._id = int(f.read()) + 1
         with open(MEASUREMENT_ID_FILE, "w") as f:
@@ -32,7 +40,16 @@ class MeasurementCounter:
         return self._id
 
 
-measurement_counter = MeasurementCounter()
+def all_measurements(measurement_dir=MEASUREMENT_DIR):
+    """returns an iterator that yields measurements in order of their id"""
+    N_measurements = MeasurementCounter().last()
+    for n in range(1, N_measurements):
+        try:
+            measurement = Measurement.open(n, measurement_dir=measurement_dir)
+        except FileNotFoundError as e:
+            print(f"itermeasurement skipping {n} due to error = \n{e}")
+        else:
+            yield measurement
 
 
 class Measurement:
@@ -57,6 +74,7 @@ class Measurement:
         elog_number=None,
         elog=None,
         EC_tag=None,
+        category=None,
         **kwargs,
     ):
         """Initiate Measurement object
@@ -76,7 +94,7 @@ class Measurement:
                 saving just to improve readability of the json
         """
         if not m_id:
-            m_id = measurement_counter.id
+            m_id = MeasurementCounter().id
         self.id = m_id
         self.name = name
         self.sample = sample
@@ -94,6 +112,7 @@ class Measurement:
         self.elog_number = elog_number
         self.elog = elog
         self.EC_tag = EC_tag
+        self.category = category
 
     def as_dict(self):
         self_as_dict = dict(
@@ -111,6 +130,7 @@ class Measurement:
             linked_measurements=self.linked_measurements,
             elog_number=self.elog_number,
             EC_tag=self.EC_tag,
+            category=self.category,
             # do not put the dataset into self.dict!
         )
         if self.copied_at:  # just for human-readability of measurement .json
@@ -151,17 +171,27 @@ class Measurement:
     @classmethod
     def open(cls, m_id, measurement_dir=MEASUREMENT_DIR):
         """Opens the measurement given its id"""
-        path_to_file = next(
-            path
-            for path in Path(measurement_dir).iterdir()
-            if path.stem.startswith(f"m{m_id}")
-        )
+        try:
+            path_to_file = next(
+                path
+                for path in Path(measurement_dir).iterdir()
+                if path.stem.startswith(f"m{m_id}")
+            )
+        except StopIteration:
+            raise FileNotFoundError(f"no measurement with id = m{m_id}")
         return cls.load(path_to_file)
 
     def make_name(self):
+        category_string = "u"  # u for uncategorized
+        if isinstance(self.category, (list, tuple)):
+            category_string = self.category[0]
+            for cat in self.category[1:]:
+                category_string += f" and {cat}"
+        elif self.category:
+            category_string = self.category
         self.name = (
-            f"m{self.id} is {self.sample} measured on {self.measurement_date} by "
-            f"{self.technique}"
+            f"m{self.id} is {self.sample} {category_string} on {self.measurement_date}"
+            f" by {self.technique}"
         )
         return self.name
 
@@ -178,7 +208,7 @@ class Measurement:
     def plot_experiment(self, *args, **kwargs):
         if not self.dataset:
             self.load_dataset()
-        self.dataset.plot_experiment(*args, **kwargs)
+        return self.dataset.plot_experiment(*args, **kwargs)
 
     def open_elog(self):
         from .elog import ElogEntry
@@ -187,10 +217,19 @@ class Measurement:
 
     def print_notes(self):
         if not self.elog:
-            self.open_elog()
+            try:
+                self.open_elog()
+            except FileNotFoundError:
+                print(f"{self.name} has no elog!")
+                return
         notes = self.elog.notes
         if self.EC_tag:
-            EC_tag_match = re.search(fr"\n{self.EC_tag}...", notes)
+            try:
+                EC_tag_match = re.search(fr"\n{self.EC_tag}", notes)
+            except TypeError:
+                print(f"problem searching for '{self.EC_tag}' in:\n{notes}")
+                return
+            # ^ note, EC_tag has the "..." already in it.
             if EC_tag_match:
                 notes = (
                     notes[0 : EC_tag_match.start()]
