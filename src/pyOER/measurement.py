@@ -131,7 +131,7 @@ class Measurement:
             elog_number=self.elog_number,
             EC_tag=self.EC_tag,
             category=self.category,
-            # do not put the dataset into self.dict!
+            # do not put the dataset into self_as_dict!
         )
         if self.copied_at:  # just for human-readability of measurement .json
             self_as_dict["copied_on"] = datetime.datetime.fromtimestamp(

@@ -19,6 +19,8 @@ MATCHERS = {
     "isotope": r"(?:(16|18)O|O(16|18))",
 }
 
+NON_DATASETS_FILE = MEASUREMENT_DIR / "non_ECMS_dataset_pickles.txt"
+
 
 def get_pickle_paths(parent_path):
     pps = []  # pickle_paths
@@ -29,6 +31,28 @@ def get_pickle_paths(parent_path):
         elif path.suffix == ".pkl":
             pps += [path]
     return pps
+
+
+def read_metadata_from_path(path):
+    metadata = {}
+    for name, matcher in MATCHERS.items():
+        match = re.search(matcher, str(path))
+        if match:
+            metadata[name] = match.group(1)
+    return metadata
+
+
+def check_if_EC_MS_pickle(measurement):
+    try:
+        measurement.load_dataset()
+    except (IOError, TypeError) as e:
+        print(f"Not an EC_MS pickle: \n\t{measurement.old_data_path}\n\tError = {e}")
+        return False
+    else:
+        return True
+    finally:
+        print("made it to the finally clause!")  # test
+        del measurement.dataset  # to save memory
 
 
 def main():
@@ -42,27 +66,19 @@ def main():
     non_dataset_pickles = []
 
     for path in pickle_paths:
-        specs = {}
-        for name, matcher in MATCHERS.items():
-            match = re.search(matcher, str(path))
-            if match:
-                specs[name] = match.group(1)
+        specs = read_metadata_from_path(path)
 
         measurement = Measurement(
             m_id=m_id, old_data_path=str(path), technique="ECMS", **specs,
         )
-        try:
-            measurement.load_dataset()
-        except (IOError, TypeError) as e:
-            print(f"Not an EC_MS pickle: \n\t{path}\n\tError = {e}")
-            non_dataset_pickles += [str(path)]
-            continue
-        del measurement.dataset  # to save memory
-        measurement.save()
+        if check_if_EC_MS_pickle(measurement):
+            measurement.save()
+        else:
+            non_dataset_pickles += [path]
 
         m_id = measurement_counter.id
 
-    with open(MEASUREMENT_DIR / "non_ECMS_dataset_pickles.txt", "w") as f:
+    with open(NON_DATASETS_FILE, "w") as f:
         f.writelines([line + "\n" for line in non_dataset_pickles])
 
 

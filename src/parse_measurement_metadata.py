@@ -12,7 +12,7 @@ MATCHERS = {  # regular expressions to match things from the metadata file
     "sample": r"([A-Z][a-z]+[0-9]+[A-Z]?)",
     "elog_and_date": r"([0-9]+), ([0-9]{2}[A-L][0-9]{2})",
     "measurement_id": r"m([0-9]+)",
-    "EC_tag": r"^\s*([0-9]*\.\.\.)",
+    "EC_tag": r"^\s*([0-9]+\.\.\.)",
 }
 
 
@@ -21,7 +21,7 @@ def map_elog_sample_measurement():
 
     with open(METADATA_DOC, "r") as f:
         metadata_lines = f.readlines()
-
+    metadata_lines += ["9999, 99L99"]  # to make sure the last elog entry gets saved
     n_elog = None  # the elog number
     date = None
     sample = None  # the sample name
