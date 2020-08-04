@@ -8,7 +8,7 @@ import re
 import time
 import datetime
 from EC_MS import Dataset
-from .tools import singleton_decorator
+from .tools import singleton_decorator, CounterWithFile
 
 MEASUREMENT_DIR = Path(__file__).parent.parent.parent / "measurements"
 MEASUREMENT_ID_FILE = MEASUREMENT_DIR / "LAST_MEASUREMENT_ID.pyoer20"
@@ -20,24 +20,10 @@ if not MEASUREMENT_DIR.exists():
 
 
 @singleton_decorator
-class MeasurementCounter:
-    _id = None
+class MeasurementCounter(CounterWithFile):
+    """Counts measurements. 'id' increments the counter. 'last()' retrieves last id"""
 
-    def last(self):
-        """Return the last measurement id"""
-        if not self._id:
-            with open(MEASUREMENT_ID_FILE, "r") as f:
-                self._id = int(f.read())
-        return self._id
-
-    @property
-    def id(self):
-        """Iterate measurement id and return the new measurement id"""
-        with open(MEASUREMENT_ID_FILE, "r") as f:
-            self._id = int(f.read()) + 1
-        with open(MEASUREMENT_ID_FILE, "w") as f:
-            f.write(str(self._id))
-        return self._id
+    _file = MEASUREMENT_ID_FILE
 
 
 def all_measurements(measurement_dir=MEASUREMENT_DIR):
@@ -65,7 +51,7 @@ class Measurement:
         sample=None,
         technique=None,
         isotope=None,
-        measurement_date=None,
+        date=None,
         analysis_date=None,
         old_data_path=None,
         new_data_path=None,
@@ -100,17 +86,17 @@ class Measurement:
         self.sample = sample
         self.technique = technique
         self.isotope = isotope
-        self.measurement_date = measurement_date
+        self.date = date
         self.analysis_date = analysis_date
         self.measurement_dir = measurement_dir
         self.copied_at = copied_at  # will be replaced by time.time()
         self.old_data_path = old_data_path
         self.new_data_path = new_data_path
-        self.dataset = dataset
+        self._dataset = dataset  # dataset is a managed property
         self.linked_measurements = linked_measurements
         self.extra_stuff = kwargs
         self.elog_number = elog_number
-        self.elog = elog
+        self._elog = elog  # elog is a managed property
         self.EC_tag = EC_tag
         self.category = category
 
@@ -121,7 +107,7 @@ class Measurement:
             sample=self.sample,
             technique=self.technique,
             isotope=self.isotope,
-            measurement_date=self.measurement_date,
+            date=self.date,
             analysis_date=self.analysis_date,
             measurement_dir=str(self.measurement_dir),
             copied_at=self.copied_at,
@@ -182,6 +168,7 @@ class Measurement:
         return cls.load(path_to_file)
 
     def make_name(self):
+        """make a name for self from its id, sample, category, date, and technique"""
         category_string = "u"  # u for uncategorized
         if isinstance(self.category, (list, tuple)):
             category_string = self.category[0]
@@ -190,30 +177,46 @@ class Measurement:
         elif self.category:
             category_string = self.category
         self.name = (
-            f"m{self.id} is {self.sample} {category_string} on {self.measurement_date}"
+            f"m{self.id} is {self.sample} {category_string} on {self.date}"
             f" by {self.technique}"
         )
         return self.name
 
+    @property
+    def dataset(self):
+        """The EC_MS dataset associated with the measurement"""
+        if not self._dataset:
+            self.load_dataset()
+        return self._dataset
+
     def load_dataset(self):
-        self.dataset = Dataset(self.old_data_path)
-        if self.dataset.empty:
+        """load the dataset from the EC_MS pkl file"""
+        self._dataset = Dataset(self.old_data_path)
+        if self._dataset.empty:
             raise IOError(f"Dataset in {self.old_data_path} loaded empty.")
-        return self.dataset
+        return self._dataset
 
     def save_dataset(self):
-        self.dataset.save(self.new_data_path)
+        """save the dataset in the new data directory"""
+        name = self.name if self.name else self.make_name()
+        path_to_pkl = self.new_data_path / (name + ".pkl")
+        self.dataset.save(file_name=path_to_pkl)
         self.copied_at = time.time()
 
     def plot_experiment(self, *args, **kwargs):
-        if not self.dataset:
-            self.load_dataset()
+        """shortcut to self.dataset.plot_experiment"""
         return self.dataset.plot_experiment(*args, **kwargs)
 
     def open_elog(self):
         from .elog import ElogEntry
 
-        self.elog = ElogEntry.open(self.elog_number)
+        self._elog = ElogEntry.open(self.elog_number)
+
+    @property
+    def elog(self):
+        if not self._elog:
+            self.open_elog()
+        return self._elog
 
     def print_notes(self):
         if not self.elog:
