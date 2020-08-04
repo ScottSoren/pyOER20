@@ -21,7 +21,7 @@ if not CALIBRATION_DIR.exists():
 def all_calibrations(calibration_dir=CALIBRATION_DIR):
     """returns an iterator that yields measurements in order of their id"""
     N_calibrations = CalibrationCounter().last()
-    for n in range(1, N_calibrations):
+    for n in range(1, N_calibrations + 1):
         try:
             calibration = Calibration.open(n, calibration_dir=calibration_dir)
         except FileNotFoundError as e:
@@ -76,6 +76,8 @@ class Calibration:
         self.tspan = tspan
         self.cal_tspans = cal_tspans
         self.t_bg = t_bg
+        if F is None:
+            F = {}
         self.F = F
         self.alpha = alpha
         self.category = category
@@ -157,6 +159,7 @@ class Calibration:
             self._extraction = Extraction(
                 dataset=self.measurement.dataset,
                 tspan_ratio=self.tspan,
+                t_bg=self.t_bg,
                 electrolyte=self.isotope,
             )
         return self._extraction
@@ -168,6 +171,7 @@ class Calibration:
             O2, ax = self.extraction.calibration_curve(
                 mol="O2",
                 mass=mass,
+                n_el=4,
                 tspans=self.cal_tspans,
                 t_bg=self.t_bg,
                 out=["Molecule", "ax"],
@@ -198,7 +202,7 @@ class Calibration:
 
     def cal_alpha(self):
         """calibrate the isotope ratio based on the assumption of OER during self.tspan"""
-        alpha = self.extraction.get_ratio()
+        alpha = self.extraction.get_alpha()
         self.alpha = alpha
 
         return alpha

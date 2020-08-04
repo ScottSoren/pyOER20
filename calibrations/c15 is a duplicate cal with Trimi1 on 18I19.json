@@ -1,11 +1,11 @@
 {
-    "c_id": 23,
-    "m_id": 191,
+    "c_id": 15,
+    "m_id": 80,
     "tspan": null,
     "cal_tspans": null,
     "t_bg": null,
-    "F": null,
+    "F": {},
     "alpha": null,
-    "category": null,
+    "category": "duplicate",
     "isotope": null
 }
