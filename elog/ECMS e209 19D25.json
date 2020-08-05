@@ -21,6 +21,6 @@
     "sample_measurements": {
         "Easter1": []
     },
-    "measurement_EC_tags": null,
+    "measurement_EC_tags": {},
     "notes": "?-C2 has a spot of membrane that looks delaminated, but it passes drop test!\n\nFlowed CO2 as carrier gas during CO2 meeting.\nHmmm.... isotope ratio not stable.\n<a href=\"https://cinfdata.fysik.dtu.dk/sniffer/xyplot.php?type=masstime&amp;xmin=0&amp;xmax=11000&amp;matplotlib=checked&amp;title=&amp;xlabel=&amp;left_ylabel=&amp;right_ylabel=&amp;left_ymin=0&amp;left_ymax=0&amp;right_ymin=0&amp;right_ymax=0&amp;left_plotlist%5B%5D=17451&amp;right_plotlist%5B%5D=17450&amp;chosen_group%5B%5D=2019-04-25+15%3A34%3A31\">https://cinfdata.fysik.dtu.dk/sniffer/xyplot.php?type=masstime&amp;xmin=0&amp;xmax=11000&amp;matplotlib=checked&amp;title=&amp;xlabel=&amp;left_ylabel=&amp;right_ylabel=&amp;left_ymin=0&amp;left_ymax=0&amp;right_ymin=0&amp;right_ymax=0&amp;left_plotlist%5B%5D=17451&amp;right_plotlist%5B%5D=17450&amp;chosen_group%5B%5D=2019-04-25+15%3A34%3A31</a></pre></td></tr>\n"
 }

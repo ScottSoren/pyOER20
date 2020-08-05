@@ -21,6 +21,6 @@
     "sample_measurements": {
         "Trimi1": []
     },
-    "measurement_EC_tags": null,
+    "measurement_EC_tags": {},
     "notes": "01...\nnice OER\nDamnit, current too noisy, positive in He at constant potential. Irange is 1 mA, no reason for that. Changing to\n100 uA\n\n02...\nBeautiful! Reproduces the figure from my Thesis.\nCycling in CO at different scan rates.\nCO calibration at 30 uA. Made sure to get background level\n\nCO strip - holy fuck there's a lot of contamination. Those are some properly funky \"Pt\" CV's. Probably a whole\nNi layer on top.\nFlushing out CO line to wall, decontaminating electrode by flushing electrolyte anodic of deposition/desorption\nredox peaks. Hydrogen region revived!\nLooks okay. \n\nTrying another CO strip with just a quick dose and purge.\n\nGot an acceptable Pt CO strip :D \n\nnow, to oxidize for 30 min, and put in thetaprobe and get home to Agnes!\n\nGod damnit, the contaminimants and/or tilt are fucking up the oxidation. I get the same amount of O2 for less the\npotential at 100 uA as I did at 50 uA at the begining. This is fucked. Holy fuck I've wasted a lot of time today.\nI'll put it in the Theta-probe anyway, but I'm not waiting 30 minutes for the oxidation. I'm going to have to put\nPt in 18O electrolyte again tomorrow. \n\nLeaving the setup delabeling (heating to 100, CO2 flowing under a drop of H2(16)O</pre></td></tr>\n"
 }

@@ -21,6 +21,6 @@
     "sample_measurements": {
         "Evans13": []
     },
-    "measurement_EC_tags": null,
+    "measurement_EC_tags": {},
     "notes": "03...\nmessed up just a bit (current maxed out) during initial oxidation. Also, cut it short before 10 minutes at 100\nuA over. Sample looks crazy active :D CV's look okay.\n\nKink at 14830 is probably due to OER at OCP\n\ntest</pre></td></tr>\n"
 }

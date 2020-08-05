@@ -23,20 +23,12 @@
             180
         ],
         "Evans12": [
-            181,
-            182,
-            183
+            181
         ]
     },
     "measurement_EC_tags": {
         "180": "01...",
-        "181": "02...",
-        "182": "02...",
-        "183": "02...",
-        "180": "01...",
-        "181": "02...",
-        "182": "02...",
-        "183": "02..."
+        "181": "02..."
     },
     "notes": "02... Evans12, everything perfect so far! Clear exchange, both steady and transient (link2)\nElectrolyte withdrawn at 2 min, \n\n\n\n\n\nlink1:\n<a href=\"https://cinfdata.fysik.dtu.dk/sniffer/xyplot.php?type=masstime&amp;xmin=4500&amp;xmax=5500&amp;matplotlib=checked&amp;title=&amp;xlabel=&amp;left_ylabel=&amp;right_ylabel=&amp;left_ymin=3e-13&amp;left_ymax=1.9e-12&amp;right_ymin=0&amp;right_ymax=4.15e-10&amp;left_plotlist%5B%5D=17768&amp;right_plotlist%5B%5D=17767&amp;chosen_group%5B%5D=2019-05-09+13%3A56%3A39\">https://cinfdata.fysik.dtu.dk/sniffer/xyplot.php?type=masstime&amp;xmin=4500&amp;xmax=5500&amp;matplotlib=checked&amp;title=&amp;xlabel=&amp;left_ylabel=&amp;right_ylabel=&amp;left_ymin=3e-13&amp;left_ymax=1.9e-12&amp;right_ymin=0&amp;right_ymax=4.15e-10&amp;left_plotlist%5B%5D=17768&amp;right_plotlist%5B%5D=17767&amp;chosen_group%5B%5D=2019-05-09+13%3A56%3A39</a>\n\nlink2:\n<a href=\"https://cinfdata.fysik.dtu.dk/sniffer/xyplot.php?type=masstime&amp;xmin=7700&amp;xmax=8700&amp;matplotlib=checked&amp;title=&amp;xlabel=&amp;left_ylabel=&amp;right_ylabel=&amp;left_ymin=3e-13&amp;left_ymax=1.9e-12&amp;right_ymin=0&amp;right_ymax=4.15e-10&amp;left_plotlist%5B%5D=17768&amp;right_plotlist%5B%5D=17767&amp;chosen_group%5B%5D=2019-05-09+13%3A56%3A39\">https://cinfdata.fysik.dtu.dk/sniffer/xyplot.php?type=masstime&amp;xmin=7700&amp;xmax=8700&amp;matplotlib=checked&amp;title=&amp;xlabel=&amp;left_ylabel=&amp;right_ylabel=&amp;left_ymin=3e-13&amp;left_ymax=1.9e-12&amp;right_ymin=0&amp;right_ymax=4.15e-10&amp;left_plotlist%5B%5D=17768&amp;right_plotlist%5B%5D=17767&amp;chosen_group%5B%5D=2019-05-09+13%3A56%3A39</a></pre></td></tr>\n"
 }

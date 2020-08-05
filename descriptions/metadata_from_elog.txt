@@ -359,14 +359,22 @@
 217, 19E07  # Trimi1, Evans12  # 18O
 	01... Trimi1
 		m175
-	02... Evans12  # seems to be an unlisted 03... through 05...
-		m176, m177, m178, m179
+	02... Evans12
+		m176,
+	# seems to be an unlisted 03... through 05...
+	    m177,
+	# Trimi1
+	    m178
+	#
+	    m179
 
 220, 19E09  # Trimi1, Evans12  # 16O
 	01... Trimi1
 		m180
 	02... Evans12
-		m181, m182, m183  # seens to be unlisted 02... and 03...
+		m181,
+	# seens to be unlisted 02... and 03...
+	    m182, m183
 
 229, 19F07  # Evans13
 	# not listed  # no pickles

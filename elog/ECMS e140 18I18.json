@@ -31,6 +31,6 @@
             78
         ]
     },
-    "measurement_EC_tags": null,
+    "measurement_EC_tags": {},
     "notes": "less active than RuO2, but we knew this.\nActivity falls during potential hold, but we knew this. \nHeld for a bit longer (5 min and 10 min) for more accurate O2 calibration)\n\nThen calibrated RHE. It's not moved more than a couple mV. Looks maybe like 0.718, but gonna keep using 0.720.\n\n----- Reshma1B -------\nReason for doing this is that Reshma1F, which had a milder reduction and oxidation treatment than Reshma1B, only\nhad a little bit of 18O in I.S.S, so had to do it again.\nReshma1B happens to be the sample that we did get a 2:1 18O:16O ratio in with its previous treatment, but then\nJakob sputtered away the outer monolayer, so its reset.\n\n01...\nall looks good, and indeed, Reshma1B looks like it did before. Comparing to 18H31, it's got the same\ncapacitance, just shifted 10 mV (due to RHE potential) and steeper because it didn't have the resistor then.\n\nGiving it 20 cycles from -0.050 V vs RHE to 1.50 V vs RHE with 1 minute holds at each potential limit, scan rate\n20 mV/s.\n\nIn the mean while, using the hydrogen line and roughing pump to empty the reduction valve of the methane bottle\nso I can move the bottle outside.\n\nO2 and H2 signals get gradually noisier each cycle of 12, but CV stable. Capacitance seems unchanged at 5 mV/s\nafter the bigh cycles. Don't really recover the smooth MS signals when checking activity again at the end, and\nfinish a bit clumsily.\n\nDone with 18O electrolyte!!!</pre></td></tr>\n"
 }

@@ -30,6 +30,6 @@
             43
         ]
     },
-    "measurement_EC_tags": null,
+    "measurement_EC_tags": {},
     "notes": "02... CV looks like shit. Constant current, independent of potential and doesn't change if I remove WE lead.\n03... same.\n04... switched back to my RE\n05...\n06... New RDE stick, can pull current, but need resistor.\n07... It was the contact between the RDE stick and the sample! Using a new RDE, CV is only as bad as it was\nTuesday. using 500 Ohm.\n08... Thomas' RE has maybe a bit less noise but CV looks the same.</pre></td></tr>\n"
 }

@@ -42,11 +42,15 @@ def map_elog_sample_measurement():
                     measurement_EC_tags=measurement_EC_tags,
                 )
                 try:
+                    print(f"opening {n_elog}.")
                     elog_entry_0 = ElogEntry.open(n_elog)
                 except FileNotFoundError:
                     pass
                 else:
-                    elog_entry_0.update_with(elog_entry)
+                    # elog_entry_0.update_with(elog_entry)
+                    elog_entry_0.date = elog_entry.date
+                    elog_entry_0.sample_measurements = elog_entry.sample_measurements
+                    elog_entry_0.measurement_EC_tags = elog_entry.measurement_EC_tags
                     elog_entry = elog_entry_0
                 elog_entry_list += [elog_entry]
             n_elog, date = elog_and_date_match.groups()
@@ -100,4 +104,5 @@ if __name__ == "__main__":
                 measurement.elog_number = elog_number
                 if measurement_EC_tags and m_id in measurement_EC_tags:
                     measurement.EC_tag = measurement_EC_tags[m_id]
+                measurement.make_name()
                 measurement.save_with_rename()  # removes original file

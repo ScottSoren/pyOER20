@@ -25,6 +25,6 @@
             35
         ]
     },
-    "measurement_EC_tags": null,
+    "measurement_EC_tags": {},
     "notes": "Really shitty CV's. 10 mV noise on RE.\n100 Ohm at first, then 500 Ohm. \n02...\nno resistor. Still shit. Worse actually. Hope I didn't reduce surface.\n03...\nResistor on again at 500 Ohm. Gonna live with it. Dosed O2 while cycling, removed while at 1.2 V vs RHE, idea is\nto catch *(16)O(16)OH. \nTwo first cycles after have identical isotope ratios, still haven't seen O stripping!\nEnding and giving sample to Ejler.</pre></td></tr>\n"
 }

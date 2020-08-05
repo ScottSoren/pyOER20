@@ -29,6 +29,6 @@
             219
         ]
     },
-    "measurement_EC_tags": null,
+    "measurement_EC_tags": {},
     "notes": "12... Trimi1 in old electrolyte - a little vial labeld 1.0 M HClO4 in H2(18)O. We'll see. \nBig air pocket, manage to get it out by lowering the pressure. I thought... but OCP has 50 mV of noise.\nIntroduced CO at OCP and... whoa! It looks like the CO takes out O from the Pt at OCP!... maybe. If it was that\nclean-cut, it would be mostly m/z=44, but it's mostly m/z=46. It's as if CO reduces Pt indirectly. \nPut on 100 uA accidentally. Get a big CO2 signal, mostly 46.\nCV at 50 mV/s looks very similar to that in H2(16)O electrolyte, as it should.\n\n13... 50 cycles at 50 mV/s at -0.1 to +1.45 V, so that I can see O2 and H2. Changed these limits a few times.\nAlso changed resistance from 100 Ohm to 50 Ohm at some point</pre></td></tr>\n"
 }

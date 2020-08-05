@@ -38,6 +38,6 @@
             15
         ]
     },
-    "measurement_EC_tags": null,
+    "measurement_EC_tags": {},
     "notes": "shunt and wierd jumps in current :(\n\nRemounted, made sure spacer was flat\n03...\ntime-dependence of Ir:\nLooses 1/3 of its value at 1.5 V vs RHE , only loses 1/6 of its value at 1.575 vs RHE (0.875 vs RE) \n04... seeing if constant-current gives same calibration as constant-potential</pre></td></tr>\n"
 }
