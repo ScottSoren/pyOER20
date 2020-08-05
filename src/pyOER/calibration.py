@@ -206,3 +206,9 @@ class Calibration:
         self.alpha = alpha
 
         return alpha
+
+
+class CalibrationTrend:
+    """A class to describe the trend of calibrations and predict F based on tstamp"""
+
+    pass
