@@ -9,6 +9,7 @@ from matplotlib import pyplot as plt
 
 from pyOER.measurement import all_measurements
 from pyOER import Calibration, all_calibrations
+from pyOER.calibration import CALIBRATION_DIR
 
 plt.interactive(False)
 
@@ -28,6 +29,12 @@ def generate_calibrations():
 
         calibration = Calibration(m_id=measurement.id,)
         calibration.save()
+
+
+def add_calibration(m_id):
+    """Create a calibration json file referencing measurement with given id"""
+    calibration = Calibration(m_id=m_id,)
+    calibration.save()
 
 
 def analyze_this_calibration(cal, criteria="uncategorized"):
@@ -92,9 +99,7 @@ def reanalyze_without_input(cal):
     cal.save_with_rename()
 
 
-if __name__ == "__main__":
-    # generate_calibrations()  # only run this the calibration dir has been emptied.
-
+def sensitivity_factor_trend():
     time_vec = np.array([])
     F_vec = np.array([])
 
@@ -143,6 +148,17 @@ if __name__ == "__main__":
 
         plt.plot(t_fit / (24 * 60 * 60), F_fit, "k--")
 
+        plt.savefig(CALIBRATION_DIR / "calibrations over time.png")
+
         plt.show()
 
-        plt.savefig("calibrations over time.png")
+
+if __name__ == "__main__":
+    # generate_calibrations()  # only run this the calibration dir has been emptied.
+    # add_calibration(m_id=175)
+
+    for calibration in all_calibrations():
+        if analyze_this_calibration(calibration):
+            input_timestamps_and_categorize(calibration)
+
+    sensitivity_factor_trend()
