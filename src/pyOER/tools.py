@@ -1,4 +1,9 @@
-"""This module defines some pythony stuff used elsewhere"""
+"""This module defines some pythony and mathy stuff used elsewhere"""
+import numpy as np
+from scipy.optimize import curve_fit
+
+
+PROJECT_START_TIMESTAMP = 1533502800  # August 25, 2018
 
 
 def singleton_decorator(cls):
@@ -72,3 +77,30 @@ class ObjWithJsonData:
 
     def __init__(self, **kwargs):
         pass
+
+
+def fit_exponential(t, y, zero_time_axis=False):
+    """Return (tao, y0, y1) for best fit of y = y0 + (y1-y0) * exp(-t/tao)
+
+    Args:
+        t (vector): time
+        y (vector): values
+        zero_time_axix (boolean): whether to subtract t[0] from t. False by default
+    """
+    if zero_time_axis:
+        t = t - t[0]  # zero time axis
+    tau_i = t[-1] / 10  # guess at time constant
+    # tau_i = t[-1]      #often can't solve with this guess. A smaller tau helps.
+    y0_i = y[-1]  # guess at approach value
+    y1_i = y[0]  # guess at true initial value
+    pars_i = [tau_i, y0_i, y1_i]
+
+    def exp_fun(x, tau, y0, y1):
+        z = y0 + (y1 - y0) * np.exp(-x / tau)
+        #        print([tau,y0,y1]) #for diagnosing curve_fit problems
+        return z
+
+    pars, pcov = curve_fit(exp_fun, t, y, p0=pars_i)
+    #    pars = [tau, y0, y1]
+
+    return pars
