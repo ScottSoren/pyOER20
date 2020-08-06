@@ -9,11 +9,9 @@ from matplotlib import pyplot as plt
 
 from pyOER.measurement import all_measurements
 from pyOER import Calibration, all_calibrations
-from pyOER.calibration import CALIBRATION_DIR
+from pyOER.calibration import CalibrationSeries, CALIBRATION_DIR
 
 plt.interactive(False)
-
-PROJECT_START_TIMESTAMP = 1533502800  # August 25, 2018
 
 # equal to, at the time of writing this script, now minus 2 years plus 20 days:
 # tPROJECT_START_TIMESTAMP = time.time() - 2 * 365 * 24 * 60 * 60 + 20 * 24 * 60 * 60
@@ -99,60 +97,6 @@ def reanalyze_without_input(cal):
     cal.save_with_rename()
 
 
-def sensitivity_factor_trend():
-    time_vec = np.array([])
-    F_vec = np.array([])
-
-    fig, ax = plt.subplots()
-    ax.set_xlabel("project time / [days]")
-    ax.set_ylabel("O2 sensitivity / [C/mol]")
-
-    t_project_start = PROJECT_START_TIMESTAMP
-    for calibration in all_calibrations():
-        if not analyze_this_calibration(calibration, criteria="good"):  # criteria=None
-            print(f"skipping: '{calibration.make_name()}'")
-            continue
-        # input_timestamps_and_categorize(calibration)
-
-        t = calibration.measurement.dataset.tstamp - t_project_start
-        F = calibration.F["O2"]
-        time_vec = np.append(time_vec, t)
-        F_vec = np.append(F_vec, F)
-
-        if calibration.isotope == 16:
-            color = "k"
-        elif calibration.isotope == 18:
-            color = "g"
-        else:
-            color = "r"  # something's wrong
-
-        sample = calibration.measurement.sample
-        if sample == "Trimi1":
-            marker = "s"  # Platinum as squares
-        elif "Jazz" in sample or "Folk" in sample or "Emil" in sample:
-            marker = "o"  # Iridium and IrO2 as circles
-        else:
-            marker = "*"  # something's wrong
-
-        ax.plot(t / (24 * 60 * 60), F, color=color, marker=marker)
-        # reanalyze_without_input(calibration)
-
-    if True:  # fit exponential convergence to sensitivity factors:
-
-        from EC_MS.Time_Response import fit_exponential
-
-        tao, y0, y1 = fit_exponential(time_vec, F_vec)
-
-        t_fit = np.arange(0, 2 * 365 * 24 * 60 * 60, 1000)
-        F_fit = y0 + (y1 - y0) * np.exp(-t_fit / tao)
-
-        plt.plot(t_fit / (24 * 60 * 60), F_fit, "k--")
-
-        plt.savefig(CALIBRATION_DIR / "calibrations over time.png")
-
-        plt.show()
-
-
 if __name__ == "__main__":
     # generate_calibrations()  # only run this the calibration dir has been emptied.
     # add_calibration(m_id=175)
@@ -161,4 +105,10 @@ if __name__ == "__main__":
         if analyze_this_calibration(calibration):
             input_timestamps_and_categorize(calibration)
 
-    sensitivity_factor_trend()
+    cal_series = CalibrationSeries()
+    cal_series.fit_exponential(ax="new")
+    plt.savefig(CALIBRATION_DIR / "calibrations over time.png")
+    plt.show()
+    F_today = cal_series.F_of_tstamp(1596666000)
+    print(f"predicted sensitivity factor for Aug 6 2020 = {F_today} C/mol")
+    cal_series.save()
