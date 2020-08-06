@@ -1,3 +1,9 @@
+# exported data and figures, bigish files, will only be committed at the end.
+*.csv
+*.png
+*.svg
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
