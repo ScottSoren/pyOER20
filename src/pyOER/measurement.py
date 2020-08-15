@@ -189,9 +189,17 @@ class Measurement:
             self.load_dataset()
         return self._dataset
 
+    @property
+    def elog(self):
+        if not self._elog:
+            self.open_elog()
+        return self._elog
+
     def load_dataset(self):
         """load the dataset from the EC_MS pkl file"""
-        self._dataset = Dataset(self.old_data_path)
+        #  data_path = fix_data_path(self.old_data_path)  # Jakob, write this!!!
+        data_path = self.old_data_path  # Until fix_data_path is available.
+        self._dataset = Dataset(data_path)
         if self._dataset.empty:
             raise IOError(f"Dataset in {self.old_data_path} loaded empty.")
         return self._dataset
@@ -211,12 +219,6 @@ class Measurement:
         from .elog import ElogEntry
 
         self._elog = ElogEntry.open(self.elog_number)
-
-    @property
-    def elog(self):
-        if not self._elog:
-            self.open_elog()
-        return self._elog
 
     def print_notes(self):
         if not self.elog:
