@@ -1,19 +1,20 @@
 """Define the Measurement class containing metadata and pointers to raw data.
 
 """
-
-from pathlib import Path
+from pathlib import Path, PureWindowsPath, PurePosixPath
 import json
 import re
 import time
 import datetime
 from EC_MS import Dataset
 from .tools import singleton_decorator, CounterWithFile
+from .settings import DATA_DIR
 
-MEASUREMENT_DIR = Path(__file__).parent.parent.parent / "measurements"
+MEASUREMENT_DIR = Path(__file__).absolute().parent.parent.parent / "measurements"
 MEASUREMENT_ID_FILE = MEASUREMENT_DIR / "LAST_MEASUREMENT_ID.pyoer20"
 
 if not MEASUREMENT_DIR.exists():
+    print(f"Creating new directory:\r\n{MEASUREMENT_DIR}")
     Path.mkdir(MEASUREMENT_DIR)
     with open(MEASUREMENT_ID_FILE, "w") as f:
         f.write("0")
@@ -152,6 +153,30 @@ class Measurement:
         self_as_dict.update(file_loaded_from=path_to_file)
         if "id" in self_as_dict:
             self_as_dict["m_id"] = self_as_dict.pop("id")
+
+        # Change hardcoded path to relative path
+        # Should work both Windows -> Linux/Mac and Linux/Mac -> Windows
+        # as long as the path specified in measurement file is absolute
+        # Only tested Windows -> Linux
+        for key in ["old_data_path", "new_data_path"]:
+            if self_as_dict[key] != "None":
+                if ":" in self_as_dict[key]:
+                    path_type = PureWindowsPath
+                elif "/" == self_as_dict[key][0]:
+                    path_type = PurePosixPath
+                else:
+                    print(type(self_as_dict[key]), repr(self_as_dict[key]))
+                    raise TypeError(f"Could not detect whether {self_as_dict[key]} \
+                        was Windows or Posix path")
+                windows_path_list = path_type(self_as_dict[key]).parts
+                for i, part in enumerate(windows_path_list):
+                    if part == DATA_DIR.name:
+                        break
+                else:
+                    print("Could not convert PureWindowsPath to local path!")
+                self_as_dict[key] = str(DATA_DIR.joinpath(*windows_path_list[i+1:]))
+        # Probably not used, but might as well save the correct path here too
+        self_as_dict["measurement_dir"] = str(MEASUREMENT_DIR)
         return cls(**self_as_dict)
 
     @classmethod

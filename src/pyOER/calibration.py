@@ -14,7 +14,7 @@ from .tools import (
     PROJECT_START_TIMESTAMP,
 )
 
-CALIBRATION_DIR = Path(__file__).parent.parent.parent / "calibrations"
+CALIBRATION_DIR = Path(__file__).absolute().parent.parent.parent / "calibrations"
 CALIBRATION_ID_FILE = CALIBRATION_DIR / "LAST_CALIBRATION_ID.pyoer20"
 
 if not CALIBRATION_DIR.exists():
