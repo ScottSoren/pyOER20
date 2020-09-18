@@ -33,9 +33,13 @@ CONTINUE_FROM = {
         "ic_ids": {"M102": 5, "M195": 6},
     },
     "19F09": {
-        "i": 12,
+        "i": 32,
         "ic_ids": {"M193": 7},
-    }
+    },
+    "20A05": {
+        "i": 37,
+        "ic_ids": {"M102": 9}
+    },
 }
 
 initial_volume = 2e-9  # 2 ul in m^3
@@ -152,15 +156,11 @@ for set, (data_pkl, samples_pkl) in {
     # "19A10": ("19F05_ICPMS/19A10_ICPMS_data.pkl", "19F05_ICPMS/19A10_ICPMS_results.pkl"),
     # "19C02": ("19F05_ICPMS/19C02_ICPMS_data.pkl", "19F05_ICPMS/19C02_ICPMS_results.pkl"),
     #"19F07": ("19F05_ICPMS/19F07_ICPMS_data_20I17.pkl", "19F05_ICPMS/19F07_ICPMS_results_20I17.pkl"),
-    "19F09": ("19F05_ICPMS/19F09_ICPMS_data.pkl", "19F05_ICPMS/19F09_ICPMS_results.pkl"),
-    "19K29": (
-    "19J21_Stoff/19K29_ICPMS_data.pkl", "19J21_Stoff/19K29_ICPMS_results.pkl"),
-    "20A05": ("19L08_Taiwan/20A05_ICPMS_data_20I17.pkl",
-              "19L08_Taiwan/20A05_ICPMS_results_20I17.pkl"),
-    "20A06": (
-    "19L08_Taiwan/20A06_ICPMS_data.pkl", "19L08_Taiwan/20A06_ICPMS_results.pkl"),
-    "20A15": ("20A08_Decade_and_friends/20A15_ICPMS_data.pkl",
-              "20A08_Decade_and_friends/20A15_ICPMS_results.pkl"),
+    # "19F09": ("19F05_ICPMS/19F09_ICPMS_data.pkl", "19F05_ICPMS/19F09_ICPMS_results.pkl"),
+    # "19K29": ("19J21_Stoff/19K29_ICPMS_data.pkl", "19J21_Stoff/19K29_ICPMS_results.pkl"),
+    # "20A05": ("19L08_Taiwan/20A05_ICPMS_data_20I17.pkl", "19L08_Taiwan/20A05_ICPMS_results_20I17.pkl"),
+    "20A06": ( "19L08_Taiwan/20A06_ICPMS_data.pkl", "19L08_Taiwan/20A06_ICPMS_results.pkl"),
+    "20A15": ("20A08_Decade_and_friends/20A15_ICPMS_data.pkl", "20A08_Decade_and_friends/20A15_ICPMS_results.pkl"),
     # fmt: on
 }.items():
 
@@ -249,7 +249,7 @@ for set, (data_pkl, samples_pkl) in {
         n_diss = calibration.signal_to_concentration(
             result["signal"]) * dilution * initial_volume
         sampling_time = None
-        while sampling_time is None and not m_id == "c":
+        while sampling_time is None and m_id and not m_id == "c":
             measurement = Measurement.open(m_id)
             print("\n\n------ NOTES -------\n\n")
             measurement.print_notes()
