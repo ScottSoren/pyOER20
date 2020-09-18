@@ -3,7 +3,10 @@ import numpy as np
 from scipy.optimize import curve_fit
 
 
-PROJECT_START_TIMESTAMP = 1533502800  # August 25, 2018
+# a regular expression to match floats like '-3.5e4' or '7' or '245.13' or '1e-15':
+FLOAT_MATCH = r'[-]?\d+[\.]?\d*(e[-]?\d+)?'
+DATE_MATCH = r'[0-9]{2}[A-L][0-9]{2}'  # matches, e.g. 18H25 or 20J01
+PROJECT_START_TIMESTAMP = 1533502800  # August 25, 2018 in unix time
 
 
 def singleton_decorator(cls):

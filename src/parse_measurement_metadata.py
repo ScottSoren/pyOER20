@@ -92,7 +92,7 @@ if __name__ == "__main__":
     elog_entries = map_elog_sample_measurement()
 
     for elog_entry in elog_entries:
-        elog_entry.save()
+        elog_entry.SAVE()
         date = elog_entry.date
         elog_number = elog_entry.number
         measurement_EC_tags = elog_entry.measurement_EC_tags

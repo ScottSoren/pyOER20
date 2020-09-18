@@ -70,10 +70,10 @@ class Measurement:
         Args:
             m_id (int): the unique id of the measurement
             name (str): the name of the measurement
-            measurement_dir (Path-like): where to save the measurement metadata
+            measurement_dir (Path-like): where to SAVE the measurement metadata
             copied_at (float): the time at which the dataset was read
             old_data_path (Path-like): path to file to load the raw data from pkl
-            new_data_path (Path-like): path to file to save the raw data as pkl
+            new_data_path (Path-like): path to file to SAVE the raw data as pkl
             dataset (EC_MS.Dataset): the dataset
             linked_measurements (dict): measurements to link to this one
             kwargs (dict): gets added, not used. Here so that I can add extra stuff when
@@ -167,6 +167,9 @@ class Measurement:
             raise FileNotFoundError(f"no measurement with id = m{m_id}")
         return cls.load(path_to_file)
 
+    def __repr__(self):
+        return self.make_name()
+
     def make_name(self):
         """make a name for self from its id, sample, category, date, and technique"""
         category_string = "u"  # u for uncategorized
@@ -205,7 +208,7 @@ class Measurement:
         return self._dataset
 
     def save_dataset(self):
-        """save the dataset in the new data directory"""
+        """SAVE the dataset in the new data directory"""
         name = self.name if self.name else self.make_name()
         path_to_pkl = self.new_data_path / (name + ".pkl")
         self.dataset.save(file_name=path_to_pkl)

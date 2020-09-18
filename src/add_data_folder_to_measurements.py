@@ -45,7 +45,7 @@ def add_folder(path, technique="ECMS"):
             m_id = None
         else:
             non_dataset_pickles += [path]
-            m_id = measurement.id  # save that id for the next one
+            m_id = measurement.id  # SAVE that id for the next one
 
 
 def main():

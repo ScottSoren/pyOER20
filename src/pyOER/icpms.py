@@ -16,9 +16,10 @@ ICPMS_DIR = Path(__file__).parent.parent.parent / "icpms"
 ICPMS_ID_FILE = ICPMS_DIR / "LAST_ICPMS_ID.pyoer20"
 ICPMS_CALIBRATION_ID_FILE = ICPMS_DIR / "LAST_ICPMS_CALIBRATION_ID.pyoer20"
 
+Measurement = None  # .measurement.Measurement imported first call avoid circular import
 
 @singleton_decorator
-class ICPMSSampleCounter(CounterWithFile):
+class ICPMSCounter(CounterWithFile):
     """Counts icpms samples. 'id' increments the counter. 'last()' retrieves last id"""
 
     _file = ICPMS_ID_FILE
@@ -29,6 +30,18 @@ class ICPMSCalCounter(CounterWithFile):
     """Counts icpms cals. 'id' increments the counter. 'last()' retrieves last id"""
 
     _file = ICPMS_CALIBRATION_ID_FILE
+
+
+def all_icpms_points(icpms_dir=ICPMS_DIR):
+    """returns an iterator that yields measurements in order of their id"""
+    N_measurements = ICPMSCounter().last()
+    for n in range(1, N_measurements):
+        try:
+            icpms_point = ICPMSPoint.open(n, icpms_dir=icpms_dir)
+        except FileNotFoundError as e:
+            print(f"itermeasurement skipping {n} due to error = \n{e}")
+        else:
+            yield icpms_point
 
 
 class ICPMSPoint:
@@ -43,11 +56,12 @@ class ICPMSPoint:
         sampling_time,
         initial_volume,
         dilution,
+        description,
     ):
         """Initiate an ICP-MS measurement
 
         Args:
-            i_id (int): The ICPMS sample id. Defaults to ICPMSSampleCounter.id
+            i_id (int or None): The ICPMS sample id. Defaults to ICPMSCounter.id
             ic_id (int): The id of the corresponding ICPMS calibration.
             m_id (int): The corresponding EC measurement id.
             element (str): The metal element measured
@@ -59,8 +73,10 @@ class ICPMSPoint:
                 dilution, in [m^3]
             sampling_time (float): The time relative to Measurement.open(m_id).tstamp
                 that the ICPMS sample was taken, in [s]
-
+            description (str): useful info on how the sample was taken.
         """
+        if not i_id:
+            i_id = ICPMSCounter().id
         self.id = i_id
         self.ic_id = ic_id
         self.m_id = m_id
@@ -70,8 +86,10 @@ class ICPMSPoint:
         self.dilution = dilution
         self.initial_volume = initial_volume
         self.sampling_time = sampling_time
-        if ic_id is not None:
+        self.description = description
+        if ic_id is not None and ic_id > 0:  # I use -1 sometimes.
             self.calibration = ICPMSCalibration.open(ic_id)
+        self._measurement = None  # opened when needed
         self.icpms_dir = ICPMS_DIR
 
     def as_dict(self):
@@ -86,6 +104,7 @@ class ICPMSPoint:
             dilution=self.dilution,
             initial_volume=self.initial_volume,
             sampling_time=self.sampling_time,
+            description=self.description,
         )
         return self_as_dict
 
@@ -93,7 +112,7 @@ class ICPMSPoint:
         """Save the ICPMS measurement as .json in self.icpms_dir / file_name"""
         self_as_dict = self.as_dict()
         if not file_name:
-            file_name = f"i{self.id} is {self.element} after {self.dilution}x dilution"
+            file_name = f"{self}.json"
         print(f"saving measurement '{file_name}'")
         path_to_measurement = Path(self.icpms_dir) / file_name
         with open(path_to_measurement, "w") as f:
@@ -105,7 +124,6 @@ class ICPMSPoint:
         path_to_file = Path(icpms_dir) / file_name
         with open(path_to_file, "r") as f:
             self_as_dict = json.load(f)
-        self_as_dict.update(file_loaded_from=path_to_file)
         if "id" in self_as_dict:
             self_as_dict["i_id"] = self_as_dict.pop("id")
         return cls(**self_as_dict)
@@ -123,6 +141,34 @@ class ICPMSPoint:
             raise FileNotFoundError(f"no icpms sample with id = {i_id}")
         return cls.load(path_to_file)
 
+    def __repr__(self):
+        s = f"i{self.id} is {self.element} from " \
+            f"{self.sample} {self.description} on {self.date}"
+
+        s = s.replace("?", " hhmmmm ")  # can't save otherwise
+        s = s.replace("->", "to")   # can't save otherwise
+        return s
+
+    @property
+    def measurement(self):
+        if not self._measurement and self.m_id:
+            global Measurement
+            if not Measurement:
+                from .measurement import Measurement
+
+            self._measurement = Measurement.open(self.m_id)
+        return self._measurement
+
+    @property
+    def date(self):
+        if self.m_id:
+            return self.measurement.date
+
+    @property
+    def sample(self):
+        if self.m_id:
+            return self.measurement.sample
+
     @property
     def concentration(self):
         """Return the concentration of the element in original sample in [mol/m^3]"""
@@ -138,20 +184,24 @@ class ICPMSPoint:
 
 class ICPMSCalibration:
     def __init__(
-        self, ic_id, date, element, ppbs, signals, wash_signals,
+        self, ic_id, date, element, mass, ppbs, signals, wash_signals,
     ):
         """Initiate an ICP-MS calibration
 
         Args:
-            ic_id (int: the id of the ICPMS calibration
+            ic_id (int or None): the id of the ICPMS calibration. Defaults to counter.
             date (str): the scott-formatted date the calibration was measured on
             element (str): the element
+            mass (str): the mass
             ppbs (np.array): concentrations in [ppb]
             signals (np.array): signals in [counts]
         """
+        if not ic_id:
+            ic_id = ICPMSCalCounter().id
         self.id = ic_id
         self.date = date
         self.element = element
+        self.mass = mass
         self.ppbs = ppbs
         self.signals = signals
         self.wash_signals = wash_signals
@@ -164,8 +214,10 @@ class ICPMSCalibration:
             id=self.id,
             date=self.date,
             element=self.element,
-            ppbs=self.ppbs,
-            signals=self.signals,
+            mass=self.mass,
+            ppbs=list(self.ppbs),
+            signals=list(self.signals),
+            wash_signals=list(self.wash_signals),
         )
         return self_as_dict
 
@@ -173,7 +225,9 @@ class ICPMSCalibration:
         """Save the ICPMS calibration as .json in self.icpms_dir / file_name"""
         self_as_dict = self.as_dict()
         if not file_name:
-            file_name = f"i{self.id} is icpms calibration for {self.element}"
+            file_name = (
+                f"ic{self.id} is icpms calibration for {self.element} on {self.date} "
+            )
         print(f"saving measurement '{file_name}'")
         path_to_measurement = Path(self.icpms_dir) / file_name
         with open(path_to_measurement, "w") as f:
@@ -185,17 +239,19 @@ class ICPMSCalibration:
         path_to_file = Path(icpms_dir) / file_name
         with open(path_to_file, "r") as f:
             self_as_dict = json.load(f)
-        self_as_dict.update(file_loaded_from=path_to_file)
         if "id" in self_as_dict:
             self_as_dict["ic_id"] = self_as_dict.pop("id")
+        self_as_dict["ppbs"] = np.array(self_as_dict["ppbs"])
+        self_as_dict["signals"] = np.array(self_as_dict["signals"])
+        self_as_dict["wash_signals"] = np.array(self_as_dict["wash_signals"])
         return cls(**self_as_dict)
 
     def make_calibration_curve(self):
         """Make self._calibration_curve best fit of ln(self.ppbs) to ln(self.signals)"""
-        ln_cal_amounts = np.log(self.ppbs)
-        ln_cal_counts = np.log(self.signals)
+        ln_ppbs = np.log(self.ppbs)
+        ln_signals = np.log(self.signals - self.bg)
 
-        p = np.polyfit(ln_cal_counts, ln_cal_amounts, deg=1)
+        p = np.polyfit(ln_signals, ln_ppbs, deg=1)
         print(p)  # debugging
 
         def calibration_curve(counts):
@@ -214,11 +270,16 @@ class ICPMSCalibration:
             path_to_file = next(
                 path
                 for path in Path(icpms_dir).iterdir()
-                if path.stem.startswith(f"i{ic_id}")
+                if path.stem.startswith(f"ic{ic_id}")
             )
         except StopIteration:
             raise FileNotFoundError(f"no icpms calibration with id = {ic_id}")
         return cls.load(path_to_file)
+
+    @property
+    def bg(self):
+        """Background signal / [counts]"""
+        return np.mean(self.wash_signals)
 
     @property
     def calibration_curve(self):
@@ -227,12 +288,29 @@ class ICPMSCalibration:
             self.make_calibration_curve()
         return self._calibration_curve
 
+    @property
+    def dl_signal(self):
+        """Detection limit signal / [counts]"""
+        return self.bg + 3 * np.std(self.wash_signals)
+
+    @property
+    def dl_concentration(self):
+        """Detection limit concentration / [mol/m^3]"""
+        return self.calibration_curve(self.dl_signal)
+
     def signal_to_concentration(self, signal):
         """Return concentration in [mol/m^3] of ICPMS sample given its signal"""
-        ppb_amount = self.calibration_curve(signal)
+        ppb_amount = self.calibration_curve(signal - self.bg)
         kg_per_m3 = ppb_amount * 1e-6
         kg_per_mol = Chem.get_mass(self.element) * 1e-3
         concentration = kg_per_m3 / kg_per_mol
+
+        if concentration < self.dl_concentration:
+            print(
+                f"WARNING! ICPMS implied {self.element} concentration of {concentration} "
+                + f"mM is below the detection limit of {self.dl_concentration} mM"
+            )
+
         return concentration
 
     def plot_calibration(self, ax=None):
@@ -246,8 +324,8 @@ class ICPMSCalibration:
         calibration_curve = self.calibration_curve
         if not ax:
             fig, ax = plt.subplots()
-            ax.set_xlabel("amount / [ppb]")
-            ax.set_ylabel("counts")
+            ax.set_xlabel(f"amount of {self.element} / [ppb]")
+            ax.set_ylabel(f"counts at {self.mass}")
             ax.set_xscale("log")
             ax.set_yscale("log")
 

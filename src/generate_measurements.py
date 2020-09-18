@@ -52,7 +52,7 @@ def check_if_EC_MS_pickle(measurement):
         return True
     finally:
         print("made it to the finally clause!")  # test
-        del measurement.dataset  # to save memory
+        del measurement.dataset  # to SAVE memory
 
 
 def main():

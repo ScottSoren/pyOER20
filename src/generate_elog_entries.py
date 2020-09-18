@@ -16,4 +16,4 @@ if __name__ == "__main__":
             pass
         else:
             elog_entry.update_with(elog_entry_0)
-        elog_entry.save()
+        elog_entry.SAVE()
