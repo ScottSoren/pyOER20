@@ -7,7 +7,7 @@ import re
 import time
 import datetime
 from EC_MS import Dataset
-from .tools import singleton_decorator, CounterWithFile
+from .tools import singleton_decorator, CounterWithFile, FLOAT_MATCH
 from .settings import DATA_DIR
 
 MEASUREMENT_DIR = Path(__file__).absolute().parent.parent.parent / "tables/measurements"
@@ -263,7 +263,7 @@ class Measurement:
         notes = self.elog.notes
         if self.EC_tag:
             try:
-                EC_tag_match = re.search(fr"\n{self.EC_tag}", notes)
+                EC_tag_match = re.search(fr"\n\s+{self.EC_tag}", notes)
             except TypeError:
                 print(f"problem searching for '{self.EC_tag}' in:\n{notes}")
                 return
@@ -277,3 +277,36 @@ class Measurement:
                     + notes[EC_tag_match.start() :]
                 )
         print(notes)
+
+    @property
+    def RE_vs_RHE(self):
+        try:
+            RE_vs_RHE_str = self.elog.field_data["RE_vs_RHE"]
+            if RE_vs_RHE_str == "":
+                raise KeyError
+        except AttributeError:
+            print(r"WARNING!!! Measurement '{self}' has no elog :(")
+            RE_vs_RHE = None
+        except KeyError:
+            print(f"WARNING!!! No RE_vs_RHE in ({self.elog}), the elog for '{self}'")
+            RE_vs_RHE = None
+        else:
+            RE_vs_RHE = float(re.search(FLOAT_MATCH, RE_vs_RHE_str).group())
+        return RE_vs_RHE
+
+    def get_icpms_points(self):
+        """Return a list of ICPMSPoints from the measurement"""
+        from .icpms import all_icpms_points
+
+        ips = []  # icpms points
+        ts = []  # sampling times, for sorting
+        for ip in all_icpms_points():
+            if ip.m_id == self.id:
+                ips += [ip]
+                ts += [ip.sampling_time]
+
+        if len(ips) > 1:
+            # sort them by sampling time:
+            ts, indeces = zip(*sorted((t_i, i) for i, t_i in enumerate(ts)))
+            ips = [ips[index] for index in indeces]
+        return ips
