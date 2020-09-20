@@ -18,6 +18,7 @@ ICPMS_CALIBRATION_ID_FILE = ICPMS_DIR / "LAST_ICPMS_CALIBRATION_ID.pyoer20"
 
 Measurement = None  # .measurement.Measurement imported first call avoid circular import
 
+
 @singleton_decorator
 class ICPMSCounter(CounterWithFile):
     """Counts icpms samples. 'id' increments the counter. 'last()' retrieves last id"""
@@ -142,11 +143,13 @@ class ICPMSPoint:
         return cls.load(path_to_file)
 
     def __repr__(self):
-        s = f"i{self.id} is {self.element} from " \
+        s = (
+            f"i{self.id} is {self.element} from "
             f"{self.sample} {self.description} on {self.date}"
+        )
 
         s = s.replace("?", " hhmmmm ")  # can't save otherwise
-        s = s.replace("->", "to")   # can't save otherwise
+        s = s.replace("->", "to")  # can't save otherwise
         return s
 
     @property

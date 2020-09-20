@@ -24,30 +24,12 @@ analysis_dir = Path(
 # CONTINUE_FROM = {}
 
 CONTINUE_FROM = {
-    "19C02": {
-        "i": 9,
-        "ic_ids": {"M102": 2},
-    },
-    "19F07": {
-        "i": 16,
-        "ic_ids": {"M102": 5, "M195": 6},
-    },
-    "19F09": {
-        "i": 32,
-        "ic_ids": {"M193": 7},
-    },
-    "20A05": {
-        "i": 37,
-        "ic_ids": {"M102": 9}
-    },
-    "20A06": {
-        "i": 40,
-        "ic_ids": {"M102": 9}
-    },
-    "20A15": {
-        "i": 25,
-        "ic_ids": {"M102": 11, "M193": 12}
-    }
+    "19C02": {"i": 9, "ic_ids": {"M102": 2},},
+    "19F07": {"i": 16, "ic_ids": {"M102": 5, "M195": 6},},
+    "19F09": {"i": 32, "ic_ids": {"M193": 7},},
+    "20A05": {"i": 37, "ic_ids": {"M102": 9}},
+    "20A06": {"i": 40, "ic_ids": {"M102": 9}},
+    "20A15": {"i": 25, "ic_ids": {"M102": 11, "M193": 12}},
 }
 
 initial_volume = 2e-9  # 2 ul in m^3
@@ -56,15 +38,27 @@ dilution = 1000 / 2 * 10 / 0.1
 
 element_samples = {
     "Ru": (
-        "Reshma", "Nancy", "Evans", "Maundy", "Easter", "Bernie", "Melih", "Taiwan",
-        "Stoff", "John", "Sofie", "Mette",
+        "Reshma",
+        "Nancy",
+        "Evans",
+        "Maundy",
+        "Easter",
+        "Bernie",
+        "Melih",
+        "Taiwan",
+        "Stoff",
+        "John",
+        "Sofie",
+        "Mette",
     ),
     "Ir": ("Jazz", "Folk", "Emil", "Ben", "Goof", "Champ", "Decade", "Legend",),
-    "Pt": ("Trimi",)
+    "Pt": ("Trimi",),
 }
 
 default_M = {
-    "Ru": 102, "Ir": 193, "Pt": 195,
+    "Ru": 102,
+    "Ir": 193,
+    "Pt": 195,
 }
 
 SAVE = True
@@ -86,14 +80,16 @@ def get_m_id_with_input(result, match_date=True):
     print(f" ... so far, we have result={result}.\n")
     for measurement in all_measurements():
         if measurement.sample == sample and (
-                measurement.date == date or not match_date):
+            measurement.date == date or not match_date
+        ):
             measurement.plot_experiment()
             print("\n\n------ NOTES -------\n\n")
             measurement.print_notes()
             print(
                 f"\nThe ICPMS measurement is {result}. "
                 f"\nThis plot is {measurement}. "
-                f"Corresponding notes are printed above.")
+                f"Corresponding notes are printed above."
+            )
             print("\n\nClose the plot when you know if it's the right measurement.")
             plt.show()
             yn = input(f"Correct ({sample} {result['description']} on {date})? (y/n)")
@@ -119,7 +115,7 @@ def get_m_id_with_input(result, match_date=True):
 
 
 def make_icpms_calibration(
-        icpms_data, date, element, icpms_mass, plotit=True, save=False
+    icpms_data, date, element, icpms_mass, plotit=True, save=False
 ):
     wash_signals = icpms_data["wash"][icpms_mass]
     calibration_keys = [key for key in icpms_data.keys() if "ug/l" in key]
@@ -132,14 +128,14 @@ def make_icpms_calibration(
             number = re.search(FLOAT_MATCH, key).group()
             ppb = float(number)
         except (AttributeError, ValueError):
-            print('WARNING: could\'t match a float in \'' + key + '\'. skipping.')
+            print("WARNING: could't match a float in '" + key + "'. skipping.")
             continue
         signals = np.append(signals, icpms_data[key][icpms_mass])
         ppbs = np.append(ppbs, ppb)
 
     ic_id = None if save else -1  # passing None to ICPMSCalibration iterates the id
 
-    mass = "M" + icpms_mass[:len(icpms_mass) - len(element)]
+    mass = "M" + icpms_mass[: len(icpms_mass) - len(element)]
 
     icpms_calibration = ICPMSCalibration(
         ic_id=ic_id,
@@ -148,7 +144,7 @@ def make_icpms_calibration(
         mass=mass,
         ppbs=ppbs,
         signals=signals,
-        wash_signals=wash_signals
+        wash_signals=wash_signals,
     )
     if plotit:
         icpms_calibration.plot_calibration()
@@ -229,8 +225,12 @@ for set, (data_pkl, samples_pkl) in {
         mass = "M" + str(M)
         if not mass in calibrations:
             calibrations[mass] = make_icpms_calibration(
-                data, date=measurement_date, element=element,
-                icpms_mass=icpms_mass, plotit=True, save=SAVE,
+                data,
+                date=measurement_date,
+                element=element,
+                icpms_mass=icpms_mass,
+                plotit=True,
+                save=SAVE,
             )
             f"calibration for {element} from {measurement_date}. Close when happy."
             plt.show()
@@ -254,17 +254,22 @@ for set, (data_pkl, samples_pkl) in {
         if not m_id:
             continue
 
-        n_diss = calibration.signal_to_concentration(
-            result["signal"]) * dilution * initial_volume
+        n_diss = (
+            calibration.signal_to_concentration(result["signal"])
+            * dilution
+            * initial_volume
+        )
         sampling_time = None
         while sampling_time is None and m_id and not m_id == "c":
             measurement = Measurement.open(m_id)
             print("\n\n------ NOTES -------\n\n")
             measurement.print_notes()
             measurement.plot_experiment()
-            print(f"\n\nICPMS point description = '{description}'. " +
-                  f"Dissolved {element} = {n_diss * 1e12} pmol.\n" +
-                  f"Close plot when ready to input sampling time")
+            print(
+                f"\n\nICPMS point description = '{description}'. "
+                + f"Dissolved {element} = {n_diss * 1e12} pmol.\n"
+                + f"Close plot when ready to input sampling time"
+            )
             plt.show()
             sampling_time_str = input(
                 "Enter sampling time as experiment time in [s]. Enter 'm' if it's "
