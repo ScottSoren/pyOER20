@@ -157,7 +157,7 @@ class Measurement:
         # Change hardcoded path to relative path
         # Should work both Windows -> Linux/Mac and Linux/Mac -> Windows
         # as long as the path specified in measurement file is absolute
-        # Only tested Windows -> Linux
+        # Only tested Windows -> Linux and Windows -> Windows
         for key in ["old_data_path", "new_data_path"]:
             if self_as_dict[key] != "None":
                 if ":" in self_as_dict[key]:
@@ -166,15 +166,20 @@ class Measurement:
                     path_type = PurePosixPath
                 else:
                     print(type(self_as_dict[key]), repr(self_as_dict[key]))
-                    raise TypeError(f"Could not detect whether {self_as_dict[key]} \
-                        was Windows or Posix path")
-                windows_path_list = path_type(self_as_dict[key]).parts
-                for i, part in enumerate(windows_path_list):
+                    raise TypeError(
+                        f"Could not detect whether {self_as_dict[key]} \
+                        was Windows or Posix path"
+                    )
+                path_parts_list = path_type(self_as_dict[key]).parts
+                for i, part in enumerate(path_parts_list):
                     if part == DATA_DIR.name:
+                        self_as_dict[key] = str(
+                            DATA_DIR.joinpath(*path_parts_list[i + 1 :])
+                        )
+                        # pycharm complains about using "i" after the loop.
                         break
                 else:
                     print("Could not convert PureWindowsPath to local path!")
-                self_as_dict[key] = str(DATA_DIR.joinpath(*windows_path_list[i+1:]))
         # Probably not used, but might as well save the correct path here too
         self_as_dict["measurement_dir"] = str(MEASUREMENT_DIR)
         return cls(**self_as_dict)
