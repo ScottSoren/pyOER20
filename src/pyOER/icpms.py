@@ -12,7 +12,7 @@ from matplotlib import pyplot as plt
 from .tools import singleton_decorator, CounterWithFile
 from EC_MS import Chem
 
-ICPMS_DIR = Path(__file__).parent.parent.parent / "icpms"
+ICPMS_DIR = Path(__file__).absolute().parent.parent.parent / "tables/icpms"
 ICPMS_ID_FILE = ICPMS_DIR / "LAST_ICPMS_ID.pyoer20"
 ICPMS_CALIBRATION_ID_FILE = ICPMS_DIR / "LAST_ICPMS_CALIBRATION_ID.pyoer20"
 

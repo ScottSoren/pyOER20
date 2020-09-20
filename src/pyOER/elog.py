@@ -7,7 +7,7 @@ from pathlib import Path
 import re
 import json
 
-ELOG_DIR = Path(__file__).parent.parent.parent / "elog"
+ELOG_DIR = Path(__file__).absolute().parent.parent.parent / "tables/elog"
 SETUP = "ECMS"
 
 FIELD_NAME_MATCHER = r"""<th class="listtitle"><a.*>(.*)</a></th>"""

@@ -3,7 +3,7 @@
 from pathlib import Path
 from pyOER.elog import ElogEntry, read_elog_html
 
-ELOG_FILE = Path("../elog/full_NOTES_cinfelog.html")
+ELOG_FILE = Path("../descriptions/full_NOTES_cinfelog.html")
 METADATA_DOC = Path("../descriptions/metadata_from_elog.txt")
 
 if __name__ == "__main__":

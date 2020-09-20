@@ -10,7 +10,7 @@ from EC_MS import Dataset
 from .tools import singleton_decorator, CounterWithFile
 from .settings import DATA_DIR
 
-MEASUREMENT_DIR = Path(__file__).absolute().parent.parent.parent / "measurements"
+MEASUREMENT_DIR = Path(__file__).absolute().parent.parent.parent / "tables/measurements"
 MEASUREMENT_ID_FILE = MEASUREMENT_DIR / "LAST_MEASUREMENT_ID.pyoer20"
 
 if not MEASUREMENT_DIR.exists():

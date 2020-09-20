@@ -16,10 +16,9 @@ plt.interactive(False)
 
 from pyOER.tools import FLOAT_MATCH
 from pyOER import Measurement, all_measurements, ICPMSPoint, ICPMSCalibration
+from pyOER.settings import DATA_DIR
 
-analysis_dir = Path(
-    r"C:\Users\scott\Dropbox (Spectro Inlets)\Soren_DTU\DTU-MIT RuO2\Analysis"
-)
+analysis_dir = DATA_DIR / "Analysis"
 
 # CONTINUE_FROM = {}
 

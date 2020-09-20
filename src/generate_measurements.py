@@ -11,7 +11,7 @@ OLD_DATA_DIRECTORIES = [
     Path("../../Analysis").absolute().resolve(),
 ]
 NEW_DATA_DIRECTORY = Path("../data/EC_MS_pickles")
-MEASUREMENT_DIR = Path("../measurements")
+MEASUREMENT_DIR = Path("../tables/measurements")
 
 MATCHERS = {
     "sample": r"([A-Z][a-z]+[0-9]+[A-Z]?)",
