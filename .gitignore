@@ -1,3 +1,12 @@
+## big data files
+*.pkl
+
+# big image files
+*.png 
+
+# pyOER20-specific
+/src/pyOER/settings.py
+
 # exported data and figures, bigish files, will only be committed at the end.
 *.csv
 *.png
@@ -137,8 +146,4 @@ dmypy.json
 # PyCharm
 .idea/
 
-# big data files
-*.pkl
 
-# big image files
-*.png
