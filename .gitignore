@@ -11,6 +11,7 @@
 *.csv
 *.png
 *.svg
+*.pickle
 
 
 # Byte-compiled / optimized / DLL files
