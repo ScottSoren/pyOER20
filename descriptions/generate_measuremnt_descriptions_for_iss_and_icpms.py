@@ -42,12 +42,12 @@ def get_sample_type(sample):
     return "UNKNOWN"
 
 
-iss_lines = ["Sample,\tType,\tm_id,\tECMS Date,\tECMS tstamp\t,\n"]
+iss_lines = ["Sample,\tType,\tm_id,\tECMS Date,\tECMS tstamp,\t30 min systematic?\n"]
 icpms_operando_lines = [
     "Sample,\tType,\tm_id,\tECMS Date,\tECMS tstamp\t,"
-    + "i_id,\tdescription,\tamount [pmol],"
-    + "\tElectrolysis interval [s],\t,rate [pmol/s],\t"
-    + "avg current density[mA]\tavg potential [VRHE]"
+    + "i_id,\tdescription,\tamount [pmol],\t"
+    + "Electrolysis interval [s],\trate [pmol/s],\t"
+    + "avg current density[mA],\tavg potential [VRHE]\n"
 ]
 
 description_list = ["2 min", "10 min", "20 min", "30 min"]
@@ -62,7 +62,9 @@ for m_id, tag in systematic_m_ids.items():
     tstamp = dataset.tstamp
     sample_type = get_sample_type(sample)
 
-    iss_lines += [f"{sample},\t{sample_type},\t{m_id},\t{date},\t{tstamp}\t,\n"]
+    iss_lines += [
+        f"{sample},\t{sample_type},\t{m_id},\t{date},\t{tstamp},\t{tag=='y'}\n"
+    ]
 
     ips = m.get_icpms_points()
     if not ips:
@@ -119,12 +121,17 @@ for m_id, tag in systematic_m_ids.items():
         I_avg = np.mean(I) * 1e3  # [mA -> A]
         t, U = dataset.get_potential(tspan=tspan)
         U_avg = np.mean(U)
-
+        # icpms_operando_lines = [
+        #     "Sample,\tType,\tm_id,\tECMS Date,\tECMS tstamp\t,"
+        #     + "i_id,\tdescription,\tamount [pmol],\t"
+        #     + "Electrolysis interval [s],\trate [pmol/s],\t"
+        #     + "avg current density[mA],\tavg potential [VRHE]\n"
+        # ]
         icpms_operando_lines += [
-            f"{sample},\t{sample_type},\t{m_id},\t{date},\t{tstamp}\t,"
+            f"{sample},\t{sample_type},\t{m_id},\t{date},\t{tstamp},\t"
             + f"{ip.id},\t{ip.description},\t{amount*1e12},\t"
-            + f"{tspan},\t,{rate*1e12},\t"
-            + f"{I_avg}\t{U_avg}\n"
+            + f"{tspan},\t{rate*1e12},\t"
+            + f"{I_avg},\t{U_avg}\n"
         ]
 
     with open("ecms_measurements_hopefully_iss_before_and_after.txt", "w") as f:
