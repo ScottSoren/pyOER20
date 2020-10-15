@@ -287,7 +287,7 @@ class Measurement:
         except AttributeError:
             print(r"WARNING!!! Measurement '{self}' has no elog :(")
             RE_vs_RHE = None
-        except KeyError:
+        except (KeyError, TypeError):
             print(f"WARNING!!! No RE_vs_RHE in ({self.elog}), the elog for '{self}'")
             RE_vs_RHE = None
         else:

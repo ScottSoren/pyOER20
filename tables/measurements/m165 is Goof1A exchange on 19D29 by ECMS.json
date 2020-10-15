@@ -13,5 +13,8 @@
     "linked_measurements": null,
     "elog_number": "211",
     "EC_tag": "03...",
-    "category": "exchange"
+    "category": [
+        "exchange",
+        "calibration"
+    ]
 }

@@ -15,6 +15,7 @@
     "EC_tag": "03...",
     "category": [
         "exchange",
-        "calibration"
+        "calibration",
+	"duplicate"
     ]
 }

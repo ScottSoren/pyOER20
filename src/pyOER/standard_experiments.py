@@ -21,6 +21,7 @@ class StandardExperiment:
         tspan_F=None,
         tspan_alpha=None,
         plot_specs=None,
+        **kwargs,
     ):
 
         self.measurement = Measurement.open(m_id)
@@ -45,6 +46,7 @@ class StandardExperiment:
         self.alpha = alpha or STANDARD_ALPHA
         self._icpms_points = None
         self.plot_specs = plot_specs or {}
+        self.extra_stuff = kwargs
 
     def calc_alpha(self, tspan=None):
         """Return fraction ^{16}O in the electrolyte based on tspan with steady OER"""
@@ -191,7 +193,11 @@ class StandardExperiment:
             axis="x", bottom=True, top=True, labelbottom=False, labeltop=False
         )
 
-        element = self.icpms_points[0].element
+        try:
+            element = self.icpms_points[0].element
+        except IndexError:
+            print(f"{self.measurement} has no ICPMS points!")
+            return axes
         ax0.set_ylabel(element + " diss. / (pmol s$^{-1}$)")
         ax0.set_xlabel("time / (s)")
         ax0.xaxis.set_label_position("top")
@@ -224,7 +230,7 @@ class StandardExperiment:
             axes[1].set_ylim(ylim2)
 
         axes = axes + [ax0]
-        ylims = ylims or self.plot_specs.get("y_lims", {})
+        ylims = ylims or self.plot_specs.get("ylims", {})
         for key, ylim in ylims.items():
             if key < 5:
                 ax = axes[key]
