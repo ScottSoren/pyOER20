@@ -3,7 +3,7 @@
     "name": "m183 is Evans12 activity and failed on 19F10 by ECMS",
     "sample": "Evans12",
     "technique": "ECMS",
-    "isotope": null,
+    "isotope": "18",
     "date": "19E09",
     "analysis_date": null,
     "measurement_dir": "C:\\Users\\scott\\Dropbox (Spectro Inlets)\\Soren_DTU\\DTU-MIT RuO2\\pyOER20\\measurements",

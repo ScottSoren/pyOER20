@@ -1,4 +1,4 @@
-## big data files
+# big data files
 *.pkl
 
 # big image files
@@ -12,6 +12,8 @@
 *.png
 *.svg
 
+# link
+*.lnk
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

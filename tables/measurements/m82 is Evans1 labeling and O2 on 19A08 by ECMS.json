@@ -3,7 +3,7 @@
     "name": "m82 is Evans1 labeling and O2 on 19A08 by ECMS",
     "sample": "Evans1",
     "technique": "ECMS",
-    "isotope": null,
+    "isotope": "18",
     "date": "19A08",
     "analysis_date": null,
     "measurement_dir": "C:\\Users\\scott\\Dropbox (Spectro Inlets)\\Soren_DTU\\DTU-MIT RuO2\\pyOER20\\measurements",
