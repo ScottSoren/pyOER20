@@ -94,7 +94,7 @@ class ICPMSPoint:
         self.icpms_dir = ICPMS_DIR
 
     def as_dict(self):
-        """Dictionary representation of the ICPMS point"""
+        """Dictionary representation of the ICPMS spec"""
         self_as_dict = dict(
             id=self.id,
             ic_id=self.ic_id,
@@ -303,16 +303,17 @@ class ICPMSCalibration:
 
     def signal_to_concentration(self, signal):
         """Return concentration in [mol/m^3] of ICPMS sample given its signal"""
-        ppb_amount = self.calibration_curve(signal - self.bg)
-        kg_per_m3 = ppb_amount * 1e-6
+        ppb_concentration = self.calibration_curve(signal - self.bg)
+
+        if ppb_concentration < self.dl_concentration:
+            print(
+                f"WARNING! ICPMS implied {self.element} concentration in ICPMS sample "
+                + f"is {ppb_concentration} ppb, which is below "
+                + f"the detection limit of {self.dl_concentration} ppb"
+            )
+        kg_per_m3 = ppb_concentration * 1e-6
         kg_per_mol = Chem.get_mass(self.element) * 1e-3
         concentration = kg_per_m3 / kg_per_mol
-
-        if concentration < self.dl_concentration:
-            print(
-                f"WARNING! ICPMS implied {self.element} concentration of {concentration} "
-                + f"mM is below the detection limit of {self.dl_concentration} mM"
-            )
 
         return concentration
 

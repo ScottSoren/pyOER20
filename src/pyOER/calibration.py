@@ -234,7 +234,7 @@ class CalibrationSeries:
         self.y0 = y0
         self.y1 = y1
         # function: returns sensitivity factor given timestamp
-        self.F_of_tstamp = self.make_F_of_tstamp()
+        self._F_of_tstamp = None
 
     def as_dict(self):
         self_as_dict = {
@@ -311,7 +311,14 @@ class CalibrationSeries:
                 t = tstamp - PROJECT_START_TIMESTAMP
                 return y0 + (y1 - y0) * np.exp(-t / tau)
 
-        self.F_of_tstamp = F_of_tstamp
+        self._F_of_tstamp = F_of_tstamp
+        return F_of_tstamp
+
+    @property
+    def F_of_tstamp(self):
+        if not self._F_of_tstamp:
+            return self.make_F_of_tstamp()
+        return self._F_of_tstamp
 
     def fit_exponential(self, ax="new"):
         time_vec, F_vec = self.sensitivity_trend(ax=ax)
