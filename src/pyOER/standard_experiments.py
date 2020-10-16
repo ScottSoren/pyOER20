@@ -1,16 +1,53 @@
 import numpy as np
+from pathlib import Path
 from matplotlib import gridspec, pyplot as plt
 
+from .tools import singleton_decorator, CounterWithFile
 from .measurement import Measurement
 from EC_MS import Molecule
 from .calibration import CalibrationSeries
 
 STANDARD_ALPHA = 0.9980  # the natural ratio ^{16}O/(^{16}O + ^{18}O) in oxygen
 
+STANDARD_EXPERIMENT_DIR = (
+    Path(__file__).absolute().parent.parent.parent / "tables/standard_experiments"
+)
+STANDARD_EXPERIMENT_ID_FILE = (
+    STANDARD_EXPERIMENT_DIR / "LAST_STANDARD_EXPERIMENT_ID.pyOER20"
+)
+
 calibration_series = CalibrationSeries.load()
 
 
+def all_standard_experiments(experiment_dir=STANDARD_EXPERIMENT_DIR):
+    """returns an iterator that yields measurements in order of their id"""
+    N_measurements = StandardExperimentCounter().last()
+    for n in range(1, N_measurements):
+        try:
+            measurement = StandardExperiment.open(n, experiment_dir=experiment_dir)
+        except FileNotFoundError as e:
+            print(f"itermeasurement skipping {n} due to error = \n{e}")
+        else:
+            yield measurement
+
+
+@singleton_decorator
+class StandardExperimentCounter(CounterWithFile):
+    _file = STANDARD_EXPERIMENT_ID_FILE
+
+
 class StandardExperiment:
+    """This class describes the experiments from which 3x TOF measurements are derived
+
+    These are EC-MS measurements of a labeled (or control) sample in non-labeled
+    elcctroyte at constant current, which ICP-MS samples taken during or between
+    measurements. The class wraps the corresponding measurement with extra functions.
+
+    They are best represented as an EC-MS-ICPMS plot where the MS panel has left and
+    rignt y-axes representing labeled and non-labeled O2, respectively. Such a plot
+    is made with StandardExperment.plot_EC_MS_ICPMS
+    """
+
     def __init__(
         self,
         m_id,
@@ -21,9 +58,30 @@ class StandardExperiment:
         tspan_F=None,
         tspan_alpha=None,
         plot_specs=None,
+        se_id=StandardExperimentCounter.id,
         **kwargs,
     ):
+        """Initiate a standard experiment
 
+        Args:
+            m_id (int): The measurement id
+            tspan_plot (timespan): The timespan in which to make the EC-MS-ICPMS
+                plot. If not given, the plot will use the measurement's tspan
+            F (float): The O2 sensitivity in [C/mol]. By default the experiment will
+                use the O2 sensitivity given by the CalibrationSeries represented in
+                TREND.json in the calibration directory
+            alhpa (float): The ^{16}O portion in the electrolyte. By default it takes
+                the natural value of 99.80%
+            tspan_bg (timespan): The timespan to consider the background
+            tspan_F (timespan): The timespan from which O2 sensitivity (F) can be
+                calculated from the measurement
+            tspan_alpha (timespan): The timespan from which the isotopic composition of
+                the electrolyte (alpha) can be calculated form the measurement F is to
+                be calculated from the measurement
+            plot_specs (dict): Additional specs for the plot, e.g. axis limits ("ylims")
+            se_id (int): The StandardExperiment's principle key
+        """
+        self.m_id = m_id
         self.measurement = Measurement.open(m_id)
         self.dataset = self.measurement.dataset
         self.dataset.sync_metadata(
@@ -33,6 +91,8 @@ class StandardExperiment:
         if tspan_bg:
             self.dataset.set_background(tspan_bg)
         self.tspan_F = tspan_F
+        self.F_0 = F  # for saving, so that if no F is given and the CalibrationSeries
+        # is updated, the updated CalibrationSeries will determine F upon loading.
         if tspan_F:
             F = self.dataset.point_calibration(
                 mol="O2", mass="M32", n_el=4, tspan=tspan_F,
@@ -41,11 +101,14 @@ class StandardExperiment:
         self.mdict = {}
         self.populate_mdict()
         self.tspan_alpha = tspan_alpha
+        self.alpha_0 = alpha  # for saving, so that if no alpha is given and the
+        # natural ratio is updated, this will determine alpha upon loading.
         if tspan_alpha:
             alpha = self.calc_alpha()
         self.alpha = alpha or STANDARD_ALPHA
         self._icpms_points = None
         self.plot_specs = plot_specs or {}
+        self.id = se_id
         self.extra_stuff = kwargs
 
     def calc_alpha(self, tspan=None):
@@ -57,17 +120,23 @@ class StandardExperiment:
         alpha = 2 / (2 + gamma)
         return alpha
 
+    def as_dict(self):
+        return dict(m_id=self.m_id, F=self.F_0, alpha=self.alpha_0)
+
     @property
     def beta(self):
+        """Float: The m/z=34 to m/z=32 signal ratio from oxidation of the electrolyte"""
         return 2 * (1 - self.alpha) / self.alpha
 
     @property
     def icpms_points(self):
+        """List of ICPMSPoint: The ICPMS samples from the experiment"""
         if not self._icpms_points:
             self._icpms_points = self.measurement.get_icpms_points()
         return self._icpms_points
 
     def populate_mdict(self):
+        """Fill in self.mdict with the EC-MS.Molecules O2_M32, O2_M34, and O2_M36"""
         for mass in ["M32", "M34", "M36"]:
             m = Molecule("O2")
             m.primary = mass
@@ -76,12 +145,14 @@ class StandardExperiment:
             self.mdict[f"O2_{mass}"] = m
 
     def get_dissolution_points(self):
+        """Return the ICPMS sampling times (t_vec) and molar amounts (n_vec)"""
         icpms_points = self.icpms_points
         t_vec = np.array([icpms_point.sampling_time for icpms_point in icpms_points])
         n_vec = np.array([icpms_point.amount for icpms_point in icpms_points])
         return t_vec, n_vec
 
     def get_dissolution_rates(self):
+        """Return the ICPMS sampling times (t_vec) and dissolution raties (n_dot_vec)"""
         t_points, n_points = self.get_dissolution_points()
         t_last = 0
         t_vec = np.array([])

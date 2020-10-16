@@ -78,6 +78,14 @@ specs = {
         tspan_bg=[350, 400], plot_specs={"ylims": {0: [-0.02, 0.2]}}
     ),  # looks failed
     224: dict(tspan_bg=[300, 350], plot_specs={"ylims": {0: [-0.2, 2]}}),
+    231: dict(plot_specs={"ylims": {0: [-0.2, 2], 1: [0.7, 1.7]}}),
+    232: dict(plot_specs={"ylims": {0: [-0.2, 2],}}),
+    233: dict(
+        tspan_plot=[0, 2350], plot_specs={"ylims": {0: [-0.2, 2], 1: [0.7, 1.7]}}
+    ),
+    234: dict(plot_specs={"ylims": {0: [-0.2, 2],}}),
+    235: dict(plot_specs={"ylims": {0: [-0.06, 0.6],}}),
+    236: dict(tspan_bg=[310, 340], plot_specs={"ylims": {0: [-0.02, 0.2]}}),
 }
 
 working_range = [200, 250]
