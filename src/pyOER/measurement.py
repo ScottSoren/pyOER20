@@ -301,7 +301,7 @@ class Measurement:
         ips = []  # icpms points
         ts = []  # sampling times, for sorting
         for ip in all_icpms_points():
-            if ip.m_id == self.id:
+            if ip.m_id == self.id and "duplicate" not in ip.description:
                 ips += [ip]
                 ts += [ip.sampling_time]
 

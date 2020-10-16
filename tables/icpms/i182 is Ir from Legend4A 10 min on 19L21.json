@@ -8,5 +8,5 @@
     "dilution": 50000.0,
     "initial_volume": 2e-09,
     "sampling_time": 950.0,
-    "description": "10 min"
+    "description": "duplicate 10 min"
 }

@@ -89,6 +89,9 @@ class StandardExperiment:
         for t, n, in zip(t_points, n_points):
             if t == 0:
                 continue
+            if t == t_last:
+                input(f"Waring! {self.measurement} has two ICPMS samples at t={t}.")
+                continue
             t_vec = np.append(t_vec, t)
             n_dot = n / (t - t_last)
             n_dot_vec = np.append(n_dot_vec, n_dot)
@@ -169,11 +172,6 @@ class StandardExperiment:
         axes[1].set_xlabel("time / (s)")
         # colorax(ax[0], O2_M34.get_color(), lr='left')
 
-        # scale M32 axis according to M34 axis limits and natural O isotope ratio!
-        ylim_1 = axes[0].get_ylim()
-        ylim_2_corrected = [ylim_1[0] / beta, ylim_1[-1] / beta]
-        axes[-1].set_ylim(ylim_2_corrected)
-
         x32, y32 = self.dataset.get_flux(O2_M32, unit="pmol/s", tspan=tspan)
         x34, y34 = self.dataset.get_flux(O2_M34, unit="pmol/s", tspan=tspan)
 
@@ -197,39 +195,45 @@ class StandardExperiment:
             element = self.icpms_points[0].element
         except IndexError:
             print(f"{self.measurement} has no ICPMS points!")
-            return axes
-        ax0.set_ylabel(element + " diss. / (pmol s$^{-1}$)")
-        ax0.set_xlabel("time / (s)")
-        ax0.xaxis.set_label_position("top")
+        else:
+            ax0.set_ylabel(element + " diss. / (pmol s$^{-1}$)")
+            ax0.set_xlabel("time / (s)")
+            ax0.xaxis.set_label_position("top")
 
-        t_diff, n_dot_diff = self.get_dissolution_differential(tspan=tspan)
+            t_diff, n_dot_diff = self.get_dissolution_differential(tspan=tspan)
 
-        ax0.plot(t_diff, n_dot_diff * 1e12, "k-")
-        ax0.set_ylim(bottom=0)
-        ax0.set_xlim(axes[0].get_xlim())
-        ax0.tick_params(
-            axis="x", bottom=False, top=True, labelbottom=False, labeltop=True
-        )
-        ax0.set_ylabel(element + " diss. / (pmol s$^{-1}$)")
-        ax0.set_xlabel("time / (s)")
-        if showsamples:
-            ylim0 = ax0.get_ylim()
-            ylim1 = axes[0].get_ylim()
-            ylim2 = axes[1].get_ylim()
+            ax0.plot(t_diff, n_dot_diff * 1e12, "k-")
+            ax0.set_ylim(bottom=0)
+            ax0.set_xlim(axes[0].get_xlim())
+            ax0.tick_params(
+                axis="x", bottom=False, top=True, labelbottom=False, labeltop=True
+            )
+            ax0.set_ylabel(element + " diss. / (pmol s$^{-1}$)")
+            ax0.set_xlabel("time / (s)")
+            if showsamples:
+                ylim0 = ax0.get_ylim()
+                ylim1 = axes[0].get_ylim()
+                ylim2 = axes[1].get_ylim()
 
-            sampling_times = [
-                icpms_point.sampling_time for icpms_point in self.icpms_points
-            ]
-            for t in sampling_times:
-                ax0.plot([t, t], ylim0, "b--")
-                axes[0].plot([t, t], ylim1, "b--")
-                axes[1].plot([t, t], ylim2, "b--")
+                sampling_times = [
+                    icpms_point.sampling_time for icpms_point in self.icpms_points
+                ]
+                for t in sampling_times:
+                    ax0.plot([t, t], ylim0, "b--")
+                    axes[0].plot([t, t], ylim1, "b--")
+                    axes[1].plot([t, t], ylim2, "b--")
 
-            ax0.set_ylim(ylim0)
-            axes[0].set_ylim(ylim1)
-            axes[1].set_ylim(ylim2)
+                ax0.set_ylim(ylim0)
+                axes[0].set_ylim(ylim1)
+                axes[1].set_ylim(ylim2)
 
         axes = axes + [ax0]
+
+        # scale M32 axis according to M34 axis limits and natural O isotope ratio!
+        ylim_1 = axes[0].get_ylim()
+        ylim_2_corrected = [ylim_1[0] / beta, ylim_1[-1] / beta]
+        axes[3].set_ylim(ylim_2_corrected)
+
         ylims = ylims or self.plot_specs.get("ylims", {})
         for key, ylim in ylims.items():
             if key < 5:
@@ -238,7 +242,7 @@ class StandardExperiment:
                 print(f"Warning, you requested ylims={ylims} but wtf is {key}???")
                 break
             ax.set_ylim(ylim)
-            if key == 0:
+            if key == 0:  # keep the isotopic scaling!
                 axes[3].set_ylim([lim / beta for lim in ylim])
 
         return axes

@@ -7,6 +7,6 @@
     "signal": 561.5126874,
     "dilution": 50000.0,
     "initial_volume": 2e-09,
-    "sampling_time": 80.0,
+    "sampling_time": 0,
     "description": "OCP 3"
 }
