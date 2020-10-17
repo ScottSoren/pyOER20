@@ -1,5 +1,6 @@
-import numpy as np
 from pathlib import Path
+import json
+import numpy as np
 from matplotlib import gridspec, pyplot as plt
 
 from .tools import singleton_decorator, CounterWithFile
@@ -24,7 +25,9 @@ def all_standard_experiments(experiment_dir=STANDARD_EXPERIMENT_DIR):
     N_measurements = StandardExperimentCounter().last()
     for n in range(1, N_measurements):
         try:
-            measurement = StandardExperiment.open(n, experiment_dir=experiment_dir)
+            measurement = StandardExperiment.open(
+                n, standard_experiment_dir=STANDARD_EXPERIMENT_DIR
+            )
         except FileNotFoundError as e:
             print(f"itermeasurement skipping {n} due to error = \n{e}")
         else:
@@ -33,6 +36,8 @@ def all_standard_experiments(experiment_dir=STANDARD_EXPERIMENT_DIR):
 
 @singleton_decorator
 class StandardExperimentCounter(CounterWithFile):
+    """Counts measurements. 'id' increments the counter. 'last()' retrieves last id"""
+
     _file = STANDARD_EXPERIMENT_ID_FILE
 
 
@@ -51,6 +56,7 @@ class StandardExperiment:
     def __init__(
         self,
         m_id,
+        experiment_type=None,
         tspan_plot=None,
         F=None,
         alpha=None,
@@ -58,13 +64,18 @@ class StandardExperiment:
         tspan_F=None,
         tspan_alpha=None,
         plot_specs=None,
-        se_id=StandardExperimentCounter.id,
+        se_id=None,
         **kwargs,
     ):
         """Initiate a standard experiment
 
         Args:
             m_id (int): The measurement id
+            experiment_type (str): Tag for the type of standard experiment. Options are
+                "y": "yes, purely systematic",  # 30 minutes at one current density
+                "s": "starts systematic",
+                "k": "shortened systematic (<30 minutes)",
+                "c": "composite systematic"}  # one sample multiple current densities
             tspan_plot (timespan): The timespan in which to make the EC-MS-ICPMS
                 plot. If not given, the plot will use the measurement's tspan
             F (float): The O2 sensitivity in [C/mol]. By default the experiment will
@@ -82,12 +93,14 @@ class StandardExperiment:
             se_id (int): The StandardExperiment's principle key
         """
         self.m_id = m_id
+        self.experiment_type = experiment_type
         self.measurement = Measurement.open(m_id)
         self.dataset = self.measurement.dataset
         self.dataset.sync_metadata(
             RE_vs_RHE=self.measurement.RE_vs_RHE, A_el=0.196,
         )
         self.tspan_plot = tspan_plot
+        self.tspan_bg = tspan_bg
         if tspan_bg:
             self.dataset.set_background(tspan_bg)
         self.tspan_F = tspan_F
@@ -108,20 +121,54 @@ class StandardExperiment:
         self.alpha = alpha or STANDARD_ALPHA
         self._icpms_points = None
         self.plot_specs = plot_specs or {}
-        self.id = se_id
+        self.id = se_id or StandardExperimentCounter().id
         self.extra_stuff = kwargs
 
-    def calc_alpha(self, tspan=None):
-        """Return fraction ^{16}O in the electrolyte based on tspan with steady OER"""
-        tspan = tspan or self.tspan_alpha
-        x_32, y_32 = self.dataset.get_signal(mass="M32", tspan=tspan)
-        x_34, y_34 = self.dataset.get_signal(mass="M34", tspan=tspan)
-        gamma = np.mean(y_34) / np.mean(y_32)
-        alpha = 2 / (2 + gamma)
-        return alpha
-
     def as_dict(self):
-        return dict(m_id=self.m_id, F=self.F_0, alpha=self.alpha_0)
+        return dict(
+            m_id=self.m_id,
+            experiment_type=self.experiment_type,
+            tspan_plot=self.tspan_plot,
+            tspan_bg=self.tspan_bg,
+            tspan_F=self.tspan_F,
+            tspan_alpha=self.tspan_alpha,
+            F=self.F_0,
+            alpha=self.alpha_0,
+            plot_specs=self.plot_specs,
+            se_id=self.id,
+        )
+
+    def __repr__(self):
+        return f"se{self.id} is from m{self.m_id} of {self.measurement.sample}"
+
+    def save(self):
+        self_as_dict = self.as_dict()
+        file = STANDARD_EXPERIMENT_DIR / f"{self}.json"
+        with open(file, "w") as f:
+            json.dump(self_as_dict, f, indent=4)
+
+    @classmethod
+    def load(cls, file):
+        """Load a standard experiment given the path to its json file."""
+        with open(file, "r") as f:
+            self_as_dict = json.load(f)
+        if "ylims" in self_as_dict["plot_specs"]:  # json turns integer keys to strings
+            self_as_dict["plot_specs"]["ylims"] = {
+                int(s): ylim for s, ylim in self_as_dict["plot_specs"]["ylims"].items()
+            }
+        return cls(**self_as_dict)
+
+    @classmethod
+    def open(cls, se_id, standard_experiment_dir=STANDARD_EXPERIMENT_DIR):
+        try:
+            path_to_file = next(
+                path
+                for path in Path(standard_experiment_dir).iterdir()
+                if path.stem.startswith(f"se{se_id}")
+            )
+        except StopIteration:
+            raise FileNotFoundError(f"no standard experiment with id = se{se_id}")
+        return cls.load(path_to_file)
 
     @property
     def beta(self):
@@ -134,6 +181,15 @@ class StandardExperiment:
         if not self._icpms_points:
             self._icpms_points = self.measurement.get_icpms_points()
         return self._icpms_points
+
+    def calc_alpha(self, tspan=None):
+        """Return fraction ^{16}O in the electrolyte based on tspan with steady OER"""
+        tspan = tspan or self.tspan_alpha
+        x_32, y_32 = self.dataset.get_signal(mass="M32", tspan=tspan)
+        x_34, y_34 = self.dataset.get_signal(mass="M34", tspan=tspan)
+        gamma = np.mean(y_34) / np.mean(y_32)
+        alpha = 2 / (2 + gamma)
+        return alpha
 
     def populate_mdict(self):
         """Fill in self.mdict with the EC-MS.Molecules O2_M32, O2_M34, and O2_M36"""

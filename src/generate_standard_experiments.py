@@ -88,11 +88,10 @@ specs = {
     236: dict(tspan_bg=[310, 340], plot_specs={"ylims": {0: [-0.02, 0.2]}}),
 }
 
-working_range = [200, 250]
+working_range = [0, 250]
 
-# for m_id, spec in specs.items():
-for m_id in systematic_mids:
-    m_id = int(m_id)
+for m_id_str in systematic_mids:
+    m_id = int(m_id_str)
     if m_id < working_range[0]:
         continue
     elif m_id > working_range[-1]:
@@ -103,10 +102,13 @@ for m_id in systematic_mids:
 
     se = StandardExperiment(
         m_id=m_id,
+        experiment_type=standard_measurements[m_id_str],
         # se_id = StandardExperimentCounter.id
         **spec
     )
-    ax = se.plot_EC_MS_ICPMS()
-    ax[1].set_title(str(se.measurement))
 
-    # se.save()
+    if False:  # plot them all!
+        ax = se.plot_EC_MS_ICPMS()
+        ax[1].set_title(str(se.measurement))
+
+    se.save()
