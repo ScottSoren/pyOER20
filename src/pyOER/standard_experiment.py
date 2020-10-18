@@ -139,7 +139,7 @@ class StandardExperiment:
         )
 
     def __repr__(self):
-        return f"se{self.id} is from m{self.m_id} of {self.measurement.sample}"
+        return f"se{self.id} is from m{self.m_id} of {self.measurement.sample_name}"
 
     def save(self):
         self_as_dict = self.as_dict()

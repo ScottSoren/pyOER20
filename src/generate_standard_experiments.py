@@ -1,7 +1,7 @@
 from pathlib import Path
 import json
 
-from pyOER.standard_experiments import StandardExperiment
+from pyOER.standard_experiment import StandardExperiment
 
 DESCRIPTIONS_DIR = Path(__file__).parent.parent / "descriptions"
 

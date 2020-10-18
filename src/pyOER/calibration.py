@@ -153,7 +153,7 @@ class Calibration:
     def make_name(self):
         c_id = self.id
         date = self.measurement.date
-        sample = self.measurement.sample
+        sample = self.measurement.sample_name
         category = self.category
         name = f"c{c_id} is a {category} cal with {sample} on {date}"
         return name
@@ -288,7 +288,7 @@ class CalibrationSeries:
                 else:
                     color = "r"  # something's wrong
 
-                sample = calibration.measurement.sample
+                sample = calibration.measurement.sample_name
                 if sample == "Trimi1":
                     marker = "s"  # Platinum as squares
                 elif "Jazz" in sample or "Folk" in sample or "Emil" in sample:

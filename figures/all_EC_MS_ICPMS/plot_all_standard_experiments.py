@@ -1,7 +1,7 @@
 from pathlib import Path
 import json
 
-from pyOER.standard_experiments import all_standard_experiments
+from pyOER.standard_experiment import all_standard_experiments
 
 working_range = [0, 100]
 

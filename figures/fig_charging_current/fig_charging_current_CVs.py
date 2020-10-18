@@ -10,7 +10,7 @@ all_data_specs = [
     for m in all_measurements()
     if
     # "activity" in m.category and "failed" not in m.category and
-    not m.isotope == "18" and m.sample and ("Reshma4A" in m.sample)
+    not m.isotope == "18" and m.sample_name and ("Reshma4A" in m.sample_name)
 ]
 A_el = 0.196
 

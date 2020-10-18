@@ -56,7 +56,7 @@ for m_id, tag in systematic_m_ids.items():
     if tag in ["n", "f"]:
         continue
     m = Measurement.open(m_id)
-    sample = m.sample
+    sample = m.sample_name
     date = m.date
     dataset = m.dataset
     tstamp = dataset.tstamp

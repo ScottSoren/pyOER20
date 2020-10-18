@@ -84,7 +84,7 @@ class Measurement:
             m_id = MeasurementCounter().id
         self.id = m_id
         self.name = name
-        self.sample = sample
+        self.sample_name = sample
         self.technique = technique
         self.isotope = isotope
         self.date = date
@@ -105,7 +105,7 @@ class Measurement:
         self_as_dict = dict(
             id=self.id,
             name=self.name,
-            sample=self.sample,
+            sample=self.sample_name,
             technique=self.technique,
             isotope=self.isotope,
             date=self.date,
@@ -210,10 +210,16 @@ class Measurement:
         elif self.category:
             category_string = self.category
         self.name = (
-            f"m{self.id} is {self.sample} {category_string} on {self.date}"
+            f"m{self.id} is {self.sample_name} {category_string} on {self.date}"
             f" by {self.technique}"
         )
         return self.name
+
+    @property
+    def sample(self):
+        from .sample import Sample
+
+        return Sample.open(self.sample_name)
 
     @property
     def dataset(self):

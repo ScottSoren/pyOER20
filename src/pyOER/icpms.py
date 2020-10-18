@@ -170,7 +170,7 @@ class ICPMSPoint:
     @property
     def sample(self):
         if self.m_id:
-            return self.measurement.sample
+            return self.measurement.sample_name
 
     @property
     def concentration(self):
