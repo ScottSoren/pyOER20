@@ -7,17 +7,9 @@ import re
 import time
 import datetime
 from EC_MS import Dataset
+from .constants import MEASUREMENT_DIR, MEASUREMENT_ID_FILE
 from .tools import singleton_decorator, CounterWithFile, FLOAT_MATCH
 from .settings import DATA_DIR
-
-MEASUREMENT_DIR = Path(__file__).absolute().parent.parent.parent / "tables/measurements"
-MEASUREMENT_ID_FILE = MEASUREMENT_DIR / "LAST_MEASUREMENT_ID.pyoer20"
-
-if not MEASUREMENT_DIR.exists():
-    print(f"Creating new directory:\r\n{MEASUREMENT_DIR}")
-    Path.mkdir(MEASUREMENT_DIR)
-    with open(MEASUREMENT_ID_FILE, "w") as f:
-        f.write("0")
 
 
 @singleton_decorator

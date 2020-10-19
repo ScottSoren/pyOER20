@@ -1,44 +1,52 @@
 """this module will define the sample object grouping experiments and results"""
 
-from pathlib import Path
 import json
 
+from .constants import SAMPLE_DIR
 from .measurement import Measurement, all_measurements
-
-SAMPLE_DIR = Path(__file__).parent.paren / "tables/samples"
 
 SAMPLE_TYPES = {
     "Ru": {
-            "hydrous": ["Taiwan1G", ],
-            "metallic": ["Melih", "Bernie"],
-            "foam": "Evans",
-            "rutile": ["Reshma4", "Maundy", "Stoff", "Sofie", "Mette", "John"],
-            "amorphous": ["Reshma1", "Nancy", "Easter", "Taiwan"],
-        },
+        "hydrous": ["Taiwan1G",],
+        "metallic": ["Melih", "Bernie"],
+        "foam": "Evans",
+        "rutile": ["Reshma4", "Maundy", "Stoff", "Sofie", "Mette", "John"],
+        "amorphous": ["Reshma1", "Nancy", "Easter", "Taiwan"],
+    },
     "Ir": {
-            "hydrous": ["Legend1C", "Decade1G"],
-            "metallic": "Jazz",
-            "rutile": ["Folk", "Champ", "Legend"],
-            "amorphous": ["Goof", "Decade"],
-        },
-    "Pt": {"metallic": "Trimi"}
+        "hydrous": ["Legend1C", "Decade1G"],
+        "metallic": "Jazz",
+        "rutile": ["Folk", "Champ", "Legend"],
+        "amorphous": ["Goof", "Decade"],
+    },
+    "Pt": {"metallic": "Trimi"},
 }
 
 SAMPLE_ISOTOPES = {
     "16": ["Reshma", "Folk"],
     "18": [
-        "Maundy", "Stoff", "Sofie", "Mette", "John", "Easter", "Taiwan",
-        "Champ", "Legend", "Goof", "Decade"
+        "Maundy",
+        "Stoff",
+        "Sofie",
+        "Mette",
+        "John",
+        "Easter",
+        "Taiwan",
+        "Champ",
+        "Legend",
+        "Goof",
+        "Decade",
     ],
-    "(check!)": ["Melih", "Bernie", "Evans", "Nancy", "Jazz", "Trimi"]
+    "(check!)": ["Melih", "Bernie", "Evans", "Nancy", "Jazz", "Trimi"],
 }
 
 
 def get_element_and_type(name, get="both"):
     for element, oxide_types in SAMPLE_TYPES.items():
         for oxide_type, sample_names in oxide_types.items():
-            for sample_name in [sample_names] if isinstance(sample_names, str) else \
-                    sample_names:
+            for sample_name in (
+                [sample_names] if isinstance(sample_names, str) else sample_names
+            ):
                 if name.startswith(sample_name):
                     if get == "element":
                         return element
@@ -118,24 +126,28 @@ class Sample:
         # sort by tstamp:
         ms, _ = zip(*sorted([(m.tstamp, m) for m in ms]))
         return ms
-s
+
     def generate_history(self):
-        for m in self.measurements:
+        measurements = self.measurements
+        N = len(measurements)
+        for (i, m) in enumerate(measurements):
             m_str = "m" + str(m.id)
             m.print_notes()
-            print(f"\n\nNotes of Measurement {m} are above.")
+            print(f"\n\nNotes of Measurement {i} of {N}, {m}, are above.")
             if m_str in self.history:
                 print(f"Current history to overwrite: '{self.history[m_str]}'")
-            print(f"Close the plot when ready to describe {self.name} "
-                  f"at the START of this measurement!")
+            print(
+                f"Close the plot when ready to describe {self.name} "
+                f"at the START of measurement {i} of {N}!"
+            )
             ax = m.plot_experiment()
             ax[1].set_title(m)
             ax.show()
             description = input(
-                f"Please describe {self.name} at the START of this measurement!"
+                f"Please describe {self.name} at the START of this measurement! "
+                f"'q'=quit"
             )
-            if description:
+            if description == "q":
+                break
+            elif description:
                 self.history[m_str] = description
-
-
-

@@ -7,15 +7,13 @@ from matplotlib import pyplot as plt
 from EC_MS.utils.extraction_class import Extraction
 from EC_MS import Chem
 from .measurement import Measurement
+from .constants import CALIBRATION_DIR, CALIBRATION_ID_FILE, PROJECT_START_TIMESTAMP
 from .tools import (
     singleton_decorator,
     CounterWithFile,
     fit_exponential,
-    PROJECT_START_TIMESTAMP,
 )
 
-CALIBRATION_DIR = Path(__file__).absolute().parent.parent.parent / "tables/calibrations"
-CALIBRATION_ID_FILE = CALIBRATION_DIR / "LAST_CALIBRATION_ID.pyoer20"
 
 if not CALIBRATION_DIR.exists():
     # This block of code makes it so I can delete calibrations/ and start over quickly.

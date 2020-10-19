@@ -6,8 +6,8 @@ Made for DTU SurfCat's cinfelog by Soren B. Scott on July 29, 2020
 from pathlib import Path
 import re
 import json
+from .constants import ELOG_DIR
 
-ELOG_DIR = Path(__file__).absolute().parent.parent.parent / "tables/elog"
 SETUP = "ECMS"
 
 FIELD_NAME_MATCHER = r"""<th class="listtitle"><a.*>(.*)</a></th>"""

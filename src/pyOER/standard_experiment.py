@@ -3,30 +3,28 @@ import json
 import numpy as np
 from matplotlib import gridspec, pyplot as plt
 
+from EC_MS import Molecule
+
+from .constants import (
+    STANDARD_EXPERIMENT_DIR,
+    STANDARD_EXPERIMENT_ID_FILE,
+    STANDARD_ALPHA,
+)
 from .tools import singleton_decorator, CounterWithFile
 from .measurement import Measurement
-from EC_MS import Molecule
 from .calibration import CalibrationSeries
 
-STANDARD_ALPHA = 0.9980  # the natural ratio ^{16}O/(^{16}O + ^{18}O) in oxygen
-
-STANDARD_EXPERIMENT_DIR = (
-    Path(__file__).absolute().parent.parent.parent / "tables/standard_experiments"
-)
-STANDARD_EXPERIMENT_ID_FILE = (
-    STANDARD_EXPERIMENT_DIR / "LAST_STANDARD_EXPERIMENT_ID.pyOER20"
-)
 
 calibration_series = CalibrationSeries.load()
 
 
-def all_standard_experiments(experiment_dir=STANDARD_EXPERIMENT_DIR):
+def all_standard_experiments(standard_experiment_dir=STANDARD_EXPERIMENT_DIR):
     """returns an iterator that yields measurements in order of their id"""
     N_measurements = StandardExperimentCounter().last()
     for n in range(1, N_measurements):
         try:
             measurement = StandardExperiment.open(
-                n, standard_experiment_dir=STANDARD_EXPERIMENT_DIR
+                n, standard_experiment_dir=standard_experiment_dir
             )
         except FileNotFoundError as e:
             print(f"itermeasurement skipping {n} due to error = \n{e}")

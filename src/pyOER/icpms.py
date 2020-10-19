@@ -9,12 +9,10 @@ from pathlib import Path
 import json
 import numpy as np
 from matplotlib import pyplot as plt
+from .constants import ICPMS_DIR, ICPMS_ID_FILE, ICPMS_CALIBRATION_ID_FILE
 from .tools import singleton_decorator, CounterWithFile
 from EC_MS import Chem
 
-ICPMS_DIR = Path(__file__).absolute().parent.parent.parent / "tables/icpms"
-ICPMS_ID_FILE = ICPMS_DIR / "LAST_ICPMS_ID.pyoer20"
-ICPMS_CALIBRATION_ID_FILE = ICPMS_DIR / "LAST_ICPMS_CALIBRATION_ID.pyoer20"
 
 Measurement = None  # .measurement.Measurement imported first call avoid circular import
 
