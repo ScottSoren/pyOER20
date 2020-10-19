@@ -65,18 +65,21 @@ def get_isotope(name):
 
 
 class Sample:
-    def __init__(self, name, history=None):
+    def __init__(self, name, synthesis_date=None, history=None):
         self.name = name
+        self.synthesis_date = synthesis_date
         self.history = history or {}
 
     def as_dict(self):
-        return dict(name=self.name, history=self.history)
+        return dict(
+            name=self.name, synthesis_date=self.synthesis_date, history=self.history
+        )
 
     def save(self):
         file = SAMPLE_DIR / (self.name + ".json")
         self_as_dict = self.as_dict()
         with open(file, "w") as f:
-            json.dump(self_as_dict, f)
+            json.dump(self_as_dict, f, indent=4)
 
     @classmethod
     def load(cls, path_to_file):
@@ -126,29 +129,3 @@ class Sample:
         # sort by tstamp:
         ms = sorted(ms)
         return ms
-
-    def generate_history(self):
-        measurements = self.measurements
-        N = len(measurements)
-        for (i, m) in enumerate(measurements):
-            m_str = "m" + str(m.id)
-            m.print_notes()
-            print(f"\n\nNotes of Measurement {i} of {N}, {m}, are above.")
-            if m_str in self.history:
-                print(f"\tCurrent history to overwrite: '{self.history[m_str]}'")
-            print(
-                f"Close the plot when ready to describe {self.name} "
-                f"at the START of measurement {i} of {N}!"
-            )
-            ax = m.plot_experiment()
-            ax[1].set_title(m)
-            ax[0].get_figure().show()
-
-            description = input(
-                f"Please describe {self.name} at the START of this measurement! "
-                f"'q'=quit"
-            )
-            if description == "q":
-                break
-            elif description:
-                self.history[m_str] = description

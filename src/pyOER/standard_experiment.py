@@ -93,30 +93,18 @@ class StandardExperiment:
         self.m_id = m_id
         self.experiment_type = experiment_type
         self.measurement = Measurement.open(m_id)
-        self.dataset = self.measurement.dataset
-        self.dataset.sync_metadata(
-            RE_vs_RHE=self.measurement.RE_vs_RHE, A_el=0.196,
-        )
+        self._dataset = None
         self.tspan_plot = tspan_plot
         self.tspan_bg = tspan_bg
-        if tspan_bg:
-            self.dataset.set_background(tspan_bg)
         self.tspan_F = tspan_F
         self.F_0 = F  # for saving, so that if no F is given and the CalibrationSeries
         # is updated, the updated CalibrationSeries will determine F upon loading.
-        if tspan_F:
-            F = self.dataset.point_calibration(
-                mol="O2", mass="M32", n_el=4, tspan=tspan_F,
-            )
-        self.F = F or calibration_series.F_of_tstamp(self.dataset.tstamp)
-        self.mdict = {}
-        self.populate_mdict()
+        self._F = None
+        self._mdict = {}
         self.tspan_alpha = tspan_alpha
         self.alpha_0 = alpha  # for saving, so that if no alpha is given and the
         # natural ratio is updated, this will determine alpha upon loading.
-        if tspan_alpha:
-            alpha = self.calc_alpha()
-        self.alpha = alpha or STANDARD_ALPHA
+        self._alpha = None
         self._icpms_points = None
         self.plot_specs = plot_specs or {}
         self.id = se_id or StandardExperimentCounter().id
@@ -169,6 +157,18 @@ class StandardExperiment:
         return cls.load(path_to_file)
 
     @property
+    def dataset(self):
+        if not self._dataset:
+            dataset = self.measurement.dataset
+            dataset.sync_metadata(
+                RE_vs_RHE=self.measurement.RE_vs_RHE, A_el=0.196,
+            )
+            if self.tspan_bg:
+                dataset.set_background(self.tspan_bg)
+            self._dataset = dataset
+        return self._dataset
+
+    @property
     def beta(self):
         """Float: The m/z=34 to m/z=32 signal ratio from oxidation of the electrolyte"""
         return 2 * (1 - self.alpha) / self.alpha
@@ -203,7 +203,35 @@ class StandardExperiment:
             m.primary = mass
             m.F_mat = None
             m.F_cal = self.F
-            self.mdict[f"O2_{mass}"] = m
+            self._mdict[f"O2_{mass}"] = m
+
+    @property
+    def mdict(self):
+        if not self._mdict:
+            self.populate_mdict()
+        return self._mdict
+
+    @property
+    def F(self):
+        if not self._F:
+            if self.tspan_F:
+                F = self.dataset.point_calibration(
+                    mol="O2", mass="M32", n_el=4, tspan=self.tspan_F,
+                )
+            else:
+                F = self.F_0
+            self._F = F or calibration_series.F_of_tstamp(self.dataset.tstamp)
+        return self._F
+
+    @property
+    def alpha(self):
+        if not self._alpha:
+            if self.tspan_alpha:
+                alpha = self.calc_alpha()
+            else:
+                alpha = self.alpha_0
+            self._alpha = alpha or STANDARD_ALPHA
+        return self._alpha
 
     def get_dissolution_points(self):
         """Return the ICPMS sampling times (t_vec) and molar amounts (n_vec)"""

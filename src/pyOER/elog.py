@@ -174,6 +174,9 @@ class ElogEntry:
     def get_name(self):
         return f"{self.setup} e{self.number} {self.date}"
 
+    def __repr__(self):
+        return f"{self.setup} e{self.number} {self.date}"
+
     def update_with(self, elog_2):
         """Put non-empty attributes from elog_2 into self, update not replace dicts"""
         new_attrs = elog_2.as_dict()

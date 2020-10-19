@@ -16,6 +16,7 @@ else:
 # Use old formatting syntax to prevent a SyntaxError from running above version check
 print("importing pyOER v{} from {}".format(__version__, __file__))
 
+from .elog import *
 from .measurement import *
 from .calibration import *
 from .icpms import *

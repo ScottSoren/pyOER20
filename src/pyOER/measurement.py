@@ -260,32 +260,36 @@ class Measurement:
     def open_elog(self):
         from .elog import ElogEntry
 
-        self._elog = ElogEntry.open(self.elog_number)
+        try:
+            self._elog = ElogEntry.open(self.elog_number)
+        except FileNotFoundError as e:
+            print(f"'{self.name}' has no elog due to: {e}!")
+            return
 
     def print_notes(self):
+        print(f"\n\n######## start of elog notes for '{self}' ###########\n")
         if not self.elog:
-            try:
-                self.open_elog()
-            except FileNotFoundError:
-                print(f"{self.name} has no elog!")
-                return
-        notes = self.elog.notes
-        if self.EC_tag:
-            try:
-                EC_tag_match = re.search(fr"\n\s+{self.EC_tag}", notes)
-            except TypeError:
-                print(f"problem searching for '{self.EC_tag}' in:\n{notes}")
-                return
-            # ^ note, EC_tag has the "..." already in it.
-            if EC_tag_match:
-                notes = (
-                    notes[0 : EC_tag_match.start()]
-                    + "\n# ======================================== #\n"
-                    + "# ===   MEASUREMENT NOTES START HERE   === #\n"
-                    + "# vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv #"
-                    + notes[EC_tag_match.start() :]
-                )
-        print(notes)
+            print(f"['{self}' has no elog.]")
+        else:
+            print(f"[printing from '{self.elog}']")
+            notes = self.elog.notes
+            if self.EC_tag:
+                try:
+                    EC_tag_match = re.search(fr"\n\s+{self.EC_tag}", notes)
+                except TypeError:
+                    print(f"[problem searching for '{self.EC_tag}' in:\n{notes}]")
+                    return
+                # ^ note, EC_tag has the "..." already in it.
+                if EC_tag_match:
+                    notes = (
+                        notes[0 : EC_tag_match.start()]
+                        + "\n# ======================================== #\n"
+                        + "# ===   MEASUREMENT NOTES START HERE   === #\n"
+                        + "# vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv #"
+                        + notes[EC_tag_match.start() :]
+                    )
+            print(notes)
+        print(f"\n\n######## end of elog notes for '{self}' ###########\n")
 
     @property
     def RE_vs_RHE(self):
@@ -319,3 +323,12 @@ class Measurement:
             ts, indeces = zip(*sorted((t_i, i) for i, t_i in enumerate(ts)))
             ips = [ips[index] for index in indeces]
         return ips
+
+    def get_standard_experiment(self):
+        from .standard_experiment import all_standard_experiments
+
+        for se in all_standard_experiments():
+            if se.m_id == self.id:
+                return se
+        print(f"'{self}' is not a standard experiment.")
+        return None
