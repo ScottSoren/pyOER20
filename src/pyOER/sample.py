@@ -80,7 +80,7 @@ class Sample:
 
     @classmethod
     def load(cls, path_to_file):
-        with open(path_to_file, "w") as f:
+        with open(path_to_file, "r") as f:
             self_as_dict = json.load(f)
         return cls(**self_as_dict)
 
@@ -113,18 +113,18 @@ class Sample:
 
     @property
     def measurement_ids(self):
-        ml = []
+        m_ids = []
         for m in all_measurements():
             if m.sample_name == self.name:
-                ml += [m]
-        return ml
+                m_ids += [m.id]
+        return m_ids
 
     @property
     def measurements(self):
         m_ids = self.measurement_ids
         ms = [Measurement.open(m_id) for m_id in m_ids]
         # sort by tstamp:
-        ms, _ = zip(*sorted([(m.tstamp, m) for m in ms]))
+        ms = sorted(ms)
         return ms
 
     def generate_history(self):
@@ -135,14 +135,15 @@ class Sample:
             m.print_notes()
             print(f"\n\nNotes of Measurement {i} of {N}, {m}, are above.")
             if m_str in self.history:
-                print(f"Current history to overwrite: '{self.history[m_str]}'")
+                print(f"\tCurrent history to overwrite: '{self.history[m_str]}'")
             print(
                 f"Close the plot when ready to describe {self.name} "
                 f"at the START of measurement {i} of {N}!"
             )
             ax = m.plot_experiment()
             ax[1].set_title(m)
-            ax.show()
+            ax[0].get_figure().show()
+
             description = input(
                 f"Please describe {self.name} at the START of this measurement! "
                 f"'q'=quit"

@@ -22,11 +22,12 @@ class MeasurementCounter(CounterWithFile):
 def all_measurements(measurement_dir=MEASUREMENT_DIR):
     """returns an iterator that yields measurements in order of their id"""
     N_measurements = MeasurementCounter().last()
-    for n in range(1, N_measurements):
+    for n in range(1, N_measurements + 1):
         try:
             measurement = Measurement.open(n, measurement_dir=measurement_dir)
         except FileNotFoundError as e:
-            print(f"itermeasurement skipping {n} due to error = \n{e}")
+            continue
+            # print(f"itermeasurement skipping {n} due to error = \n{e}")
         else:
             yield measurement
 
@@ -225,6 +226,16 @@ class Measurement:
         if not self._elog:
             self.open_elog()
         return self._elog
+
+    @property
+    def tstamp(self):
+        return self.dataset.tstamp
+
+    def __gt__(self, other):
+        return self.tstamp > other.tstamp
+
+    def __ge__(self, other):
+        return self.tstamp >= other.tstamp
 
     def load_dataset(self):
         """load the dataset from the EC_MS pkl file"""

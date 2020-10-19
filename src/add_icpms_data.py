@@ -6,7 +6,6 @@ in the Aanalysis folder.
 The data and some of the metadata are taken form the data
 """
 
-from pathlib import Path
 import pickle
 import re
 import numpy as np

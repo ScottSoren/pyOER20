@@ -180,6 +180,13 @@ class StandardExperiment:
             self._icpms_points = self.measurement.get_icpms_points()
         return self._icpms_points
 
+    @property
+    def sample(self):
+        return self.measurement.sample
+
+    def sample_name(self):
+        return self.measurement.sample_name
+
     def calc_alpha(self, tspan=None):
         """Return fraction ^{16}O in the electrolyte based on tspan with steady OER"""
         tspan = tspan or self.tspan_alpha
