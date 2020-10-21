@@ -1,0 +1,12 @@
+{
+    "tof_type": "exchange",
+    "e_id": 29,
+    "tspan": [
+        1440.0,
+        2040.0
+    ],
+    "r_id": null,
+    "rate_calc_kwargs": {},
+    "description": "composite full time",
+    "t_id": 100
+}

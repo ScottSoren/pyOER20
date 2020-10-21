@@ -3,7 +3,7 @@
     "name": "m114 is Evans8 labeling on 19A27 by ECMS",
     "sample": "Evans8",
     "technique": "ECMS",
-    "isotope": null,
+    "isotope": "18",
     "date": "19A27",
     "analysis_date": null,
     "measurement_dir": "C:\\Users\\scott\\Dropbox (Spectro Inlets)\\Soren_DTU\\DTU-MIT RuO2\\pyOER20\\measurements",

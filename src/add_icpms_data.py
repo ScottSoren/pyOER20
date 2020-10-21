@@ -6,7 +6,6 @@ in the Aanalysis folder.
 The data and some of the metadata are taken form the data
 """
 
-from pathlib import Path
 import pickle
 import re
 import numpy as np
@@ -78,7 +77,7 @@ def get_m_id_with_input(result, match_date=True):
         print(f"on {date}")
     print(f" ... so far, we have result={result}.\n")
     for measurement in all_measurements():
-        if measurement.sample == sample and (
+        if measurement.sample_name == sample and (
             measurement.date == date or not match_date
         ):
             measurement.plot_experiment()

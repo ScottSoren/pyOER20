@@ -7,17 +7,9 @@ import re
 import time
 import datetime
 from EC_MS import Dataset
+from .constants import MEASUREMENT_DIR, MEASUREMENT_ID_FILE
 from .tools import singleton_decorator, CounterWithFile, FLOAT_MATCH
 from .settings import DATA_DIR
-
-MEASUREMENT_DIR = Path(__file__).absolute().parent.parent.parent / "tables/measurements"
-MEASUREMENT_ID_FILE = MEASUREMENT_DIR / "LAST_MEASUREMENT_ID.pyoer20"
-
-if not MEASUREMENT_DIR.exists():
-    print(f"Creating new directory:\r\n{MEASUREMENT_DIR}")
-    Path.mkdir(MEASUREMENT_DIR)
-    with open(MEASUREMENT_ID_FILE, "w") as f:
-        f.write("0")
 
 
 @singleton_decorator
@@ -30,11 +22,12 @@ class MeasurementCounter(CounterWithFile):
 def all_measurements(measurement_dir=MEASUREMENT_DIR):
     """returns an iterator that yields measurements in order of their id"""
     N_measurements = MeasurementCounter().last()
-    for n in range(1, N_measurements):
+    for n in range(1, N_measurements + 1):
         try:
             measurement = Measurement.open(n, measurement_dir=measurement_dir)
         except FileNotFoundError as e:
-            print(f"itermeasurement skipping {n} due to error = \n{e}")
+            continue
+            # print(f"itermeasurement skipping {n} due to error = \n{e}")
         else:
             yield measurement
 
@@ -84,7 +77,7 @@ class Measurement:
             m_id = MeasurementCounter().id
         self.id = m_id
         self.name = name
-        self.sample = sample
+        self.sample_name = sample
         self.technique = technique
         self.isotope = isotope
         self.date = date
@@ -105,7 +98,7 @@ class Measurement:
         self_as_dict = dict(
             id=self.id,
             name=self.name,
-            sample=self.sample,
+            sample=self.sample_name,
             technique=self.technique,
             isotope=self.isotope,
             date=self.date,
@@ -210,10 +203,16 @@ class Measurement:
         elif self.category:
             category_string = self.category
         self.name = (
-            f"m{self.id} is {self.sample} {category_string} on {self.date}"
+            f"m{self.id} is {self.sample_name} {category_string} on {self.date}"
             f" by {self.technique}"
         )
         return self.name
+
+    @property
+    def sample(self):
+        from .sample import Sample
+
+        return Sample.open(self.sample_name)
 
     @property
     def dataset(self):
@@ -228,11 +227,20 @@ class Measurement:
             self.open_elog()
         return self._elog
 
+    @property
+    def tstamp(self):
+        return self.dataset.tstamp
+
+    def __gt__(self, other):
+        return self.tstamp > other.tstamp
+
+    def __ge__(self, other):
+        return self.tstamp >= other.tstamp
+
     def load_dataset(self):
         """load the dataset from the EC_MS pkl file"""
-        #  data_path = fix_data_path(self.old_data_path)  # Jakob, write this!!!
         data_path = self.old_data_path  # Until fix_data_path is available.
-        self._dataset = Dataset(data_path)
+        self._dataset = Dataset(data_path, verbose=False)
         if self._dataset.empty:
             raise IOError(f"Dataset in {self.old_data_path} loaded empty.")
         return self._dataset
@@ -251,32 +259,37 @@ class Measurement:
     def open_elog(self):
         from .elog import ElogEntry
 
-        self._elog = ElogEntry.open(self.elog_number)
+        try:
+            self._elog = ElogEntry.open(self.elog_number)
+        except FileNotFoundError as e:
+            print(f"'{self.name}' has no elog due to: {e}!")
+            return
 
     def print_notes(self):
         if not self.elog:
-            try:
-                self.open_elog()
-            except FileNotFoundError:
-                print(f"{self.name} has no elog!")
-                return
-        notes = self.elog.notes
-        if self.EC_tag:
-            try:
-                EC_tag_match = re.search(fr"\n\s+{self.EC_tag}", notes)
-            except TypeError:
-                print(f"problem searching for '{self.EC_tag}' in:\n{notes}")
-                return
-            # ^ note, EC_tag has the "..." already in it.
-            if EC_tag_match:
-                notes = (
-                    notes[0 : EC_tag_match.start()]
-                    + "\n# ======================================== #\n"
-                    + "# ===   MEASUREMENT NOTES START HERE   === #\n"
-                    + "# vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv #"
-                    + notes[EC_tag_match.start() :]
-                )
-        print(notes)
+            print(f"'{self}' has no elog.")
+        else:
+            print(f"\n### printing from '{self.elog}' ###\n")
+            print(f"elog.field_data = {self.elog.field_data}")
+            print(f"\n######## start of elog notes for '{self}' ###########\n")
+            notes = self.elog.notes
+            if self.EC_tag:
+                try:
+                    EC_tag_match = re.search(fr"\n\s+{self.EC_tag}", notes)
+                except TypeError:
+                    print(f"[problem searching for '{self.EC_tag}' in:\n{notes}]\n")
+                    return
+                # ^ note, EC_tag has the "..." already in it.
+                if EC_tag_match:
+                    notes = (
+                        notes[0 : EC_tag_match.start()]
+                        + "\n# ======================================== #\n"
+                        + "# ===   MEASUREMENT NOTES START HERE   === #\n"
+                        + "# vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv #"
+                        + notes[EC_tag_match.start() :]
+                    )
+            print(notes)
+            print(f"\n\n######## end of elog notes for '{self}' ###########\n")
 
     @property
     def RE_vs_RHE(self):
@@ -287,7 +300,7 @@ class Measurement:
         except AttributeError:
             print(r"WARNING!!! Measurement '{self}' has no elog :(")
             RE_vs_RHE = None
-        except KeyError:
+        except (KeyError, TypeError):
             print(f"WARNING!!! No RE_vs_RHE in ({self.elog}), the elog for '{self}'")
             RE_vs_RHE = None
         else:
@@ -301,7 +314,7 @@ class Measurement:
         ips = []  # icpms points
         ts = []  # sampling times, for sorting
         for ip in all_icpms_points():
-            if ip.m_id == self.id:
+            if ip.m_id == self.id and "duplicate" not in ip.description:
                 ips += [ip]
                 ts += [ip.sampling_time]
 
@@ -310,3 +323,12 @@ class Measurement:
             ts, indeces = zip(*sorted((t_i, i) for i, t_i in enumerate(ts)))
             ips = [ips[index] for index in indeces]
         return ips
+
+    def get_standard_experiment(self):
+        from .experiment import all_standard_experiments
+
+        for se in all_standard_experiments():
+            if se.m_id == self.id:
+                return se
+        print(f"'{self}' is not a standard experiment.")
+        return None

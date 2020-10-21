@@ -7,15 +7,13 @@ from matplotlib import pyplot as plt
 from EC_MS.utils.extraction_class import Extraction
 from EC_MS import Chem
 from .measurement import Measurement
+from .constants import CALIBRATION_DIR, CALIBRATION_ID_FILE, PROJECT_START_TIMESTAMP
 from .tools import (
     singleton_decorator,
     CounterWithFile,
     fit_exponential,
-    PROJECT_START_TIMESTAMP,
 )
 
-CALIBRATION_DIR = Path(__file__).absolute().parent.parent.parent / "tables/calibrations"
-CALIBRATION_ID_FILE = CALIBRATION_DIR / "LAST_CALIBRATION_ID.pyoer20"
 
 if not CALIBRATION_DIR.exists():
     # This block of code makes it so I can delete calibrations/ and start over quickly.
@@ -153,7 +151,7 @@ class Calibration:
     def make_name(self):
         c_id = self.id
         date = self.measurement.date
-        sample = self.measurement.sample
+        sample = self.measurement.sample_name
         category = self.category
         name = f"c{c_id} is a {category} cal with {sample} on {date}"
         return name
@@ -234,7 +232,7 @@ class CalibrationSeries:
         self.y0 = y0
         self.y1 = y1
         # function: returns sensitivity factor given timestamp
-        self.F_of_tstamp = self.make_F_of_tstamp()
+        self._F_of_tstamp = None
 
     def as_dict(self):
         self_as_dict = {
@@ -288,7 +286,7 @@ class CalibrationSeries:
                 else:
                     color = "r"  # something's wrong
 
-                sample = calibration.measurement.sample
+                sample = calibration.measurement.sample_name
                 if sample == "Trimi1":
                     marker = "s"  # Platinum as squares
                 elif "Jazz" in sample or "Folk" in sample or "Emil" in sample:
@@ -311,7 +309,14 @@ class CalibrationSeries:
                 t = tstamp - PROJECT_START_TIMESTAMP
                 return y0 + (y1 - y0) * np.exp(-t / tau)
 
-        self.F_of_tstamp = F_of_tstamp
+        self._F_of_tstamp = F_of_tstamp
+        return F_of_tstamp
+
+    @property
+    def F_of_tstamp(self):
+        if not self._F_of_tstamp:
+            return self.make_F_of_tstamp()
+        return self._F_of_tstamp
 
     def fit_exponential(self, ax="new"):
         time_vec, F_vec = self.sensitivity_trend(ax=ax)

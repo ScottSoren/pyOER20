@@ -23,6 +23,8 @@ systematic_types = {
     "p": "some kind of constant-potential systematic",
     "f": "failed systematic",  # something is wrong.
     "n": "not systematic at all.",
+    "d": "duplicate",
+    "b": "broken",  # something is wrong with the file
     "q": "[Quit and save progress]",
 }
 

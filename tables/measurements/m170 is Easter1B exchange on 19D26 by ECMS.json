@@ -13,5 +13,8 @@
     "linked_measurements": null,
     "elog_number": "210",
     "EC_tag": "03...",
-    "category": "exchange"
+    "category": [
+        "exchange",
+        "duplicate"
+    ]
 }

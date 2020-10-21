@@ -99,7 +99,7 @@ if __name__ == "__main__":
         for sample, m_ids in elog_entry.sample_measurements.items():
             for m_id in m_ids:
                 measurement = Measurement.open(m_id)
-                measurement.sample = sample
+                measurement.sample_name = sample
                 measurement.date = date
                 measurement.elog_number = elog_number
                 if measurement_EC_tags and m_id in measurement_EC_tags:

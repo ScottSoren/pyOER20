@@ -1,0 +1,12 @@
+{
+    "tof_type": "activity",
+    "e_id": 29,
+    "tspan": [
+        2410.0,
+        3010.0
+    ],
+    "r_id": null,
+    "rate_calc_kwargs": {},
+    "description": "composite full time",
+    "t_id": 102
+}

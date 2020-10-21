@@ -9,12 +9,10 @@ from pathlib import Path
 import json
 import numpy as np
 from matplotlib import pyplot as plt
+from .constants import ICPMS_DIR, ICPMS_ID_FILE, ICPMS_CALIBRATION_ID_FILE
 from .tools import singleton_decorator, CounterWithFile
 from EC_MS import Chem
 
-ICPMS_DIR = Path(__file__).absolute().parent.parent.parent / "tables/icpms"
-ICPMS_ID_FILE = ICPMS_DIR / "LAST_ICPMS_ID.pyoer20"
-ICPMS_CALIBRATION_ID_FILE = ICPMS_DIR / "LAST_ICPMS_CALIBRATION_ID.pyoer20"
 
 Measurement = None  # .measurement.Measurement imported first call avoid circular import
 
@@ -94,7 +92,7 @@ class ICPMSPoint:
         self.icpms_dir = ICPMS_DIR
 
     def as_dict(self):
-        """Dictionary representation of the ICPMS point"""
+        """Dictionary representation of the ICPMS spec"""
         self_as_dict = dict(
             id=self.id,
             ic_id=self.ic_id,
@@ -114,7 +112,7 @@ class ICPMSPoint:
         self_as_dict = self.as_dict()
         if not file_name:
             file_name = f"{self}.json"
-        print(f"saving measurement '{file_name}'")
+        # print(f"saving measurement '{file_name}'")
         path_to_measurement = Path(self.icpms_dir) / file_name
         with open(path_to_measurement, "w") as f:
             json.dump(self_as_dict, f, indent=4)
@@ -170,7 +168,7 @@ class ICPMSPoint:
     @property
     def sample(self):
         if self.m_id:
-            return self.measurement.sample
+            return self.measurement.sample_name
 
     @property
     def concentration(self):
@@ -231,7 +229,7 @@ class ICPMSCalibration:
             file_name = (
                 f"ic{self.id} is icpms calibration for {self.element} on {self.date} "
             )
-        print(f"saving measurement '{file_name}'")
+        # print(f"saving measurement '{file_name}'")
         path_to_measurement = Path(self.icpms_dir) / file_name
         with open(path_to_measurement, "w") as f:
             json.dump(self_as_dict, f, indent=4)
@@ -255,7 +253,7 @@ class ICPMSCalibration:
         ln_signals = np.log(self.signals - self.bg)
 
         p = np.polyfit(ln_signals, ln_ppbs, deg=1)
-        print(p)  # debugging
+        # print(p)  # debugging
 
         def calibration_curve(counts):
             """Return the concentration in [ppb] given signal in [counts]"""
@@ -303,16 +301,17 @@ class ICPMSCalibration:
 
     def signal_to_concentration(self, signal):
         """Return concentration in [mol/m^3] of ICPMS sample given its signal"""
-        ppb_amount = self.calibration_curve(signal - self.bg)
-        kg_per_m3 = ppb_amount * 1e-6
+        ppb_concentration = self.calibration_curve(signal - self.bg)
+
+        if ppb_concentration < self.dl_concentration:
+            print(
+                f"WARNING! ICPMS implied {self.element} concentration in ICPMS sample "
+                + f"is {ppb_concentration} ppb, which is below "
+                + f"the detection limit of {self.dl_concentration} ppb"
+            )
+        kg_per_m3 = ppb_concentration * 1e-6
         kg_per_mol = Chem.get_mass(self.element) * 1e-3
         concentration = kg_per_m3 / kg_per_mol
-
-        if concentration < self.dl_concentration:
-            print(
-                f"WARNING! ICPMS implied {self.element} concentration of {concentration} "
-                + f"mM is below the detection limit of {self.dl_concentration} mM"
-            )
 
         return concentration
 

@@ -1,7 +1,7 @@
 {
     "id": 181,
     "name": "m181 is Evans12 exchange on 19E09 by ECMS",
-    "sample": "Evans12",
+    "sample": "Trimi1",
     "technique": "ECMS",
     "isotope": null,
     "date": "19E09",
@@ -12,6 +12,6 @@
     "new_data_path": "None",
     "linked_measurements": null,
     "elog_number": "220",
-    "EC_tag": "02...",
+    "EC_tag": "01...",
     "category": "exchange"
 }
