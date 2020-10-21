@@ -1,6 +1,9 @@
 """this module implements methods and classes around point results"""
-
+from pathlib import Path
+import json
 import numpy as np
+from .tools import singleton_decorator, CounterWithFile
+from .constants import TOF_DIR, TOF_ID_FILE
 from .experiment import open_experiment
 
 
@@ -72,9 +75,34 @@ def calc_potential(experiment, tspan):
     return np.mean(U)
 
 
+@singleton_decorator
+class TOFCounter(CounterWithFile):
+    """Counts measurements. 'id' increments the counter. 'last()' retrieves last id"""
+
+    _file = TOF_ID_FILE
+
+
+def all_tofs(tof_dir=TOF_DIR):
+    """returns an iterator that yields measurements in order of their id"""
+    N_tofs = TOFCounter().last()
+    for n in range(1, N_tofs + 1):
+        try:
+            tof = TurnOverFrequency.open(n, tof_dir=tof_dir)
+        except FileNotFoundError as e:
+            continue
+        else:
+            yield tof
+
+
 class TurnOverFrequency:
     def __init__(
-        self, tof_type=None, e_id=None, tspan=None, r_id=None, rate_calc_kwargs=None
+        self,
+        tof_type=None,
+        e_id=None,
+        tspan=None,
+        r_id=None,
+        rate_calc_kwargs=None,
+        t_id=None,
     ):
         """Iinitiate a TurnOverFrequency
 
@@ -84,7 +112,8 @@ class TurnOverFrequency:
             e_id (int): The id of the associated experiment
             tspan (timespan): The time interval over which to integrate/average
             r_id (int): The id of the associated roughness measurement
-            rate_calc_kwargs (dict): Extra kwargs for the relevant rate calc. function
+            rate_calc_kwargs (dict): Extra kwargs for the relevant rate calc. function.
+            t_id (int): The principle key. Defaults to incrementing the counter
         """
         self.tof_type = tof_type
         self.e_id = e_id
@@ -92,7 +121,50 @@ class TurnOverFrequency:
         self.r_id = r_id
         self._experiment = None
         self._rate = None
+        self._potential = None
         self.rate_calc_kwargs = rate_calc_kwargs or {}
+        self.id = t_id
+
+    def as_dict(self):
+        """The dictionary represnetation of the TOF's metadata"""
+        return dict(
+            tof_type=self.tof_type,
+            e_id=self.e_id,
+            tspan=self.tspan,
+            r_id=self.r_id,
+            rate_calc_kwargs=self.rate_calc_kwargs,
+            t_id=self.id,
+        )
+
+    def save(self):
+        """Save the TOF's metadata to a .json file"""
+        self_as_dict = self.as_dict()
+        path_to_file = TOF_DIR / f"{self}.json"
+        with open(path_to_file, "w") as f:
+            json.dump(self_as_dict, f)
+
+    @classmethod
+    def load(cls, path_to_file):
+        """Load a TOF from the metadata stored in a file"""
+        with open(path_to_file, "r") as f:
+            self_as_dict = json.load(f)
+        return cls(**self_as_dict)
+
+    @classmethod
+    def open(cls, t_id, tof_dir=TOF_DIR):
+        """Opens the measurement given its id"""
+        try:
+            path_to_file = next(
+                path
+                for path in Path(tof_dir).iterdir()
+                if path.stem.startswith(f"m{t_id}")
+            )
+        except StopIteration:
+            raise FileNotFoundError(f"no measurement with id = m{t_id}")
+        return cls.load(path_to_file)
+
+    def __repr__(self):
+        return f"t{self.id} is {self.tof_type} on {self.sample_name} on {self.date}"
 
     @property
     def experiment(self):
@@ -101,7 +173,24 @@ class TurnOverFrequency:
         return self._experiment
 
     @property
+    def measurement(self):
+        return self.experiment.measurement
+
+    @property
+    def date(self):
+        return self.measurement.date
+
+    @property
+    def sample(self):
+        return self.measurement.sample
+
+    @property
+    def sample_name(self):
+        return self.measurement.sample_name
+
+    @property
     def rate_calculating_function(self):
+        """The function that this TOF uses to calculate its rate"""
         if self.tof_type == "activity":
             return calc_OER_rate
         if self.tof_type == "exchange":
@@ -126,3 +215,10 @@ class TurnOverFrequency:
         if not self._rate:
             self.calc_rate()
         return self._rate
+
+    @property
+    def potential(self):
+        """The potential vs RHE in [V]"""
+        if not self._potential:
+            self._potential = calc_potential(self.experiment, self.tspan)
+        return self._potential
