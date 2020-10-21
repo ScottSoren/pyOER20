@@ -2,41 +2,26 @@
 
 from .measurement import Measurement
 
-def calc_OER_rate(
-        standard_experiment,
-        tspan
-):
+
+def calc_OER_rate(standard_experiment, tspan):
     pass
 
 
-def calc_dissolution_rate(
-        standard_experiment,
-        tspan
-):
+def calc_dissolution_rate(standard_experiment, tspan):
     pass
 
 
-def calc_exchange_rate(
-        standard_experiment,
-        tspan
-):
+def calc_exchange_rate(standard_experiment, tspan):
     pass
 
 
-def calc_potential(
-        standard_experiment,
-        tspan
-):
+def calc_potential(standard_experiment, tspan):
     pass
 
 
 class TurnOverFrequency:
     def __init__(
-            self,
-            tof_type=None,
-            m_id=None,
-            tspan=None,
-            r_id=None,
+        self, tof_type=None, m_id=None, tspan=None, r_id=None,
     ):
         """Iinitiate a TurnOverFrequency"""
         self.m_id = m_id
@@ -54,4 +39,3 @@ class TurnOverFrequency:
         if not self._standard_experiment:
             self._standard_experiment = self.measurement.get_standard_experiment()
         return self._standard_experiment
-

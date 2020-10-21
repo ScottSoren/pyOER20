@@ -267,17 +267,18 @@ class Measurement:
             return
 
     def print_notes(self):
-        print(f"\n\n######## start of elog notes for '{self}' ###########\n")
         if not self.elog:
-            print(f"['{self}' has no elog.]")
+            print(f"'{self}' has no elog.")
         else:
-            print(f"[printing from '{self.elog}']")
+            print(f"\n### printing from '{self.elog}' ###\n")
+            print(f"elog.field_data = {self.elog.field_data}")
+            print(f"\n######## start of elog notes for '{self}' ###########\n")
             notes = self.elog.notes
             if self.EC_tag:
                 try:
                     EC_tag_match = re.search(fr"\n\s+{self.EC_tag}", notes)
                 except TypeError:
-                    print(f"[problem searching for '{self.EC_tag}' in:\n{notes}]")
+                    print(f"[problem searching for '{self.EC_tag}' in:\n{notes}]\n")
                     return
                 # ^ note, EC_tag has the "..." already in it.
                 if EC_tag_match:
@@ -289,7 +290,7 @@ class Measurement:
                         + notes[EC_tag_match.start() :]
                     )
             print(notes)
-        print(f"\n\n######## end of elog notes for '{self}' ###########\n")
+            print(f"\n\n######## end of elog notes for '{self}' ###########\n")
 
     @property
     def RE_vs_RHE(self):

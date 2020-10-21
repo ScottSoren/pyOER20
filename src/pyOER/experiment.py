@@ -36,9 +36,7 @@ def all_experiments(experiment_dir=EXPERIMENT_DIR):
     N_experiments = ExperimentCounter().last()
     for n in range(1, N_experiments):
         try:
-            measurement = Experiment.open(
-                n, experiment_dir=experiment_dir
-            )
+            measurement = Experiment.open(n, experiment_dir=experiment_dir)
         except FileNotFoundError as e:
             print(f"itermeasurement skipping {n} due to error = \n{e}")
         else:
@@ -256,20 +254,19 @@ class Experiment:
 
 
 class StandardExperiment(Experiment):
-
     def __init__(
-            self,
-            m_id,
-            experiment_type=None,
-            tspan_plot=None,
-            F=None,
-            alpha=None,
-            tspan_bg=None,
-            tspan_F=None,
-            tspan_alpha=None,
-            e_id=None,
-            plot_specs=None,
-            **kwargs,
+        self,
+        m_id,
+        experiment_type=None,
+        tspan_plot=None,
+        F=None,
+        alpha=None,
+        tspan_bg=None,
+        tspan_F=None,
+        tspan_alpha=None,
+        e_id=None,
+        plot_specs=None,
+        **kwargs,
     ):
         super().__init__(
             m_id=m_id,
@@ -281,11 +278,13 @@ class StandardExperiment(Experiment):
             tspan_alpha=tspan_alpha,
             tspan_bg=tspan_bg,
             e_id=e_id,
-            **kwargs
+            **kwargs,
         )
         if not experiment_type in ["y", "k", "s", "c"]:
-            raise TypeError(f"Cannot make StandardExperiment of '{self.measurement}' "
-                            f"with experiment_type='{experiment_type}'")
+            raise TypeError(
+                f"Cannot make StandardExperiment of '{self.measurement}' "
+                f"with experiment_type='{experiment_type}'"
+            )
         self.plot_specs = plot_specs
         self._icpms_points = None
 
