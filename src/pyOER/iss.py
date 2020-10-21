@@ -2,6 +2,7 @@
 """
 import pickle
 import pathlib
+import numpy as np
 
 class ISS:
     def __init__(self, sample=None):
@@ -14,6 +15,8 @@ class ISS:
         self.plot_list = []
         if sample is not None:
             self.get_sample(sample)
+        # All reference data
+        self._ref = pickle.load(open(self.path / 'iss_reference.pickle', 'rb'))
 
     @property
     def keys(self):
@@ -31,7 +34,8 @@ class ISS:
             for key in self.keys:
                 print(f'Key: {key}')
                 print(f'\tSample: {self._active[key].sample}')
-                print(f'\tComment: {self._active[key].comment}')
+                print(f'\tComment (filename): {self._active[key].comment}')
+                print(f'\tComment (from avg): {self._active[key].note[0]}')
                 print(f'\tRecorded: {self._active[key].date}')
                 print(f'\tPath: {self._active[key].filename}')
                 #print(f'
@@ -101,6 +105,8 @@ Set to None for certain effect."""
         for i, filename in enumerate(filenames):
             with open(self.path / filename, 'rb') as f:
                 iss_dict[i] = pickle.load(f)
+            print(i, filename)
+        print('load_set ', iss_dict)
         return iss_dict
 
     def plot(self, selection=[], show=True):
@@ -125,3 +131,198 @@ Set to None for certain effect."""
         """Show figures"""
         import matplotlib.pyplot as plt
         plt.show()
+
+    # Maybe a @classmethod ?
+    def fit_with_reference(self, selection=None, peaks=[], plot=False):
+        """Fit reference data to selected datasets.
+
+Input  :
+    selection (list) where each element is an integer representing a key in
+        self._active. Each of these ISS objects will be fit to the reference
+        data. Defaults to all datasets.
+    peaks (list) where each element is an integer representing the mass of the
+        elements to fit. If elements should be compared group-wise, as in O-16
+        or O-18 to total oxygen signal, nest them in a list of their own, e.g.
+        peaks=[[16, 18], 40].
+
+Output :
+    ratios (dict) which will contain the ratio of peak-to-peak(s) for every
+        combination of peak in ´peaks´.
+
+Example:
+>>> ratio = self.fit_with_reference(peaks=[[16, 18]])
+>>> print(ratio['16/18'])
+2.917
+>>> print(ratio['16'])
+0.7447
+    __________________________________________
+Notes:
+
+REFERENCE DATA:
+    self._ref (nested dict)
+    self._ref[setup][peak].keys() =
+
+        'xy': xy-data of original spectrum
+        'background': peak-subtracted original spectrum
+        'peak': background-subtracted original spectrum
+        'area': integrated signal of 'peak'
+        'region': the [low, high] delimiter used for the peak identification/
+               background subtraction
+        'file': full path to original spectrum on host computer
+        'iss': original ISS object
+
+FITTING METHOD:
+    for each spectrum in ´selection´:
+        for each peak in ´peaks´:
+            subtract background from spectrum using same region as ref;
+            for each nested peak (if any):
+                add scaled nested peaks to background subtracted data for
+                best fit;
+            save fit result to ´results´ dictionary;
+
+RETURN METHOD:
+    for each result in ´results´:
+        for each other result in ´results´:
+            if result != other result:
+                save to ´ratios´: (result)/(other result)
+    for each nested peak:
+        save to ´ratios´:
+            'peak1' = peak1 / (peak1 + peak2)
+            'peak2' = peak2 / (peak1 + peak2)
+"""
+
+        from scipy.optimize import curve_fit
+
+        # Initialize constants
+        if selection is None:
+            selection = self.keys
+        coeffs = {i: {} for i in selection}
+        ratios = {i: {} for i in selection}
+
+        # Main loop
+        self.background = {}
+        for selected in selection:
+            if plot is True:
+                import matplotlib.pyplot as plt
+                plt.figure(f'Fitting: {selected}')
+            data_set = self._active[selected]
+            if data_set.good is False:
+                continue # skip bad data set
+            ref = self._ref[data_set.setup]
+            for peak in peaks:
+                # Peak is single
+                if isinstance(peak, int):
+                    region = ref[peak]['region']
+                    N = 1
+                # Peak is a group
+                elif isinstance(peak, list):
+                    region = ref[peak[0]]['region']
+                    N = len(peak)
+                    for _ in peak:
+                        if ref[_]['region'] != region:
+                            raise ValueError(f'Grouped peaks "{peak}" are not\
+defined by the same region'
+                            )
+                else:
+                    raise TypeError(f'Item in kwarg peaks is not understood:\n\
+{peak}\nMust be an integer or list of integers.')
+
+                # Subtract background and make accessible afterwards
+                # np.vstack((data.shifted[key], data.smoothed[key])).T
+                #background = subtract_single_background(data_set.xy, ranges=[region])
+                background = subtract_single_background(np.vstack((data_set.shifted['oxygen'], data_set.smoothed['oxygen'])).T, ranges=[region])
+                self.background[selected] = background
+                isolated_peak = data_set.y - background
+                isolated_peak[np.isnan(isolated_peak)] = 0.1
+                if plot is True:
+                    plt.plot(data_set.x, background, 'k:', label='Background')
+                    plt.plot(data_set.x, data_set.y, 'k-', label='Data')
+                    plt.plot(data_set.shifted['oxygen'], background, 'r:', label='Background 1')
+                    plt.plot(data_set.shifted['oxygen'], data_set.y, 'r-', label='Data 1')
+
+                import common_toolbox as ct
+                mask_dat = ct.get_range(data_set.shifted['oxygen'], *region)
+                mask_ref = {}
+                mask_ref[16] = ct.get_range(ref[16]['xy'][:, 0], *region)
+                mask_ref[18] = ct.get_range(ref[18]['xy'][:, 0], *region)
+
+                def func(x, *args):
+                    """Fitting method"""
+                    signal = x*0
+                    for arg, i in list(zip(args, peak)):
+                        signal += arg*ref[i]['peak'][mask_ref[i]]
+                    return signal
+
+                #print(np.where(isolated_peak[mask_dat] == 0))
+                #print(np.where(ref[16]['peak'][mask_ref[16]] == 0))
+                #print(np.where(ref[18]['peak'][mask_ref[18]] == 0))
+                fit, _ = curve_fit(
+                    func,
+                    data_set.shifted['oxygen'][mask_dat],
+                    isolated_peak[mask_dat],
+                    p0=[2.]*N,
+                    bounds=(0, 3),
+                )
+                #print(fit, peak)
+                for i in range(len(peak)):
+                    coeffs[selected][peak[i]] = fit[i]
+
+            # Calculate output ratios
+            total = 0
+            all_peaks = []
+            for peak in peaks:
+                if isinstance(peak, list):
+                    for peak_ in peak:
+                        all_peaks.append(peak_)
+                else:
+                    all_peaks.append(peak)
+            for peak1 in all_peaks:
+                for peak2 in all_peaks:
+                    if peak1 == peak2:
+                        continue
+                    a1 = ref[peak1]['area']
+                    a2 = ref[peak2]['area']
+                    c1 = coeffs[selected][peak1]
+                    c2 = coeffs[selected][peak2]
+                    #print(a1, a2, c1, c2)
+                    ratios[selected][f'{peak1}/{peak2}'] = coeffs[selected][peak1] * \
+ref[peak1]['area'] / coeffs[selected][peak2] / ref[peak2]['area']
+            # Group ratios
+            for peak in peaks:
+                if not isinstance(peak, list):
+                    continue
+                total = 0
+                for peak_ in peak:
+                    coefficient = coeffs[selected][peak_]
+                    total += ref[peak_]['area']*coefficient
+                    ratios[selected][f'{peak_}'] = ref[peak_]['area']*coefficient
+                for peak_ in peak:
+                    ratios[selected][f'{peak_}'] /= total
+            if plot is True:
+                plt.legend()
+        return ratios, coeffs
+
+
+def subtract_single_background(xy, ranges=[], avg=3):
+    """Subtract the background from a single spectrum"""
+    import common_toolbox as ct
+    x, y = xy[:, 0], xy[:, 1]
+    background = np.copy(y)
+    for limit in ranges:
+        indice = ct.get_range(x, *limit)
+        # if first index is chosen
+        # OR
+        # if last ten indice are included
+        if indice[0] == 0 or indice[-1] > len(x) - 10:
+            print('Uhh', indice[0], indice[-1], limit)
+            background[indice] = 0
+        elif len(indice) == 0:
+            print('Did not find data within limit: {}'.format(limit))
+        else:
+            y1 = np.average(y[indice[0]-avg:indice[0]+avg])
+            y2 = np.average(y[indice[-1]-avg:indice[-1]+avg])
+            a_coeff = (y2-y1)/(limit[1]-limit[0])
+            b_coeff = y1 - a_coeff*limit[0]
+            #print(y1, y2, a_coeff, b_coeff)
+            background[indice] = x[indice]*a_coeff + b_coeff
+    return background
