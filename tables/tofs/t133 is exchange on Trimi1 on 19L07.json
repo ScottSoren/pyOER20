@@ -1,0 +1,12 @@
+{
+    "tof_type": "exchange",
+    "e_id": 32,
+    "tspan": [
+        350.0,
+        470.0
+    ],
+    "r_id": null,
+    "rate_calc_kwargs": {},
+    "description": "first 2 min",
+    "t_id": 133
+}

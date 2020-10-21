@@ -239,9 +239,8 @@ class Measurement:
 
     def load_dataset(self):
         """load the dataset from the EC_MS pkl file"""
-        #  data_path = fix_data_path(self.old_data_path)  # Jakob, write this!!!
         data_path = self.old_data_path  # Until fix_data_path is available.
-        self._dataset = Dataset(data_path)
+        self._dataset = Dataset(data_path, verbose=False)
         if self._dataset.empty:
             raise IOError(f"Dataset in {self.old_data_path} loaded empty.")
         return self._dataset

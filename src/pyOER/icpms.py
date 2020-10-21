@@ -112,7 +112,7 @@ class ICPMSPoint:
         self_as_dict = self.as_dict()
         if not file_name:
             file_name = f"{self}.json"
-        print(f"saving measurement '{file_name}'")
+        # print(f"saving measurement '{file_name}'")
         path_to_measurement = Path(self.icpms_dir) / file_name
         with open(path_to_measurement, "w") as f:
             json.dump(self_as_dict, f, indent=4)
@@ -229,7 +229,7 @@ class ICPMSCalibration:
             file_name = (
                 f"ic{self.id} is icpms calibration for {self.element} on {self.date} "
             )
-        print(f"saving measurement '{file_name}'")
+        # print(f"saving measurement '{file_name}'")
         path_to_measurement = Path(self.icpms_dir) / file_name
         with open(path_to_measurement, "w") as f:
             json.dump(self_as_dict, f, indent=4)
@@ -253,7 +253,7 @@ class ICPMSCalibration:
         ln_signals = np.log(self.signals - self.bg)
 
         p = np.polyfit(ln_signals, ln_ppbs, deg=1)
-        print(p)  # debugging
+        # print(p)  # debugging
 
         def calibration_curve(counts):
             """Return the concentration in [ppb] given signal in [counts]"""

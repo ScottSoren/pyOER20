@@ -1,0 +1,12 @@
+{
+    "tof_type": "activity",
+    "e_id": 36,
+    "tspan": [
+        640.0,
+        930.0
+    ],
+    "r_id": null,
+    "rate_calc_kwargs": {},
+    "description": "next 8 min",
+    "t_id": 166
+}

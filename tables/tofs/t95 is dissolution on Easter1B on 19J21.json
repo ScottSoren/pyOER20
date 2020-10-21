@@ -1,0 +1,14 @@
+{
+    "tof_type": "dissolution",
+    "e_id": 28,
+    "tspan": [
+        450.0,
+        1040.0
+    ],
+    "r_id": null,
+    "rate_calc_kwargs": {
+        "t_electrolysis": 600.0
+    },
+    "description": "full time",
+    "t_id": 95
+}

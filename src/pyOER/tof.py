@@ -58,14 +58,14 @@ def calc_dissolution_rate(experiment, tspan, t_electrolysis=None):
                 n_vec[i_after] * t_interval / (t_vec[i_after] - t_vec[i_after - 1])
             )
 
-    n_during_interval / t_interval
+    return n_during_interval / t_interval
 
 
 def calc_exchange_rate(experiment, tspan):
     """Return the average rate of lattice O incorporation in O2 in [mol/s] over tspan"""
     beta = experiment.beta
-    x_32, y_32 = experiment.calc_flux("O2_M32", tsapn=tspan, unit="mol/s")
-    x_34, y_34 = experiment.calc_flux("O2_M34", tsapn=tspan, unit="mol/s")
+    x_32, y_32 = experiment.calc_flux("O2_M32", tspan=tspan, unit="mol/s")
+    x_34, y_34 = experiment.calc_flux("O2_M34", tspan=tspan, unit="mol/s")
     return np.mean(y_34) - np.mean(y_32) * beta
 
 
@@ -102,6 +102,7 @@ class TurnOverFrequency:
         tspan=None,
         r_id=None,
         rate_calc_kwargs=None,
+        description=None,
         t_id=None,
     ):
         """Iinitiate a TurnOverFrequency
@@ -113,6 +114,7 @@ class TurnOverFrequency:
             tspan (timespan): The time interval over which to integrate/average
             r_id (int): The id of the associated roughness measurement
             rate_calc_kwargs (dict): Extra kwargs for the relevant rate calc. function.
+            description (str): free-form description of the TOF point
             t_id (int): The principle key. Defaults to incrementing the counter
         """
         self.tof_type = tof_type
@@ -122,8 +124,9 @@ class TurnOverFrequency:
         self._experiment = None
         self._rate = None
         self._potential = None
+        self.description = description
         self.rate_calc_kwargs = rate_calc_kwargs or {}
-        self.id = t_id
+        self.id = t_id or TOFCounter().id
 
     def as_dict(self):
         """The dictionary represnetation of the TOF's metadata"""
@@ -133,6 +136,7 @@ class TurnOverFrequency:
             tspan=self.tspan,
             r_id=self.r_id,
             rate_calc_kwargs=self.rate_calc_kwargs,
+            description=self.description,
             t_id=self.id,
         )
 
@@ -141,7 +145,7 @@ class TurnOverFrequency:
         self_as_dict = self.as_dict()
         path_to_file = TOF_DIR / f"{self}.json"
         with open(path_to_file, "w") as f:
-            json.dump(self_as_dict, f)
+            json.dump(self_as_dict, f, indent=4)
 
     @classmethod
     def load(cls, path_to_file):
