@@ -161,10 +161,10 @@ class TurnOverFrequency:
             path_to_file = next(
                 path
                 for path in Path(tof_dir).iterdir()
-                if path.stem.startswith(f"m{t_id}")
+                if path.stem.startswith(f"t{t_id}")
             )
         except StopIteration:
-            raise FileNotFoundError(f"no measurement with id = m{t_id}")
+            raise FileNotFoundError(f"no TurnOverFrequency with id = t{t_id}")
         return cls.load(path_to_file)
 
     def __repr__(self):

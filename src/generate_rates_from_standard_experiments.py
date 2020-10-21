@@ -6,11 +6,18 @@ plt.interactive(False)
 tof_diss = None
 
 response = "start!"
+continue_from = 40
+
 for se in all_standard_experiments():
+    if se.id < continue_from:
+        continue
     while not response == "q":
         ax = se.plot_EC_MS_ICPMS()
         ax[1].set_title(se.measurement)
         se.measurement.print_notes()
+        print(f"Get tofs for {se}. Existing tofs (if any):")
+        for tof in se.tofs:
+            print(f"{tof}, description={tof.description}, rate={tof.rate} [mol/s]")
         print("close the plot when you're ready to enter tspan and electrolysis time")
         plt.show()
         response = input(

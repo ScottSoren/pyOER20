@@ -38,7 +38,8 @@ def all_icpms_points(icpms_dir=ICPMS_DIR):
         try:
             icpms_point = ICPMSPoint.open(n, icpms_dir=icpms_dir)
         except FileNotFoundError as e:
-            print(f"itermeasurement skipping {n} due to error = \n{e}")
+            # print(f"skipping {n} due to error = \n{e}")
+            continue
         else:
             yield icpms_point
 

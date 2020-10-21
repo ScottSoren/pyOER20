@@ -28,7 +28,6 @@ from .tools import singleton_decorator, CounterWithFile
 from .measurement import Measurement
 from .calibration import CalibrationSeries
 
-
 calibration_series = CalibrationSeries.load()
 
 
@@ -226,6 +225,12 @@ class Experiment:
 
     def sample_name(self):
         return self.measurement.sample_name
+
+    @property
+    def tofs(self):
+        from .tof import all_tofs
+
+        return [tof for tof in all_tofs() if tof.e_id == self.id]
 
     def calc_alpha(self, tspan=None):
         """Return fraction ^{16}O in the electrolyte based on tspan with steady OER"""

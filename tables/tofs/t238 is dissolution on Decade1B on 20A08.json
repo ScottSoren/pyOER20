@@ -1,0 +1,12 @@
+{
+    "tof_type": "dissolution",
+    "e_id": 43,
+    "tspan": [
+        610.0,
+        2130.0
+    ],
+    "r_id": null,
+    "rate_calc_kwargs": {},
+    "description": "steady",
+    "t_id": 238
+}
