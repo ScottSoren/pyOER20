@@ -22,6 +22,7 @@ from .constants import (
     EXPERIMENT_DIR,
     EXPERIMENT_ID_FILE,
     STANDARD_ALPHA,
+    STANDARD_EXPERIMENT_TAGS,
 )
 from .tools import singleton_decorator, CounterWithFile
 from .measurement import Measurement
@@ -61,6 +62,26 @@ class ExperimentCounter(CounterWithFile):
     """Counts measurements. 'id' increments the counter. 'last()' retrieves last id"""
 
     _file = EXPERIMENT_ID_FILE
+
+
+def open_experiment(e_id, experiment_dir=EXPERIMENT_DIR):
+    """Open as the appropriate type of Experiment based on the experiment_type field"""
+    try:
+        path_to_file = next(
+            path
+            for path in Path(experiment_dir).iterdir()
+            if path.stem.startswith(f"e{e_id}")
+        )
+    except StopIteration:
+        raise FileNotFoundError(f"no standard experiment with id = e{e_id}")
+    with open(path_to_file, "r") as f:
+        e_as_dict = json.load(f)
+    e_type = e_as_dict["experiment_type"]
+    if e_type in STANDARD_EXPERIMENT_TAGS:
+        cls = StandardExperiment
+    else:
+        cls = Experiment
+    return cls(**e_as_dict)
 
 
 class Experiment:
@@ -252,6 +273,11 @@ class Experiment:
             self._alpha = alpha or STANDARD_ALPHA
         return self._alpha
 
+    def calc_flux(self, mol, tspan, **kwargs):
+        """Return the flux for a calibrated mol (a key to self.mdict)"""
+        m = self.mdict[mol]
+        return self.dataset.get_flux(m, tspan=tspan, **kwargs)
+
 
 class StandardExperiment(Experiment):
     def __init__(
@@ -280,7 +306,7 @@ class StandardExperiment(Experiment):
             e_id=e_id,
             **kwargs,
         )
-        if not experiment_type in ["y", "k", "s", "c"]:
+        if not experiment_type in STANDARD_EXPERIMENT_TAGS:
             raise TypeError(
                 f"Cannot make StandardExperiment of '{self.measurement}' "
                 f"with experiment_type='{experiment_type}'"
