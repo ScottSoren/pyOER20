@@ -1,7 +1,7 @@
 from pathlib import Path
 import json
 
-from pyOER.standard_experiment import StandardExperiment
+from pyOER.experiment import StandardExperiment
 
 DESCRIPTIONS_DIR = Path(__file__).parent.parent / "descriptions"
 
@@ -89,26 +89,39 @@ specs = {
 }
 
 working_range = [0, 250]
+if False:  # go through and save them all
+    for m_id_str in systematic_mids:
+        m_id = int(m_id_str)
+        if m_id < working_range[0]:
+            continue
+        elif m_id > working_range[-1]:
+            break
+        spec = specs.get(m_id, {})
+        if "tspan_bg" not in spec:
+            spec["tspan_bg"] = [0, 10]
 
-for m_id_str in systematic_mids:
-    m_id = int(m_id_str)
-    if m_id < working_range[0]:
-        continue
-    elif m_id > working_range[-1]:
-        break
-    spec = specs.get(m_id, {})
-    if "tspan_bg" not in spec:
-        spec["tspan_bg"] = [0, 10]
+        se = StandardExperiment(
+            m_id=m_id,
+            experiment_type=standard_measurements[m_id_str],
+            # se_id = StandardExperimentCounter.id
+            **spec
+        )
 
-    se = StandardExperiment(
-        m_id=m_id,
-        experiment_type=standard_measurements[m_id_str],
-        # se_id = StandardExperimentCounter.id
-        **spec
-    )
+        if False:  # plot them all!
+            ax = se.plot_EC_MS_ICPMS()
+            ax[1].set_title(str(se.measurement))
 
-    if False:  # plot them all!
-        ax = se.plot_EC_MS_ICPMS()
-        ax[1].set_title(str(se.measurement))
+        se.save()
 
-    se.save()
+
+if True:  # change prefix 'se' to 'e'
+    from pyOER.constants import EXPERIMENT_DIR
+    for file in EXPERIMENT_DIR.iterdir():
+        if not file.suffix == ".json":
+            continue
+        with open(file, "r") as f:
+            e_as_dict = json.load(f)
+        e_as_dict["e_id"] = e_as_dict.pop("se_id")
+        e = StandardExperiment(**e_as_dict)
+        e.save()
+        file.unlink()

@@ -1,3 +1,16 @@
+"""This module implements Experiments, which add analysis to types of Measurements
+
+All experiments should have a background-subtracted dataset (EC_MS.Dataset) with
+calibrated current and potential, and an mdict containing EC_MS.Molecule objects
+which correctly calibrate the MS data of the dataset.
+
+The StandardExperiment is a constant-potential OER (or composite thereof) with
+ICPMS-MS samples taken during the measurement. The sample is a labeled test sample or
+un-labeled control sample and the electrolyte is natural, so all m/z=34 and m/z=36 is
+excess lattice O. The StandardExperiment is only calibrated for O2, though at all
+three isotopes, and gets the calibration factor from the trend in the project's
+CalibrationSeries. """
+
 from pathlib import Path
 import json
 import numpy as np
@@ -6,8 +19,8 @@ from matplotlib import gridspec, pyplot as plt
 from EC_MS import Molecule
 
 from .constants import (
-    STANDARD_EXPERIMENT_DIR,
-    STANDARD_EXPERIMENT_ID_FILE,
+    EXPERIMENT_DIR,
+    EXPERIMENT_ID_FILE,
     STANDARD_ALPHA,
 )
 from .tools import singleton_decorator, CounterWithFile
@@ -18,13 +31,13 @@ from .calibration import CalibrationSeries
 calibration_series = CalibrationSeries.load()
 
 
-def all_standard_experiments(standard_experiment_dir=STANDARD_EXPERIMENT_DIR):
-    """returns an iterator that yields measurements in order of their id"""
-    N_measurements = StandardExperimentCounter().last()
-    for n in range(1, N_measurements):
+def all_experiments(experiment_dir=EXPERIMENT_DIR):
+    """returns an iterator that yields experiments in order of their id"""
+    N_experiments = ExperimentCounter().last()
+    for n in range(1, N_experiments):
         try:
-            measurement = StandardExperiment.open(
-                n, standard_experiment_dir=standard_experiment_dir
+            measurement = Experiment.open(
+                n, experiment_dir=experiment_dir
             )
         except FileNotFoundError as e:
             print(f"itermeasurement skipping {n} due to error = \n{e}")
@@ -32,14 +45,27 @@ def all_standard_experiments(standard_experiment_dir=STANDARD_EXPERIMENT_DIR):
             yield measurement
 
 
+def all_standard_experiments(experiment_dir=EXPERIMENT_DIR):
+    N_experiments = ExperimentCounter().last()
+    for n in range(1, N_experiments):
+        try:
+            standard_experiment = StandardExperiment.open(
+                n, experiment_dir=experiment_dir
+            )
+        except (FileNotFoundError, TypeError) as e:
+            print(f"itermeasurement skipping {n} due to error = \n{e}")
+        else:
+            yield standard_experiment
+
+
 @singleton_decorator
-class StandardExperimentCounter(CounterWithFile):
+class ExperimentCounter(CounterWithFile):
     """Counts measurements. 'id' increments the counter. 'last()' retrieves last id"""
 
-    _file = STANDARD_EXPERIMENT_ID_FILE
+    _file = EXPERIMENT_ID_FILE
 
 
-class StandardExperiment:
+class Experiment:
     """This class describes the experiments from which 3x TOF measurements are derived
 
     These are EC-MS measurements of a labeled (or control) sample in non-labeled
@@ -61,8 +87,7 @@ class StandardExperiment:
         tspan_bg=None,
         tspan_F=None,
         tspan_alpha=None,
-        plot_specs=None,
-        se_id=None,
+        e_id=None,
         **kwargs,
     ):
         """Initiate a standard experiment
@@ -88,7 +113,7 @@ class StandardExperiment:
                 the electrolyte (alpha) can be calculated form the measurement F is to
                 be calculated from the measurement
             plot_specs (dict): Additional specs for the plot, e.g. axis limits ("ylims")
-            se_id (int): The StandardExperiment's principle key
+            e_id (int): The StandardExperiment's principle key
         """
         self.m_id = m_id
         self.experiment_type = experiment_type
@@ -106,8 +131,7 @@ class StandardExperiment:
         # natural ratio is updated, this will determine alpha upon loading.
         self._alpha = None
         self._icpms_points = None
-        self.plot_specs = plot_specs or {}
-        self.id = se_id or StandardExperimentCounter().id
+        self.id = e_id or ExperimentCounter().id
         self.extra_stuff = kwargs
 
     def as_dict(self):
@@ -120,16 +144,15 @@ class StandardExperiment:
             tspan_alpha=self.tspan_alpha,
             F=self.F_0,
             alpha=self.alpha_0,
-            plot_specs=self.plot_specs,
-            se_id=self.id,
+            e_id=self.id,
         )
 
     def __repr__(self):
-        return f"se{self.id} is from m{self.m_id} of {self.measurement.sample_name}"
+        return f"e{self.id} is from m{self.m_id} of {self.measurement.sample_name}"
 
     def save(self):
         self_as_dict = self.as_dict()
-        file = STANDARD_EXPERIMENT_DIR / f"{self}.json"
+        file = EXPERIMENT_DIR / f"{self}.json"
         with open(file, "w") as f:
             json.dump(self_as_dict, f, indent=4)
 
@@ -145,15 +168,15 @@ class StandardExperiment:
         return cls(**self_as_dict)
 
     @classmethod
-    def open(cls, se_id, standard_experiment_dir=STANDARD_EXPERIMENT_DIR):
+    def open(cls, e_id, experiment_dir=EXPERIMENT_DIR):
         try:
             path_to_file = next(
                 path
-                for path in Path(standard_experiment_dir).iterdir()
-                if path.stem.startswith(f"se{se_id}")
+                for path in Path(experiment_dir).iterdir()
+                if path.stem.startswith(f"e{e_id}")
             )
         except StopIteration:
-            raise FileNotFoundError(f"no standard experiment with id = se{se_id}")
+            raise FileNotFoundError(f"no standard experiment with id = e{e_id}")
         return cls.load(path_to_file)
 
     @property
@@ -174,11 +197,9 @@ class StandardExperiment:
         return 2 * (1 - self.alpha) / self.alpha
 
     @property
-    def icpms_points(self):
-        """List of ICPMSPoint: The ICPMS samples from the experiment"""
-        if not self._icpms_points:
-            self._icpms_points = self.measurement.get_icpms_points()
-        return self._icpms_points
+    def gamma(self):
+        """Float: The m/z=34 to m/z=36 signal ratio from oxidation of the electrolyte"""
+        return 2 * self.alpha / (1 - self.alpha)
 
     @property
     def sample(self):
@@ -232,6 +253,53 @@ class StandardExperiment:
                 alpha = self.alpha_0
             self._alpha = alpha or STANDARD_ALPHA
         return self._alpha
+
+
+class StandardExperiment(Experiment):
+
+    def __init__(
+            self,
+            m_id,
+            experiment_type=None,
+            tspan_plot=None,
+            F=None,
+            alpha=None,
+            tspan_bg=None,
+            tspan_F=None,
+            tspan_alpha=None,
+            e_id=None,
+            plot_specs=None,
+            **kwargs,
+    ):
+        super().__init__(
+            m_id=m_id,
+            experiment_type=experiment_type,
+            tspan_plot=tspan_plot,
+            F=F,
+            tspan_F=tspan_F,
+            alpha=alpha,
+            tspan_alpha=tspan_alpha,
+            tspan_bg=tspan_bg,
+            e_id=e_id,
+            **kwargs
+        )
+        if not experiment_type in ["y", "k", "s", "c"]:
+            raise TypeError(f"Cannot make StandardExperiment of '{self.measurement}' "
+                            f"with experiment_type='{experiment_type}'")
+        self.plot_specs = plot_specs
+        self._icpms_points = None
+
+    def as_dict(self):
+        self_as_dict = super().as_dict()
+        self_as_dict.update(plot_specs=self.plot_specs)
+        return self_as_dict
+
+    @property
+    def icpms_points(self):
+        """List of ICPMSPoint: The ICPMS samples from the experiment"""
+        if not self._icpms_points:
+            self._icpms_points = self.measurement.get_icpms_points()
+        return self._icpms_points
 
     def get_dissolution_points(self):
         """Return the ICPMS sampling times (t_vec) and molar amounts (n_vec)"""

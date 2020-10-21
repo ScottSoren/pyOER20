@@ -20,5 +20,5 @@ from .elog import *
 from .measurement import *
 from .calibration import *
 from .icpms import *
-from .standard_experiment import *
+from .experiment import *
 from .sample import *

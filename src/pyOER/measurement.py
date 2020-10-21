@@ -325,7 +325,7 @@ class Measurement:
         return ips
 
     def get_standard_experiment(self):
-        from .standard_experiment import all_standard_experiments
+        from .experiment import all_standard_experiments
 
         for se in all_standard_experiments():
             if se.m_id == self.id:
