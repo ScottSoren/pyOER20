@@ -114,7 +114,7 @@ if False:  # go through and save them all
         se.save()
 
 
-if True:  # change prefix 'se' to 'e'
+if False:  # change prefix 'se' to 'e'
     from pyOER.constants import EXPERIMENT_DIR
     for file in EXPERIMENT_DIR.iterdir():
         if not file.suffix == ".json":
