@@ -104,7 +104,7 @@ if False:  # go through and save them all
             m_id=m_id,
             experiment_type=standard_measurements[m_id_str],
             # se_id = StandardExperimentCounter.id
-            **spec
+            **spec,
         )
 
         if False:  # plot them all!
@@ -116,6 +116,7 @@ if False:  # go through and save them all
 
 if False:  # change prefix 'se' to 'e'
     from pyOER.constants import EXPERIMENT_DIR
+
     for file in EXPERIMENT_DIR.iterdir():
         if not file.suffix == ".json":
             continue
@@ -125,3 +126,19 @@ if False:  # change prefix 'se' to 'e'
         e = StandardExperiment(**e_as_dict)
         e.save()
         file.unlink()
+
+if False:
+    """Open and re-save elog files, deleting original"""
+    from pyOER.elog import ELOG_DIR, ElogEntry
+
+    for file in ELOG_DIR.iterdir():
+        if file.suffix == ".json":
+            with open(file, "r") as f:
+                elog_as_dict = json.load(f)
+            try:
+                elog = ElogEntry(**elog_as_dict)
+            except TypeError as e:  # raised if __init__ doesn't get right args
+                print(f"{e}... maybe {file} shouldn't be in {ELOG_DIR}?")
+            else:
+                elog.save()
+                file.unlink()

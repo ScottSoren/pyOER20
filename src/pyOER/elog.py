@@ -107,6 +107,19 @@ def read_elog_html(
     return elog_entries
 
 
+def all_elog_entries(elog_dir=ELOG_DIR):
+    """iterate over elog entries."""
+    for file in elog_dir.iterdir():
+        if file.suffix == ".json":
+            with open(file, "r") as f:
+                log_as_dict = json.load(f)
+            try:
+                yield ElogEntry(**log_as_dict)
+            except TypeError as e:  # raised if __init__ doesn't get right args
+                print(f"{e}... maybe {file} shouldn't be in {elog_dir}?")
+                raise
+
+
 class ElogEntry:
     """simple data class summarizing contents of an elog entry"""
 
@@ -137,13 +150,13 @@ class ElogEntry:
         return cls(**self_as_dict)
 
     @classmethod
-    def open(cls, e_id, setup=SETUP, measurement_dir=ELOG_DIR):
+    def open(cls, e_id, setup=SETUP, elog_dir=ELOG_DIR):
         """Open the elog entry given its id"""
         try:
             path_to_file = next(
                 path
-                for path in Path(measurement_dir).iterdir()
-                if path.stem.startswith(f"{setup} e{e_id}")
+                for path in Path(elog_dir).iterdir()
+                if path.stem.startswith(f"{setup} {e_id}")
             )
         except StopIteration:
             raise FileNotFoundError(f"no elog with number={e_id}")
@@ -172,10 +185,10 @@ class ElogEntry:
         return self_as_dict
 
     def get_name(self):
-        return f"{self.setup} e{self.number} {self.date}"
+        return f"{self.setup} {self.number} {self.date}"
 
     def __repr__(self):
-        return f"{self.setup} e{self.number} {self.date}"
+        return f"{self.setup} {self.number} {self.date}"
 
     def update_with(self, elog_2):
         """Put non-empty attributes from elog_2 into self, update not replace dicts"""
