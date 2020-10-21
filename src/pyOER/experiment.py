@@ -223,6 +223,7 @@ class Experiment:
     def sample(self):
         return self.measurement.sample
 
+    @property
     def sample_name(self):
         return self.measurement.sample_name
 

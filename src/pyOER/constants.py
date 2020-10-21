@@ -1,7 +1,8 @@
 from pathlib import Path
 
 # -------------- natural constants -------------- #
-STANDARD_ALPHA = 0.9980  # the natural ratio ^{16}O/(^{16}O + ^{18}O) of oxygen atoms
+STANDARD_ALPHA = 0.99804  # the natural ratio ^{16}O/(^{16}O + ^{18}O) of oxygen atoms
+# determined from control standard experiments in generate_standard_experiments.py
 
 
 # -------------- project-specific constants -------------- #

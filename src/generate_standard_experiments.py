@@ -142,3 +142,17 @@ if False:
             else:
                 elog.save()
                 file.unlink()
+
+if True:
+    """Calculate alpha based on the control standard experiments"""
+    import numpy as np
+    from pyOER import all_standard_experiments
+
+    alphas = {}
+    for se in all_standard_experiments():
+        if not ("Reshma" in se.sample_name or "Folk" in se.sample_name):
+            continue
+        alphas[se.id] = se.calc_alpha(tspan=se.tspan_plot)
+
+    alpha_0 = np.mean([alph for e_id, alph in alphas.items()])
+    print(alpha_0)

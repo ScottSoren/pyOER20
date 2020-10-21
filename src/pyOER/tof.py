@@ -193,6 +193,10 @@ class TurnOverFrequency:
         return self.measurement.sample_name
 
     @property
+    def element(self):
+        return self.sample.element
+
+    @property
     def rate_calculating_function(self):
         """The function that this TOF uses to calculate its rate"""
         if self.tof_type == "activity":
