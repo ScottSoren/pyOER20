@@ -233,6 +233,12 @@ class Experiment:
 
         return [tof for tof in all_tofs() if tof.e_id == self.id]
 
+    @property
+    def tof_sets(self):
+        from .tof import all_tof_sets
+
+        return [t_set for t_set in all_tof_sets() if t_set.experiment.id == self.id]
+
     def calc_alpha(self, tspan=None):
         """Return fraction ^{16}O in the electrolyte based on tspan with steady OER"""
         tspan = tspan or self.tspan_alpha

@@ -129,3 +129,15 @@ class Sample:
         # sort by tstamp:
         ms = sorted(ms)
         return ms
+
+    @property
+    def tofs(self):
+        from .tof import all_tofs
+
+        return [tof for tof in all_tofs() if tof.sample_name == self.name]
+
+    @property
+    def tof_sets(self):
+        from .tof import all_tof_sets
+
+        return [t_set for t_set in all_tof_sets() if t_set.sample_name == self.name]

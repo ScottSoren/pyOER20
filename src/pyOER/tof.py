@@ -94,11 +94,89 @@ def all_tofs(tof_dir=TOF_DIR):
             yield tof
 
 
+def all_tof_sets(tof_dir=TOF_DIR):
+    tof_sets = {}
+    for tof in all_tofs(tof_dir=tof_dir):
+        e_id = tof.e_id
+        tspan = tuple(int(t) for t in tof.tspan)
+        if not (e_id, tspan) in tof_sets:
+            tof_sets[(e_id, tspan)] = TurnOverSet()
+        tof_sets[(e_id, tspan)].add_tof(tof)
+    yield from tof_sets.values()
+
+
+class TurnOverSet:
+    def __init__(
+        self, t_ids=None,
+    ):
+        """Initiate a set of turn-over-frequencies taken from one point in an experiment
+
+        Args:
+            t_ids (dict): {tof_type: t_id} where tof_type is the action the tof
+                describes ("activity", "exchange", "dissolution") and t_id is the id
+        """
+        self.t_ids = t_ids or {}
+        self._tofs = {}
+        self.experiment = None
+        self.tspan = None
+
+    def __contains__(self, item):
+        return item in self.t_ids
+
+    def __repr__(self):
+        return f"TurnOverSet({self.t_ids})"
+
+    def add_tof(self, tof):
+        tof_type = tof.tof_type
+        self.t_ids[tof_type] = tof.id
+        self._tofs[tof_type] = tof
+        if not self.experiment:
+            self.experiment = tof.experiment
+        elif not (tof.experiment.id == self.experiment.id):
+            raise TypeError(f"can't add {tof} to {self} as experiment is not the same")
+        if not self.tspan:
+            self.tspan = tof.tspan
+        elif not (tof.tspan[0] == self.tspan[0]):
+            raise TypeError(f"can't add {tof} to {self} as tspans are not the same")
+
+    def get_tof(self, item):
+        if item in self._tofs:
+            return self._tofs[item]
+        elif item in self.t_ids:
+            if self.experiment:
+                self._tofs[item] = TurnOverFrequency.open(
+                    self.t_ids[item], experiment=self.experiment
+                )
+            else:
+                self._tofs[item] = TurnOverFrequency.open(self.t_ids[item])
+                self.experiment = self._tofs[item].experiment
+            return self._tofs[item]
+        raise KeyError(f"{self} does not have tof for {item}")
+
+    def __getitem__(self, item):
+        return self.get_tof(item)
+
+    def __getattr__(self, item):
+        try:
+            return self.get_tof(item)
+        except KeyError as e:
+            raise AttributeError(e)
+
+    @property
+    def sample(self):
+        return self.experiment.sample
+
+    @property
+    def sample_name(self):
+        return self.experiment.sample_name
+
+
 class TurnOverFrequency:
     def __init__(
         self,
         tof_type=None,
         e_id=None,
+        experiment=None,
         tspan=None,
         r_id=None,
         rate_calc_kwargs=None,
@@ -111,6 +189,8 @@ class TurnOverFrequency:
             tof_type (str): The type of TOF. Options are 'activity', 'exchange', and
                 'dissolution'.
             e_id (int): The id of the associated experiment
+            experiment (Experiment): optionally, the Experiment itself can be given to
+                save time.
             tspan (timespan): The time interval over which to integrate/average
             r_id (int): The id of the associated roughness measurement
             rate_calc_kwargs (dict): Extra kwargs for the relevant rate calc. function.
@@ -121,7 +201,7 @@ class TurnOverFrequency:
         self.e_id = e_id
         self.tspan = tspan
         self.r_id = r_id
-        self._experiment = None
+        self._experiment = experiment
         self._rate = None
         self._potential = None
         self.description = description
@@ -148,14 +228,15 @@ class TurnOverFrequency:
             json.dump(self_as_dict, f, indent=4)
 
     @classmethod
-    def load(cls, path_to_file):
+    def load(cls, path_to_file, **kwargs):
         """Load a TOF from the metadata stored in a file"""
         with open(path_to_file, "r") as f:
             self_as_dict = json.load(f)
+        self_as_dict.update(kwargs)
         return cls(**self_as_dict)
 
     @classmethod
-    def open(cls, t_id, tof_dir=TOF_DIR):
+    def open(cls, t_id, tof_dir=TOF_DIR, **kwargs):
         """Opens the measurement given its id"""
         try:
             path_to_file = next(
@@ -165,7 +246,7 @@ class TurnOverFrequency:
             )
         except StopIteration:
             raise FileNotFoundError(f"no TurnOverFrequency with id = t{t_id}")
-        return cls.load(path_to_file)
+        return cls.load(path_to_file, **kwargs)
 
     def __repr__(self):
         return f"t{self.id} is {self.tof_type} on {self.sample_name} on {self.date}"
