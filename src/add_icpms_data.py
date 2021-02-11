@@ -22,9 +22,18 @@ analysis_dir = DATA_DIR / "Analysis"
 # CONTINUE_FROM = {}
 
 CONTINUE_FROM = {
-    "19C02": {"i": 9, "ic_ids": {"M102": 2},},
-    "19F07": {"i": 16, "ic_ids": {"M102": 5, "M195": 6},},
-    "19F09": {"i": 32, "ic_ids": {"M193": 7},},
+    "19C02": {
+        "i": 9,
+        "ic_ids": {"M102": 2},
+    },
+    "19F07": {
+        "i": 16,
+        "ic_ids": {"M102": 5, "M195": 6},
+    },
+    "19F09": {
+        "i": 32,
+        "ic_ids": {"M193": 7},
+    },
     "20A05": {"i": 37, "ic_ids": {"M102": 9}},
     "20A06": {"i": 40, "ic_ids": {"M102": 9}},
     "20A15": {"i": 25, "ic_ids": {"M102": 11, "M193": 12}},
@@ -49,7 +58,16 @@ element_samples = {
         "Sofie",
         "Mette",
     ),
-    "Ir": ("Jazz", "Folk", "Emil", "Ben", "Goof", "Champ", "Decade", "Legend",),
+    "Ir": (
+        "Jazz",
+        "Folk",
+        "Emil",
+        "Ben",
+        "Goof",
+        "Champ",
+        "Decade",
+        "Legend",
+    ),
     "Pt": ("Trimi",),
 }
 

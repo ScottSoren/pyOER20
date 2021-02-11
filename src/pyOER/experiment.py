@@ -84,15 +84,14 @@ def open_experiment(e_id, experiment_dir=EXPERIMENT_DIR):
 
 
 class Experiment:
-    """This class describes the experiments from which 3x TOF measurements are derived
+    """Joins a pyOER measurement with extra metadata and methods for deriving results
 
-    These are EC-MS measurements of a labeled (or control) sample in non-labeled
-    elcctroyte at constant current, which ICP-MS samples taken during or between
-    measurements. The class wraps the corresponding measurement with extra functions.
-
-    They are best represented as an EC-MS-ICPMS plot where the MS panel has left and
-    rignt y-axes representing labeled and non-labeled O2, respectively. Such a plot
-    is made with StandardExperment.plot_EC_MS_ICPMS
+    This is a base class for more complex experiments, with methods and saveable
+    metadata (typically tspans) for subtracting background, plotting nicely,
+    calibrating signals, determining electrolyte isotopic composition, etc.
+    It also has a list of TOFs, which (separately) contain the metadata for deriving
+    specific results.
+    Inheriting classes will contain methods to
     """
 
     def __init__(
@@ -102,34 +101,42 @@ class Experiment:
         tspan_plot=None,
         F=None,
         alpha=None,
+        cap=None,
         tspan_bg=None,
         tspan_F=None,
         tspan_alpha=None,
+        tspan_cap=None,
+        V_DL=(1.2, 1.3),
         e_id=None,
         **kwargs,
     ):
-        """Initiate a standard experiment
+        """Initiate an experiment
 
         Args:
             m_id (int): The measurement id
             experiment_type (str): Tag for the type of standard experiment. Options are
+                - standard experiments (activity + exchange + dissolution):
                 "y": "yes, purely systematic",  # 30 minutes at one current density
                 "s": "starts systematic",
                 "k": "shortened systematic (<30 minutes)",
-                "c": "composite systematic"}  # one sample multiple current densities
-            tspan_plot (timespan): The timespan in which to make the EC-MS-ICPMS
+                "c": "composite systematic"  # one sample multiple current densities
+                - activity experiments (constant potential steps):
+            tspan_plot (timespan): The timespan in which to make the experiment
                 plot. If not given, the plot will use the measurement's tspan
             F (float): The O2 sensitivity in [C/mol]. By default the experiment will
                 use the O2 sensitivity given by the CalibrationSeries represented in
                 TREND.json in the calibration directory
             alhpa (float): The ^{16}O portion in the electrolyte. By default it takes
                 the natural value of 99.80%
+            cap (float): The capacitance- in [Farads], if known.
             tspan_bg (timespan): The timespan to consider the background
             tspan_F (timespan): The timespan from which O2 sensitivity (F) can be
                 calculated from the measurement
             tspan_alpha (timespan): The timespan from which the isotopic composition of
                 the electrolyte (alpha) can be calculated form the measurement F is to
                 be calculated from the measurement
+            tspan_cap (timespan): The timespan from which capacitance can be measured
+            V_DL (list of float): The voltage range for capacitance calculation / [V]
             plot_specs (dict): Additional specs for the plot, e.g. axis limits ("ylims")
             e_id (int): The StandardExperiment's principle key
         """
@@ -148,6 +155,10 @@ class Experiment:
         self.alpha_0 = alpha  # for saving, so that if no alpha is given and the
         # natural ratio is updated, this will determine alpha upon loading.
         self._alpha = None
+        self._cap = cap
+        self.tspan_cap = tspan_cap
+        self.V_DL = V_DL
+        self._cap = None
         self._icpms_points = None
         self.id = e_id or ExperimentCounter().id
         self.extra_stuff = kwargs
@@ -202,7 +213,8 @@ class Experiment:
         if not self._dataset:
             dataset = self.measurement.dataset
             dataset.sync_metadata(
-                RE_vs_RHE=self.measurement.RE_vs_RHE, A_el=0.196,
+                RE_vs_RHE=self.measurement.RE_vs_RHE,
+                A_el=0.196,
             )
             if self.tspan_bg:
                 dataset.set_background(self.tspan_bg)
@@ -248,6 +260,24 @@ class Experiment:
         alpha = 2 / (2 + gamma)
         return alpha
 
+    @property
+    def cap(self):
+        """Capacitance in Farads"""
+        if not self._cap:
+            cap_cv = self.measurement.dataset.cut(self.tspan_cap).as_cv()
+            self._cap - cap_cv.get_capacitance(V_DL=self.V_DL) * self.measurement.A_el
+        return self._cap
+
+    @property
+    def ECSA(self):
+        """Electrochemical surface area in [cm^2]"""
+        return self.cap / self.sample.specific_capacitance
+
+    @property
+    def n_sites(self):
+        """Number of sites in [mol]"""
+        return self.ECSA / self.sample.site_density
+
     def populate_mdict(self):
         """Fill in self.mdict with the EC-MS.Molecules O2_M32, O2_M34, and O2_M36"""
         for mass in ["M32", "M34", "M36"]:
@@ -268,7 +298,10 @@ class Experiment:
         if not self._F:
             if self.tspan_F:
                 F = self.dataset.point_calibration(
-                    mol="O2", mass="M32", n_el=4, tspan=self.tspan_F,
+                    mol="O2",
+                    mass="M32",
+                    n_el=4,
+                    tspan=self.tspan_F,
                 )
             else:
                 F = self.F_0
@@ -292,6 +325,17 @@ class Experiment:
 
 
 class StandardExperiment(Experiment):
+    """This class describes the experiments from which 3x TOF measurements are derived
+
+    These are EC-MS measurements of a labeled (or control) sample in non-labeled
+    elcctroyte at constant current, which ICP-MS samples taken during or between
+    measurements. The class wraps the corresponding measurement with extra functions.
+
+    They are best represented as an EC-MS-ICPMS plot where the MS panel has left and
+    rignt y-axes representing labeled and non-labeled O2, respectively. Such a plot
+    is made with StandardExperment.plot_EC_MS_ICPMS
+    """
+
     def __init__(
         self,
         m_id,
@@ -351,7 +395,10 @@ class StandardExperiment(Experiment):
         t_last = 0
         t_vec = np.array([])
         n_dot_vec = np.array([])
-        for t, n, in zip(t_points, n_points):
+        for (
+            t,
+            n,
+        ) in zip(t_points, n_points):
             if t == 0:
                 continue
             if t == t_last:
@@ -511,3 +558,7 @@ class StandardExperiment(Experiment):
                 axes[3].set_ylim([lim / beta for lim in ylim])
 
         return axes
+
+
+class ActExperiment(Experiment):
+    """Activity experiment. Doesn't actually need anything extra. Info in the TOFs."""

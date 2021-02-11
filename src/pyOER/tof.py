@@ -107,7 +107,8 @@ def all_tof_sets(tof_dir=TOF_DIR):
 
 class TurnOverSet:
     def __init__(
-        self, t_ids=None,
+        self,
+        t_ids=None,
     ):
         """Initiate a set of turn-over-frequencies taken from one point in an experiment
 
@@ -156,6 +157,9 @@ class TurnOverSet:
     def __getitem__(self, item):
         return self.get_tof(item)
 
+    def __iter__(self):
+        yield from self._tofs.values()
+
     def __getattr__(self, item):
         try:
             return self.get_tof(item)
@@ -171,10 +175,27 @@ class TurnOverSet:
         return self.experiment.sample_name
 
 
+class TOFCollection:
+    """A group of turnoverfrequencies"""
+
+    def __init__(self, tof_list=None):
+        self.tof_list = tof_list
+
+    def __iter__(self):
+        yield from self.tof_list
+
+    def mean_rate(self):
+        return np.mean(np.array([tof.rate for tof in self]))
+
+    def std(self):
+        return np.mean(np.array([tof.rate for tof in self]))
+
+
 class TurnOverFrequency:
     def __init__(
         self,
         tof_type=None,
+        rate=None,
         e_id=None,
         experiment=None,
         tspan=None,
@@ -188,6 +209,7 @@ class TurnOverFrequency:
         Args:
             tof_type (str): The type of TOF. Options are 'activity', 'exchange', and
                 'dissolution'.
+            rate (float): The un-normalized rate, if known, in [mol/s]
             e_id (int): The id of the associated experiment
             experiment (Experiment): optionally, the Experiment itself can be given to
                 save time.
@@ -202,7 +224,7 @@ class TurnOverFrequency:
         self.tspan = tspan
         self.r_id = r_id
         self._experiment = experiment
-        self._rate = None
+        self._rate = rate
         self._potential = None
         self.description = description
         self.rate_calc_kwargs = rate_calc_kwargs or {}
@@ -212,6 +234,7 @@ class TurnOverFrequency:
         """The dictionary represnetation of the TOF's metadata"""
         return dict(
             tof_type=self.tof_type,
+            rate=self._rate,
             e_id=self.e_id,
             tspan=self.tspan,
             r_id=self.r_id,
@@ -304,6 +327,10 @@ class TurnOverFrequency:
         if not self._rate:
             self.calc_rate()
         return self._rate
+
+    @property
+    def tof(self):
+        return self.rate / self.experiment.n_sites
 
     @property
     def potential(self):

@@ -39,7 +39,11 @@ def add_folder(path, technique="ECMS"):
         if n_elog:
             specs.update(elog_number=n_elog)
 
-        measurement = Measurement(old_data_path=path, m_id=m_id, **specs,)
+        measurement = Measurement(
+            old_data_path=path,
+            m_id=m_id,
+            **specs,
+        )
         if check_if_EC_MS_pickle(measurement):
             measurement.save_with_rename()
             m_id = None

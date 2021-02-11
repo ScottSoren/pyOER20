@@ -20,7 +20,8 @@ ENTRY_END_MATCHER = r"</pre></td></tr>"
 
 
 def read_elog_html(
-    path_to_elog_html, setup=SETUP,
+    path_to_elog_html,
+    setup=SETUP,
 ):
     """Return a list of ElogEntry's with data from the html file
 

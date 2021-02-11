@@ -210,9 +210,14 @@ class Measurement:
 
     @property
     def sample(self):
+        if not self.sample_name:
+            return
         from .sample import Sample
 
-        return Sample.open(self.sample_name)
+        try:
+            return Sample.open(self.sample_name)
+        except FileNotFoundError:
+            return Sample(name=self.sample_name)
 
     @property
     def dataset(self):
@@ -255,6 +260,9 @@ class Measurement:
     def plot_experiment(self, *args, **kwargs):
         """shortcut to self.dataset.plot_experiment"""
         return self.dataset.plot_experiment(*args, **kwargs)
+
+    def cut_dataset(self, *args, **kwargs):
+        self._dataset = self.dataset.cut(*args, **kwargs)
 
     def open_elog(self):
         from .elog import ElogEntry

@@ -7,7 +7,9 @@ from .measurement import Measurement, all_measurements
 
 SAMPLE_TYPES = {
     "Ru": {
-        "hydrous": ["Taiwan1G",],
+        "hydrous": [
+            "Taiwan1G",
+        ],
         "metallic": ["Melih", "Bernie"],
         "foam": "Evans",
         "rutile": ["Reshma4", "Maundy", "Stoff", "Sofie", "Mette", "John"],
@@ -102,6 +104,15 @@ class Sample:
     @property
     def element(self):
         return get_element_and_type(self.name, get="element")
+
+    @property
+    def site_density(self):
+        """Density of sites in mol/cm^2. TODO: module dictionary with elements"""
+        return 166e-12  # 1 site/nm^2 in mol/cm^2
+
+    def specific_capacitance(self):
+        """Specific capacitance in Farad/cm^2. TODO: module dictionary with elements"""
+        return 200e-6
 
     @property
     def oxide_type(self):

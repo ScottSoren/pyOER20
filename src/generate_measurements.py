@@ -69,7 +69,10 @@ def main():
         specs = read_metadata_from_path(path)
 
         measurement = Measurement(
-            m_id=m_id, old_data_path=str(path), technique="ECMS", **specs,
+            m_id=m_id,
+            old_data_path=str(path),
+            technique="ECMS",
+            **specs,
         )
         if check_if_EC_MS_pickle(measurement):
             measurement.save()
