@@ -190,11 +190,18 @@ class Experiment:
         """Load a standard experiment given the path to its json file."""
         with open(file, "r") as f:
             self_as_dict = json.load(f)
-        if "ylims" in self_as_dict["plot_specs"]:  # json turns integer keys to strings
+        if "plot_specs" in self_as_dict and "ylims" in self_as_dict["plot_specs"]:
+            # json turns integer keys to strings. This fixes.
             self_as_dict["plot_specs"]["ylims"] = {
                 int(s): ylim for s, ylim in self_as_dict["plot_specs"]["ylims"].items()
             }
-        return cls(**self_as_dict)
+        experiment_class = cls
+        if "experiment_type" in self_as_dict:
+            if self_as_dict["experiment_type"] == "activity":
+                experiment_class = ActExperiment
+            elif self_as_dict["experiment_type"] in STANDARD_EXPERIMENT_TAGS:
+                experiment_class = StandardExperiment
+        return experiment_class(**self_as_dict)
 
     @classmethod
     def open(cls, e_id, experiment_dir=EXPERIMENT_DIR):
@@ -297,15 +304,19 @@ class Experiment:
     def F(self):
         if not self._F:
             if self.tspan_F:
-                F = self.dataset.point_calibration(
-                    mol="O2",
-                    mass="M32",
-                    n_el=4,
-                    tspan=self.tspan_F,
-                )
-            else:
+                F = 0
+                for mass in ["M32", "M34", "M36"]:
+                    F += self.dataset.point_calibration(
+                        mol="O2",
+                        mass=mass,
+                        n_el=4,
+                        tspan=self.tspan_F,
+                    ).F_cal
+            elif self.F_0:
                 F = self.F_0
-            self._F = F or calibration_series.F_of_tstamp(self.dataset.tstamp)
+            else:
+                F = calibration_series.F_of_tstamp(self.dataset.tstamp)
+            self._F = F
         return self._F
 
     @property
@@ -562,3 +573,14 @@ class StandardExperiment(Experiment):
 
 class ActExperiment(Experiment):
     """Activity experiment. Doesn't actually need anything extra. Info in the TOFs."""
+
+    def plot_experiment(self, tspan=None, unit="pmol/s/cm^2"):
+        tspan = tspan or self.tspan_plot
+        mols = list(self.mdict.values())
+        axes = self.dataset.plot_experiment(
+            mols=mols, tspan=tspan, unit=unit, logplot=False
+        )
+        if self.tspan_F:
+            self.dataset.plot_flux(
+                mols=mols, tspan=self.tspan_F, ax=axes[0], alpha_under=0.2, unit=unit
+            )

@@ -1,0 +1,20 @@
+{
+    "m_id": 58,
+    "experiment_type": "activity",
+    "tspan_plot": null,
+    "tspan_bg": [
+        5000.0,
+        5500.0
+    ],
+    "tspan_F": [
+        11300.0,
+        11700.0
+    ],
+    "tspan_alpha": [
+        11300.0,
+        11700.0
+    ],
+    "F": null,
+    "alpha": null,
+    "e_id": 63
+}
