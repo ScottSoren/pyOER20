@@ -64,10 +64,17 @@ else:  # just use the loaded experiments
 if True:  # get the TOFs
     for exp in defined_experiments:
         exp.plot_experiment()
-        print("close the plot when ready to enter tspan_plot and category")
+        print(f"close the plot of {exp} when ready to enter tspan_plot and category")
         plt.show()
-
-
+        answer = input("enter tspan plot as two numbers separated by a comma "
+                       "(defaults to what you see)")
+        if answer:
+            tspan_plot = [float(t) for t in answer.split(",")]
+            exp.tspan_plot = tspan_plot
+        answer = input(f"enter the experiment_type of {exp} (defaults to `activity`)")
+        if answer:
+            exp.experiment_type = answer
+        exp.save()
         answer = 1
         while answer:
             exp.plot_experiment()
@@ -79,4 +86,7 @@ if True:  # get the TOFs
                 tof = TurnOverFrequency(
                     tof_type="activity", e_id=exp.id, tspan=tspan_tof,
                 )
+                tof.calc_rate()
+                tof.calc_tof()
+                tof.calc_potential()
                 tof.save()

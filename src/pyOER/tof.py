@@ -196,6 +196,8 @@ class TurnOverFrequency:
         self,
         tof_type=None,
         rate=None,
+        tof=None,
+        potential=None,
         e_id=None,
         experiment=None,
         tspan=None,
@@ -225,7 +227,8 @@ class TurnOverFrequency:
         self.r_id = r_id
         self._experiment = experiment
         self._rate = rate
-        self._potential = None
+        self._tof = tof
+        self._potential = potential
         self.description = description
         self.rate_calc_kwargs = rate_calc_kwargs or {}
         self.id = t_id or TOFCounter().id
@@ -234,7 +237,9 @@ class TurnOverFrequency:
         """The dictionary represnetation of the TOF's metadata"""
         return dict(
             tof_type=self.tof_type,
-            rate=self._rate,
+            rate=self._rate,  # result!
+            tof=self._tof,  # result!
+            potential=self._potential,  # result!
             e_id=self.e_id,
             tspan=self.tspan,
             r_id=self.r_id,
@@ -328,13 +333,23 @@ class TurnOverFrequency:
             self.calc_rate()
         return self._rate
 
+    def calc_tof(self):
+        self._tof = self.rate / self.experiment.n_sites
+        return self._tof
+
     @property
     def tof(self):
-        return self.rate / self.experiment.n_sites
+        if not self._tof:
+            self.calc_tof()
+        return self._tof
+
+    def calc_potential(self):
+        self._potential = calc_potential(self.experiment, self.tspan)
+        return self._potential
 
     @property
     def potential(self):
         """The potential vs RHE in [V]"""
         if not self._potential:
-            self._potential = calc_potential(self.experiment, self.tspan)
+            self.calc_potential()
         return self._potential

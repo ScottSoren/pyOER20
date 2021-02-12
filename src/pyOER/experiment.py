@@ -272,18 +272,19 @@ class Experiment:
         """Capacitance in Farads"""
         if not self._cap:
             cap_cv = self.measurement.dataset.cut(self.tspan_cap).as_cv()
-            self._cap - cap_cv.get_capacitance(V_DL=self.V_DL) * self.measurement.A_el
+            self._cap = cap_cv.get_capacitance(V_DL=self.V_DL) * self.dataset.A_el
+            # Farad/cm^2 * cm^2
         return self._cap
 
     @property
     def ECSA(self):
         """Electrochemical surface area in [cm^2]"""
-        return self.cap / self.sample.specific_capacitance
+        return self.cap / self.sample.specific_capacitance  # Farad / (Farad/cm^2)
 
     @property
     def n_sites(self):
         """Number of sites in [mol]"""
-        return self.ECSA / self.sample.site_density
+        return self.ECSA * self.sample.site_density  # cm^2 * mol/cm^2
 
     def populate_mdict(self):
         """Fill in self.mdict with the EC-MS.Molecules O2_M32, O2_M34, and O2_M36"""
@@ -582,5 +583,6 @@ class ActExperiment(Experiment):
         )
         if self.tspan_F:
             self.dataset.plot_flux(
-                mols=mols, tspan=self.tspan_F, ax=axes[0], alpha_under=0.2, unit=unit
+                mols=mols, tspan=self.tspan_F, ax=axes[0], alpha_under=0.2, unit=unit,
+                logplot=False,
             )

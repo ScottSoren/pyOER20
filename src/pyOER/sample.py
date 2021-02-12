@@ -110,6 +110,7 @@ class Sample:
         """Density of sites in mol/cm^2. TODO: module dictionary with elements"""
         return 166e-12  # 1 site/nm^2 in mol/cm^2
 
+    @property
     def specific_capacitance(self):
         """Specific capacitance in Farad/cm^2. TODO: module dictionary with elements"""
         return 200e-6
