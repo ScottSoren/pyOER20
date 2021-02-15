@@ -106,7 +106,7 @@ class Experiment:
         tspan_F=None,
         tspan_alpha=None,
         tspan_cap=None,
-        V_DL=(1.2, 1.3),
+        V_DL=(1.22, 1.3),
         e_id=None,
         **kwargs,
     ):
@@ -162,6 +162,7 @@ class Experiment:
         self._icpms_points = None
         self.id = e_id or ExperimentCounter().id
         self.default_masses = ["M32", "M34", "M36"]
+        self._tofs = None
         self.extra_stuff = kwargs
 
     def as_dict(self):
@@ -250,9 +251,14 @@ class Experiment:
 
     @property
     def tofs(self):
+        if not self._tofs:
+            self.load_tofs()
+        return self._tofs
+
+    def load_tofs(self):
         from .tof import all_tofs
 
-        return [tof for tof in all_tofs() if tof.e_id == self.id]
+        self._tofs = [tof for tof in all_tofs() if tof.e_id == self.id]
 
     @property
     def tof_sets(self):
@@ -591,7 +597,20 @@ class ActExperiment(Experiment):
                 mols=mols,
                 tspan=self.tspan_F,
                 ax=axes[0],
-                alpha_under=0.2,
+                alpha_under=0.3,
+                unit=unit,
+                logplot=False,
+            )
+        if self.tspan_cap and (tspan == "all" or not tspan):
+            cap_cv = self.measurement.dataset.cut(self.tspan_cap).as_cv()
+            t, J = cap_cv.get_capacitance(V_DL=self.V_DL, out=["t", "J"])
+            axes[2].fill_between(t, J, np.zeros(t.shape), color="0.5", alpha=0.3)
+        for tof in self.tofs:
+            self.dataset.plot_flux(
+                mols=mols,
+                tspan=tof.tspan,
+                ax=axes[0],
+                alpha_under=0.15,
                 unit=unit,
                 logplot=False,
             )

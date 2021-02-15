@@ -1,3 +1,4 @@
+import time
 from matplotlib import pyplot as plt
 
 from pyOER import all_measurements
@@ -71,7 +72,8 @@ if False:  # get the experiments
 else:  # just use the loaded experiments
     pass
 
-if True:  # save the tspan_cap's!!! And sub-category and tspan_plot, forgotten above.
+
+if False:  # save the tspan_cap's!!! And sub-category and tspan_plot, forgotten above.
     for exp in defined_experiments:
         exp.measurement.print_notes()
         exp.plot_experiment(tspan="all")
@@ -111,26 +113,58 @@ if True:  # save the tspan_cap's!!! And sub-category and tspan_plot, forgotten a
         exp.save()
 
 
-if False:  # get the TOFs
+if True:  # get the TOFs
     for exp in defined_experiments:
         exp.measurement.print_notes()
         answer = 1
+        if True:  # a chance to edit the plot.
+            exp.plot_experiment(tspan="all")
+            for item in [
+                "experiment_type",
+                "tspan_bg",
+                "tspan_F",
+                "tspan_cap",
+                "tspan_plot",
+            ]:
+                print(f"exp.{item} = {getattr(exp, item)}")
+            print(
+                f"Check if above is right for '{exp}', edit the .json"
+                " file if not, and close the plot."
+            )
+            plt.show()
+            time.sleep(0.5)
+            exp = ActExperiment.open(exp.id)  # update the experiment.
         while answer:
+            exp.load_tofs()
             exp.plot_experiment()
             print(
-                f"close the plot of {exp} when ready to enter a TOF tspan "
+                f"close the plot of '{exp}' when ready to enter one or more TOF tspan "
                 f"(or blank to go on)."
             )
             plt.show()
-            answer = input("Enter a tspan for a TOF or blank to go to next measurement")
+            answer = input(
+                "Enter one or more tspan for a TOF or blank to go to next measurement"
+            )
             if answer:
-                tspan_tof = [float(t) for t in answer.split(",")]
-                tof = TurnOverFrequency(
-                    tof_type="activity",
-                    e_id=exp.id,
-                    tspan=tspan_tof,
-                )
-                tof.calc_rate()
-                tof.calc_tof()
-                tof.calc_potential()
-                tof.save()
+                if "[" in answer:  # then we assume the user put it in right.
+                    tof_tspans = eval(answer)
+                else:
+                    tof_tspans = [
+                        [float(t) for t in answer.split(",")],
+                    ]
+                for tspan_tof in tof_tspans:
+                    tof = TurnOverFrequency(
+                        tof_type="activity",
+                        e_id=exp.id,
+                        tspan=tspan_tof,
+                    )
+                    tof.calc_rate()
+                    tof.calc_tof()
+                    tof.calc_potential()
+                    print(
+                        f"Got tof for {exp}"
+                        f" with {tof.rate*1e9} [nmol/s] or {tof.tof} [1/s]"
+                        f" at {tof.potential} V vs RHE"
+                    )
+                    time.sleep(0.5)
+                    tof.save()
