@@ -3,11 +3,12 @@ from matplotlib import pyplot as plt
 from pyOER import all_measurements
 from pyOER.experiment import ActExperiment, all_experiments
 from pyOER.tof import TurnOverFrequency
+from pyOER.constants import EXPERIMENT_TAGS
 
 plt.interactive(False)
 
 defined_experiments = [
-    exp for exp in all_experiments() if exp.experiment_type=="activity"
+    exp for exp in all_experiments() if exp.experiment_type.startswith("a")
 ]
 
 if False:  # get the experiments
@@ -31,19 +32,27 @@ if False:  # get the experiments
         print("close the plot when ready to enter tspan_bg")
         plt.show()
         tspan_bg_str = input("enter tspan_bg as two numbers separated by a comma.")
-        tspan_bg = [float(t_str) for t_str in tspan_bg_str.split(",")] \
-            if tspan_bg_str else None
+        tspan_bg = (
+            [float(t_str) for t_str in tspan_bg_str.split(",")]
+            if tspan_bg_str
+            else None
+        )
         m.plot_experiment()
         print("close the plot when ready to enter tspan_F")
         plt.show()
         tspan_F_str = input("enter tspan_F as two numbers separated by a comma.")
-        tspan_F = [float(t_str) for t_str in tspan_F_str.split(",")] if tspan_F_str else None
+        tspan_F = (
+            [float(t_str) for t_str in tspan_F_str.split(",")] if tspan_F_str else None
+        )
         m.plot_experiment()
         print("close the plot when ready to enter tspan_cap")
         plt.show()
         tspan_cap_str = input("enter tspan_cap as two numbers separated by a comma.")
-        tspan_cap = [float(t_str) for t_str in tspan_cap_str.split(",")] \
-            if tspan_F_str else None
+        tspan_cap = (
+            [float(t_str) for t_str in tspan_cap_str.split(",")]
+            if tspan_F_str
+            else None
+        )
         exp = ActExperiment(
             m_id=m.id,
             experiment_type="activity",
@@ -58,33 +67,68 @@ if False:  # get the experiments
             V_DL=None,
         )
         exp.save()
+        defined_experiments.append(exp)
 else:  # just use the loaded experiments
     pass
 
-if True:  # get the TOFs
+if True:  # save the tspan_cap's!!! And sub-category and tspan_plot, forgotten above.
     for exp in defined_experiments:
-        exp.plot_experiment()
-        print(f"close the plot of {exp} when ready to enter tspan_plot and category")
+        exp.measurement.print_notes()
+        exp.plot_experiment(tspan="all")
+        print(
+            f"close the plot of '{exp}' (notes above) when ready to enter tspan_cap.\n"
+            f"defaults to: {exp.tspan_cap}"
+        )
         plt.show()
-        answer = input("enter tspan plot as two numbers separated by a comma "
-                       "(defaults to what you see)")
+        answer = input("enter tspan_cap as two numbers separated by a comma.")
+        if answer:
+            tspan_cap = [float(t) for t in answer.split(",")] if answer else None
+            exp.tspan_cap = tspan_cap
+        exp.plot_experiment(tspan="all")
+        print(
+            f"close the plot of '{exp}' when ready to enter tspan_plot.\n"
+            f"Defaults to: {exp.tspan_plot}"
+        )
+        plt.show()
+        answer = input(
+            "enter tspan plot as two numbers separated by a comma "
+            "(defaults to what you see)"
+        )
         if answer:
             tspan_plot = [float(t) for t in answer.split(",")]
             exp.tspan_plot = tspan_plot
-        answer = input(f"enter the experiment_type of {exp} (defaults to `activity`)")
-        if answer:
+        exp.plot_experiment()
+        print(EXPERIMENT_TAGS)
+        print("Close plot when ready to enter experiment category (see above).")
+        plt.show()
+        answer = input(
+            f"Enter the experiment_type of '{exp}'.\n"
+            f"Defaults to: {exp.experiment_type}\n"
+            f"Should start with 'a'!!! Additional tag components above."
+        )
+        if answer and answer.startswith("a"):
             exp.experiment_type = answer
         exp.save()
+
+
+if False:  # get the TOFs
+    for exp in defined_experiments:
+        exp.measurement.print_notes()
         answer = 1
         while answer:
             exp.plot_experiment()
-            print("close the plot when ready to enter a TOF tspan (or blank to go on).")
+            print(
+                f"close the plot of {exp} when ready to enter a TOF tspan "
+                f"(or blank to go on)."
+            )
             plt.show()
             answer = input("Enter a tspan for a TOF or blank to go to next measurement")
             if answer:
                 tspan_tof = [float(t) for t in answer.split(",")]
                 tof = TurnOverFrequency(
-                    tof_type="activity", e_id=exp.id, tspan=tspan_tof,
+                    tof_type="activity",
+                    e_id=exp.id,
+                    tspan=tspan_tof,
                 )
                 tof.calc_rate()
                 tof.calc_tof()

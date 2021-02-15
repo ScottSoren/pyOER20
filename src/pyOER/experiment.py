@@ -161,6 +161,7 @@ class Experiment:
         self._cap = None
         self._icpms_points = None
         self.id = e_id or ExperimentCounter().id
+        self.default_masses = ["M32", "M34", "M36"]
         self.extra_stuff = kwargs
 
     def as_dict(self):
@@ -170,6 +171,7 @@ class Experiment:
             tspan_plot=self.tspan_plot,
             tspan_bg=self.tspan_bg,
             tspan_F=self.tspan_F,
+            tspan_cap=self.tspan_cap,
             tspan_alpha=self.tspan_alpha,
             F=self.F_0,
             alpha=self.alpha_0,
@@ -197,7 +199,7 @@ class Experiment:
             }
         experiment_class = cls
         if "experiment_type" in self_as_dict:
-            if self_as_dict["experiment_type"] == "activity":
+            if self_as_dict["experiment_type"].startswith("a"):
                 experiment_class = ActExperiment
             elif self_as_dict["experiment_type"] in STANDARD_EXPERIMENT_TAGS:
                 experiment_class = StandardExperiment
@@ -306,13 +308,16 @@ class Experiment:
         if not self._F:
             if self.tspan_F:
                 F = 0
-                for mass in ["M32", "M34", "M36"]:
-                    F += self.dataset.point_calibration(
-                        mol="O2",
-                        mass=mass,
-                        n_el=4,
-                        tspan=self.tspan_F,
-                    ).F_cal
+                for mass in self.default_masses:
+                    try:
+                        F += self.dataset.point_calibration(
+                            mol="O2",
+                            mass=mass,
+                            n_el=4,
+                            tspan=self.tspan_F,
+                        ).F_cal
+                    except KeyError:
+                        continue
             elif self.F_0:
                 F = self.F_0
             else:
@@ -583,6 +588,10 @@ class ActExperiment(Experiment):
         )
         if self.tspan_F:
             self.dataset.plot_flux(
-                mols=mols, tspan=self.tspan_F, ax=axes[0], alpha_under=0.2, unit=unit,
+                mols=mols,
+                tspan=self.tspan_F,
+                ax=axes[0],
+                alpha_under=0.2,
+                unit=unit,
                 logplot=False,
             )

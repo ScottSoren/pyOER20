@@ -22,6 +22,13 @@ EXPERIMENT_TAGS = {
     "n": "not systematic at all.",
     "d": "duplicate",
     "b": "broken",  # something is wrong with the file
+    "a": "activity",
+    "m": "missing (start, CV's) for activity",
+    "t": "short (truncated) activity",
+    "o": "oxygen-saturated activity",
+    "l": "long-term (overnight) activity",
+    "16": "in un-labeled (H2(16)O) electrolyte",
+    "18": "in labeled (H2(18)O) electrolyte",
     "q": "[Quit and save progress]",
 }
 STANDARD_EXPERIMENT_TAGS = ["y", "k", "s", "c"]

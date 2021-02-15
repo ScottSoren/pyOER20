@@ -1,7 +1,10 @@
 {
     "m_id": 27,
-    "experiment_type": "activity",
-    "tspan_plot": null,
+    "experiment_type": "a18",
+    "tspan_plot": [
+        1100.0,
+        5500.0
+    ],
     "tspan_bg": [
         5400.0,
         5500.0
@@ -9,6 +12,10 @@
     "tspan_F": [
         3150.0,
         3200.0
+    ],
+    "tspan_cap": [
+        800.0,
+        1100.0
     ],
     "tspan_alpha": [
         3150.0,
