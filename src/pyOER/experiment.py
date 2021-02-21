@@ -55,6 +55,20 @@ def all_standard_experiments(experiment_dir=EXPERIMENT_DIR):
         else:
             yield standard_experiment
 
+def all_activity_experiments(experiment_dir=EXPERIMENT_DIR):
+    N_experiments = ExperimentCounter().last()
+    for n in range(1, N_experiments):
+        try:
+            activity_experiment = ActExperiment.open(
+                n, experiment_dir=experiment_dir
+            )
+            if not activity_experiment.experiment_type.startswith("a"):
+                raise TypeError("wrong type of experiment.")
+        except (FileNotFoundError, TypeError) as e:
+            print(f"itermeasurement skipping {n} due to error = \n{e}")
+        else:
+            yield activity_experiment
+
 
 @singleton_decorator
 class ExperimentCounter(CounterWithFile):
@@ -614,3 +628,4 @@ class ActExperiment(Experiment):
                 unit=unit,
                 logplot=False,
             )
+        return axes
