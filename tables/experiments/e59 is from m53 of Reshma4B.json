@@ -1,7 +1,10 @@
 {
     "m_id": 53,
-    "experiment_type": "a18",
-    "tspan_plot": null,
+    "experiment_type": "ao18",
+    "tspan_plot": [
+        1025,
+        3150
+    ],
     "tspan_bg": [
         1750.0,
         1800.0
