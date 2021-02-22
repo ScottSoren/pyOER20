@@ -115,7 +115,7 @@ if False:  # save the tspan_cap's!!! And sub-category and tspan_plot, forgotten 
 
 if True:  # get the TOFs
     for exp in defined_experiments:
-        if exp.id < 70:
+        if exp.id < 72:
             continue
         exp.measurement.print_notes()
         answer = 1

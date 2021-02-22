@@ -2,7 +2,9 @@
     "setup": "ECMS",
     "number": "172",
     "date": "19B12",
-    "field_data": null,
+    "field_data": {
+        "RE_vs_RHE": "0.715"
+    },
     "sample_measurements": {
         "Reshma4": [
             133,
