@@ -1,5 +1,8 @@
 {
     "tof_type": "dissolution",
+    "rate": 3.365886273154193e-12,
+    "tof": null,
+    "potential": null,
     "e_id": 33,
     "tspan": [
         540.0,

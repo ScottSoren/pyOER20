@@ -10,7 +10,14 @@ from .experiment import open_experiment
 def calc_OER_rate(experiment, tspan):
     """Return the total average flux of O2 in [mol/s] in the experiment over tspan"""
     rate = 0
-    for mol in "O2_M32", "O2_M34", "O2_M36":
+    if "18" in (experiment.measurement.isotope or ""):
+        mol_list = ["O2_M34", "O2_M36"]
+    elif "16" in (experiment.measurement.isotope or ""):
+        mol_list = ["O2_M32"]
+    else:
+        print(f"The electrolyte isotope for '{experiment}' is not known!")
+        mol_list = ["O2_M32", "O2_M34", "O2_M36"]
+    for mol in mol_list:
         x, y = experiment.calc_flux(mol, tspan=tspan, unit="mol/s")
         rate += np.mean(y)
 

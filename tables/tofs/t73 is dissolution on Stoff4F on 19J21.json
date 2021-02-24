@@ -1,5 +1,8 @@
 {
     "tof_type": "dissolution",
+    "rate": Infinity,
+    "tof": null,
+    "potential": null,
     "e_id": 22,
     "tspan": [
         500.0,
