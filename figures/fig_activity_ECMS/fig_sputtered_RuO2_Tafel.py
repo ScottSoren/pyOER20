@@ -2,7 +2,7 @@ import re
 from pyOER.tof import all_tofs
 from matplotlib import pyplot as plt
 
-colors = {   # from Reshma's Figure 1.
+colors = {  # from Reshma's Figure 1.
     "1": "#54bdebff",
     "2": "#308ab2ff",
     "3": "#2e7094ff",
@@ -11,10 +11,7 @@ colors = {   # from Reshma's Figure 1.
 }
 colors_soren = {"1": "k", "2": "b", "3": "g", "4": "r"}
 # colors = colors_soren
-markers = {
-    "16": "o",
-    "18": "s"
-}
+markers = {"16": "o", "18": "s"}
 number_finder = "([0-4])"
 
 fig1, ax1 = plt.subplots()

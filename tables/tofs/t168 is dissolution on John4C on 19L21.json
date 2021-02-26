@@ -3,6 +3,7 @@
     "rate": 1.820483250758121e-13,
     "tof": null,
     "potential": null,
+    "current": null,
     "e_id": 36,
     "tspan": [
         640.0,

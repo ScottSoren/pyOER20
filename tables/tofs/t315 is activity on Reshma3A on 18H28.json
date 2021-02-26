@@ -3,6 +3,7 @@
     "rate": NaN,
     "tof": NaN,
     "potential": NaN,
+    "current": NaN,
     "e_id": 48,
     "tspan": [
         3325,

@@ -3,6 +3,7 @@
     "rate": Infinity,
     "tof": null,
     "potential": null,
+    "current": null,
     "e_id": 22,
     "tspan": [
         300.0,

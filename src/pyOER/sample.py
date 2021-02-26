@@ -2,7 +2,7 @@
 
 import json
 
-from .constants import SAMPLE_DIR
+from .constants import SAMPLE_DIR, STANDARD_SITE_DENSITY, STANDARD_SPECIFIC_CAPACITANCE
 from .measurement import Measurement, all_measurements
 
 SAMPLE_TYPES = {
@@ -108,12 +108,12 @@ class Sample:
     @property
     def site_density(self):
         """Density of sites in mol/cm^2. TODO: module dictionary with elements"""
-        return 166e-12  # 1 site/nm^2 in mol/cm^2
+        return STANDARD_SITE_DENSITY  # 1 site/nm^2 in mol/cm^2
 
     @property
     def specific_capacitance(self):
         """Specific capacitance in Farad/cm^2. TODO: module dictionary with elements"""
-        return 200e-6
+        return STANDARD_SPECIFIC_CAPACITANCE
 
     @property
     def oxide_type(self):

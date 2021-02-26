@@ -23,10 +23,12 @@ from .constants import (
     EXPERIMENT_ID_FILE,
     STANDARD_ALPHA,
     STANDARD_EXPERIMENT_TAGS,
+    FARADAYS_CONSTANT
 )
 from .tools import singleton_decorator, CounterWithFile
 from .measurement import Measurement
 from .calibration import CalibrationSeries
+from .calc import calc_current
 
 calibration_series = CalibrationSeries.load()
 
@@ -87,14 +89,7 @@ def open_experiment(e_id, experiment_dir=EXPERIMENT_DIR):
         )
     except StopIteration:
         raise FileNotFoundError(f"no standard experiment with id = e{e_id}")
-    with open(path_to_file, "r") as f:
-        e_as_dict = json.load(f)
-    e_type = e_as_dict["experiment_type"]
-    if e_type in STANDARD_EXPERIMENT_TAGS:
-        cls = StandardExperiment
-    else:
-        cls = Experiment
-    return cls(**e_as_dict)
+    return Experiment.open(e_id)
 
 
 class Experiment:
@@ -117,6 +112,7 @@ class Experiment:
         alpha=None,
         cap=None,
         tspan_bg=None,
+        tspan_bg_current=None,
         tspan_F=None,
         tspan_alpha=None,
         tspan_cap=None,
@@ -160,6 +156,7 @@ class Experiment:
         self._dataset = None
         self.tspan_plot = tspan_plot
         self.tspan_bg = tspan_bg
+        self.tspan_bg_current = tspan_bg_current
         self.tspan_F = tspan_F
         self.F_0 = F  # for saving, so that if no F is given and the CalibrationSeries
         # is updated, the updated CalibrationSeries will determine F upon loading.
@@ -185,6 +182,7 @@ class Experiment:
             experiment_type=self.experiment_type,
             tspan_plot=self.tspan_plot,
             tspan_bg=self.tspan_bg,
+            tspan_bg_current=self.tspan_bg_current,
             tspan_F=self.tspan_F,
             tspan_cap=self.tspan_cap,
             tspan_alpha=self.tspan_alpha,
@@ -240,6 +238,8 @@ class Experiment:
                 RE_vs_RHE=self.measurement.RE_vs_RHE,
                 A_el=0.196,
             )
+            # if self.measurement.R_ohm:
+            #     dataset.correct_ohmic_drop(self.measurement.R_Ohm)
             if self.tspan_bg:
                 dataset.set_background(self.tspan_bg)
             self._dataset = dataset
@@ -273,6 +273,21 @@ class Experiment:
         from .tof import all_tofs
 
         self._tofs = [tof for tof in all_tofs() if tof.e_id == self.id]
+
+    @property
+    def mol_list(self):
+        return [f"O2_{mass}" for mass in self.mass_list]
+
+    @property
+    def mass_list(self):
+        if "18" in (self.measurement.isotope or ""):
+            mass_list = ["M34", "M36"]
+        elif "16" in (self.measurement.isotope or ""):
+            mass_list = ["M32"]
+        else:
+            print(f"The electrolyte isotope for '{self}' is not known!")
+            mass_list = ["M32", "M34", "M36"]
+        return mass_list
 
     @property
     def tof_sets(self):
@@ -328,14 +343,14 @@ class Experiment:
         if not self._F:
             if self.tspan_F:
                 F = 0
-                for mass in self.default_masses:
+                for mass in self.mass_list:
                     try:
-                        F += self.dataset.point_calibration(
-                            mol="O2",
-                            mass=mass,
-                            n_el=4,
-                            tspan=self.tspan_F,
-                        ).F_cal
+                        x, y = self.dataset.get_signal(
+                            mass, tspan=self.tspan_F, unit="A"
+                        )
+                        I = calc_current(self, tspan=self.tspan_F)
+                        F_M = np.mean(y) / (I / (4 * FARADAYS_CONSTANT))
+                        F += F_M
                     except KeyError:
                         continue
             elif self.F_0:
@@ -359,6 +374,13 @@ class Experiment:
         """Return the flux for a calibrated mol (a key to self.mdict)"""
         m = self.mdict[mol]
         return self.dataset.get_flux(m, tspan=tspan, **kwargs)
+
+    def calc_background_current(self):
+        cap_cv = self.measurement.dataset.cut(self.tspan_cap).as_cv()
+        t, J = cap_cv.get_capacitance(V_DL=self.V_DL, out=["t", "J"])
+        J_bg = np.mean(J)
+        I_bg = J_bg * self.dataset.A_el * 1e-3
+        return I_bg
 
 
 class StandardExperiment(Experiment):
@@ -629,3 +651,61 @@ class ActExperiment(Experiment):
                 logplot=False,
             )
         return axes
+
+    def plot_faradaic_efficiency(
+            self, axes=None, offset=0, width=0.005, alpha=0.5, cutoff=1.33,
+    ):
+        if not axes:
+            fig, ax1 = plt.subplots()
+            ax2 = ax1.twinx()
+            ax1.set_xlabel(self.measurement.dataset.V_str)
+            ax1.set_ylabel("Faradaic efficiency / [%]")
+            ax2.set_ylabel(self.measurement.dataset.J_str)
+        else:
+            ax1, ax2 = axes
+
+        mol_list = self.mol_list
+
+        currents = {}
+        FEs = {}
+        for tof in self.tofs:
+            potential = np.round(tof.potential, decimals=2)
+            if potential < cutoff:
+                continue
+            if potential not in currents:
+                currents[potential] = []
+                FEs[potential] = {mol: [] for mol in mol_list}
+            currents[potential].append(tof.current)
+            for mol in mol_list:
+                FEs[potential][mol].append(
+                    tof.calc_faradaic_efficiency(mol=mol) * 100
+                )
+
+        for potential, current_list in currents.items():
+            current_density = np.mean(current_list) * 1e3 / self.measurement.dataset.A_el
+            ax2.plot(potential, current_density, "ko")
+            cum_FE = 0
+            for mol, FE_list in FEs[potential].items():
+                color = self.mdict[mol].get_color()
+                FE = np.mean(FE_list)
+                if len(FE_list)>1:
+                    FE_std = np.std(FE_list)
+                    ax1.plot(
+                        [potential+offset, potential+offset],
+                        [FE + cum_FE - FE_std, FE + cum_FE + FE_std],
+                        marker="_", color=color
+                    )
+                ax1.bar(
+                    potential + offset, FE, bottom=cum_FE, width=width,
+                    color=color, alpha=alpha
+                )
+                cum_FE += FE
+        ax1.set_ylim(bottom=0)
+        ax2.set_ylim(bottom=0)
+        xlim = ax1.get_xlim()
+        ax1.plot(ax1.get_xlim(), [100, 100], "k--", alpha=0.5)
+        ax1.set_xlim(xlim)
+        return [ax1, ax2]
+
+
+
