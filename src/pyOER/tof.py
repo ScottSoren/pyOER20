@@ -3,8 +3,13 @@ from pathlib import Path
 import json
 import numpy as np
 
-from .calc import calc_OER_rate, calc_dissolution_rate, calc_exchange_rate, \
-    calc_potential, calc_current
+from .calc import (
+    calc_OER_rate,
+    calc_dissolution_rate,
+    calc_exchange_rate,
+    calc_potential,
+    calc_current,
+)
 from .tools import singleton_decorator, CounterWithFile
 from .constants import TOF_DIR, TOF_ID_FILE, FARADAYS_CONSTANT
 from .experiment import open_experiment

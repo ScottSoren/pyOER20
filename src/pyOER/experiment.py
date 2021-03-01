@@ -23,7 +23,7 @@ from .constants import (
     EXPERIMENT_ID_FILE,
     STANDARD_ALPHA,
     STANDARD_EXPERIMENT_TAGS,
-    FARADAYS_CONSTANT
+    FARADAYS_CONSTANT,
 )
 from .tools import singleton_decorator, CounterWithFile
 from .measurement import Measurement
@@ -57,13 +57,12 @@ def all_standard_experiments(experiment_dir=EXPERIMENT_DIR):
         else:
             yield standard_experiment
 
+
 def all_activity_experiments(experiment_dir=EXPERIMENT_DIR):
     N_experiments = ExperimentCounter().last()
     for n in range(1, N_experiments):
         try:
-            activity_experiment = ActExperiment.open(
-                n, experiment_dir=experiment_dir
-            )
+            activity_experiment = ActExperiment.open(n, experiment_dir=experiment_dir)
             if not activity_experiment.experiment_type.startswith("a"):
                 raise TypeError("wrong type of experiment.")
         except (FileNotFoundError, TypeError) as e:
@@ -238,8 +237,8 @@ class Experiment:
                 RE_vs_RHE=self.measurement.RE_vs_RHE,
                 A_el=0.196,
             )
-            # if self.measurement.R_ohm:
-            #     dataset.correct_ohmic_drop(self.measurement.R_Ohm)
+            if self.measurement.R_Ohm:
+                dataset.correct_ohmic_drop(self.measurement.R_Ohm)
             if self.tspan_bg:
                 dataset.set_background(self.tspan_bg)
             self._dataset = dataset
@@ -308,7 +307,7 @@ class Experiment:
     def cap(self):
         """Capacitance in Farads"""
         if not self._cap:
-            cap_cv = self.measurement.dataset.cut(self.tspan_cap).as_cv()
+            cap_cv = self.dataset.cut(self.tspan_cap).as_cv()
             self._cap = cap_cv.get_capacitance(V_DL=self.V_DL) * self.dataset.A_el
             # Farad/cm^2 * cm^2
         return self._cap
@@ -376,11 +375,20 @@ class Experiment:
         return self.dataset.get_flux(m, tspan=tspan, **kwargs)
 
     def calc_background_current(self):
-        cap_cv = self.measurement.dataset.cut(self.tspan_cap).as_cv()
+        cap_cv = self.dataset.cut(self.tspan_cap).as_cv()
         t, J = cap_cv.get_capacitance(V_DL=self.V_DL, out=["t", "J"])
         J_bg = np.mean(J)
         I_bg = J_bg * self.dataset.A_el * 1e-3
         return I_bg
+
+    def correct_current(self):
+        I_bg = self.calc_background_current()
+        I_str = self.dataset.I_str
+        J_str = self.dataset.J_str
+        A_el = self.dataset.data["A_el"]
+        print(f"subtracting {I_bg * 1e3 * A_el} from '{J_str}'")
+        self.dataset.data[I_str] = self.dataset.data[I_str] - I_bg * 1e3
+        self.dataset.data[J_str] = self.dataset.data[J_str] - I_bg * 1e3 / A_el
 
 
 class StandardExperiment(Experiment):
@@ -622,45 +630,51 @@ class StandardExperiment(Experiment):
 class ActExperiment(Experiment):
     """Activity experiment. Doesn't actually need anything extra. Info in the TOFs."""
 
-    def plot_experiment(self, tspan=None, unit="pmol/s/cm^2"):
+    def plot_experiment(self, tspan=None, unit="pmol/s/cm^2", highlights=True):
         tspan = tspan or self.tspan_plot
         mols = list(self.mdict.values())
         axes = self.dataset.plot_experiment(
             mols=mols, tspan=tspan, unit=unit, logplot=False
         )
-        if self.tspan_F:
-            self.dataset.plot_flux(
-                mols=mols,
-                tspan=self.tspan_F,
-                ax=axes[0],
-                alpha_under=0.3,
-                unit=unit,
-                logplot=False,
-            )
-        if self.tspan_cap and (tspan == "all" or not tspan):
-            cap_cv = self.measurement.dataset.cut(self.tspan_cap).as_cv()
-            t, J = cap_cv.get_capacitance(V_DL=self.V_DL, out=["t", "J"])
-            axes[2].fill_between(t, J, np.zeros(t.shape), color="0.5", alpha=0.3)
-        for tof in self.tofs:
-            self.dataset.plot_flux(
-                mols=mols,
-                tspan=tof.tspan,
-                ax=axes[0],
-                alpha_under=0.15,
-                unit=unit,
-                logplot=False,
-            )
+        if highlights:
+            if self.tspan_F:
+                self.dataset.plot_flux(
+                    mols=mols,
+                    tspan=self.tspan_F,
+                    ax=axes[0],
+                    alpha_under=0.3,
+                    unit=unit,
+                    logplot=False,
+                )
+            if self.tspan_cap and (tspan == "all" or not tspan):
+                cap_cv = self.dataset.cut(self.tspan_cap).as_cv()
+                t, J = cap_cv.get_capacitance(V_DL=self.V_DL, out=["t", "J"])
+                axes[2].fill_between(t, J, np.zeros(t.shape), color="0.5", alpha=0.3)
+            for tof in self.tofs:
+                self.dataset.plot_flux(
+                    mols=mols,
+                    tspan=tof.tspan,
+                    ax=axes[0],
+                    alpha_under=0.15,
+                    unit=unit,
+                    logplot=False,
+                )
         return axes
 
     def plot_faradaic_efficiency(
-            self, axes=None, offset=0, width=0.005, alpha=0.5, cutoff=1.33,
+        self,
+        axes=None,
+        offset=0,
+        width=0.005,
+        alpha=0.5,
+        cutoff=1.33,
     ):
         if not axes:
             fig, ax1 = plt.subplots()
             ax2 = ax1.twinx()
-            ax1.set_xlabel(self.measurement.dataset.V_str)
+            ax1.set_xlabel(self.dataset.V_str)
             ax1.set_ylabel("Faradaic efficiency / [%]")
-            ax2.set_ylabel(self.measurement.dataset.J_str)
+            ax2.set_ylabel(self.dataset.J_str)
         else:
             ax1, ax2 = axes
 
@@ -677,27 +691,30 @@ class ActExperiment(Experiment):
                 FEs[potential] = {mol: [] for mol in mol_list}
             currents[potential].append(tof.current)
             for mol in mol_list:
-                FEs[potential][mol].append(
-                    tof.calc_faradaic_efficiency(mol=mol) * 100
-                )
+                FEs[potential][mol].append(tof.calc_faradaic_efficiency(mol=mol) * 100)
 
         for potential, current_list in currents.items():
-            current_density = np.mean(current_list) * 1e3 / self.measurement.dataset.A_el
+            current_density = np.mean(current_list) * 1e3 / self.dataset.A_el
             ax2.plot(potential, current_density, "ko")
             cum_FE = 0
             for mol, FE_list in FEs[potential].items():
                 color = self.mdict[mol].get_color()
                 FE = np.mean(FE_list)
-                if len(FE_list)>1:
+                if len(FE_list) > 1:
                     FE_std = np.std(FE_list)
                     ax1.plot(
-                        [potential+offset, potential+offset],
+                        [potential + offset, potential + offset],
                         [FE + cum_FE - FE_std, FE + cum_FE + FE_std],
-                        marker="_", color=color
+                        marker="_",
+                        color=color,
                     )
                 ax1.bar(
-                    potential + offset, FE, bottom=cum_FE, width=width,
-                    color=color, alpha=alpha
+                    potential + offset,
+                    FE,
+                    bottom=cum_FE,
+                    width=width,
+                    color=color,
+                    alpha=alpha,
                 )
                 cum_FE += FE
         ax1.set_ylim(bottom=0)
@@ -706,6 +723,3 @@ class ActExperiment(Experiment):
         ax1.plot(ax1.get_xlim(), [100, 100], "k--", alpha=0.5)
         ax1.set_xlim(xlim)
         return [ax1, ax2]
-
-
-

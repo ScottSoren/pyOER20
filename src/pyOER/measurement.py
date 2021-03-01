@@ -315,6 +315,22 @@ class Measurement:
             RE_vs_RHE = float(re.search(FLOAT_MATCH, RE_vs_RHE_str).group())
         return RE_vs_RHE
 
+    @property
+    def R_Ohm(self):
+        try:
+            R_ohm_str = self.elog.field_data["Resistor"]
+            if R_ohm_str == "":
+                raise KeyError
+        except AttributeError:
+            print(f"WARNING!!! Measurement '{self}' has no elog :(")
+            R_ohm = None
+        except (KeyError, TypeError):
+            print(f"WARNING!!! No R_ohm in ({self.elog}), the elog for '{self}'")
+            R_ohm = None
+        else:
+            R_ohm = float(re.search(FLOAT_MATCH, R_ohm_str).group())
+        return R_ohm
+
     def get_icpms_points(self):
         """Return a list of ICPMSPoints from the measurement"""
         from .icpms import all_icpms_points
