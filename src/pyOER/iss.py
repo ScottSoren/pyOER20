@@ -136,7 +136,7 @@ Set to None for certain effect."""
         print('load_set ', iss_dict)
         return iss_dict
 
-    def plot(self, selection=[], show=True):
+    def plot(self, selection=[], mass_lines=[], show=True):
         """Plot selected spectra.
 'selection' must be a list of keys matching 'iss_dict' returned by self.load_set"""
         import matplotlib.pyplot as plt
@@ -144,6 +144,8 @@ Set to None for certain effect."""
             selection = self.keys
         plt.figure('iss autoplot')
         self.labels
+        if len(mass_lines) > 0:
+            self._active[0].AddMassLines(mass_lines, color='gray', labels=False)
         for key in selection:
             data = self._active[key]
             plt.plot(data.x, data.y, label=f'{key} - {data.sample}')
@@ -355,6 +357,7 @@ ref[peak1]['area'] / coeffs[selected][peak2] / ref[peak2]['area']
         for i in self.keys:
             # Skip bad data
             if self._active[i].good is False:
+                counter += 1
                 continue
             # Plot good data
             plt.plot(counter, self.fit_ratios[i]['16']*100, 'o', color=colors[0])
@@ -396,7 +399,7 @@ ref[peak1]['area'] / coeffs[selected][peak2] / ref[peak2]['area']
         if show_plot is True:
             plt.show()
 
-    def plot_fit(self, index=0):
+    def plot_fit(self, index=0, labels=True):
         """Visually verify the automatic fit to reference data"""
 
         # Make sure references have been fitted
@@ -425,9 +428,12 @@ ref[peak1]['area'] / coeffs[selected][peak2] / ref[peak2]['area']
         # Individual components
         plt.plot(self._ref[setup][16]['xy'][:, 0], ref1*self.fit_coeffs[index][16], 'r-', label='O-16 component')
         plt.plot(self._ref[setup][18]['xy'][:, 0], ref2*self.fit_coeffs[index][18], 'g-', label='O-18 component')
-        self._active[index].AddMassLines([16, 18, 101])
+        self._active[index].AddMassLines([16, 18, 101], labels=labels)
 
         # Show
+        plt.title(self._active[index].sample)
+        plt.xlabel('Energy (eV)')
+        plt.ylabel('Counts per second')
         plt.legend()
         plt.show()
 
