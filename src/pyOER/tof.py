@@ -2,77 +2,17 @@
 from pathlib import Path
 import json
 import numpy as np
+
+from .calc import (
+    calc_OER_rate,
+    calc_dissolution_rate,
+    calc_exchange_rate,
+    calc_potential,
+    calc_current,
+)
 from .tools import singleton_decorator, CounterWithFile
-from .constants import TOF_DIR, TOF_ID_FILE
+from .constants import TOF_DIR, TOF_ID_FILE, FARADAYS_CONSTANT
 from .experiment import open_experiment
-
-
-def calc_OER_rate(experiment, tspan):
-    """Return the total average flux of O2 in [mol/s] in the experiment over tspan"""
-    rate = 0
-    for mol in "O2_M32", "O2_M34", "O2_M36":
-        x, y = experiment.calc_flux(mol, tspan=tspan, unit="mol/s")
-        rate += np.mean(y)
-
-    return rate
-
-
-def calc_dissolution_rate(experiment, tspan, t_electrolysis=None):
-    """Return the average dissolution rate during tspan in [mol/s]
-
-    Args:
-        experiment (StandardExperiment): the standard experiment
-        tspan (timespan): The time interval for which to get average dissolution rate
-        t_electrolysis (float): if given, then assume dissolution only occurs over that
-            length of time. I.e., divide the icpms_point amount by t_electrolysis.
-    """
-    t_vec, n_vec = experiment.get_dissolution_points()
-
-    i_before = int(np.argmax(t_vec > tspan[0])) - 1
-    i_after = int(np.argmax(t_vec > tspan[-1]))
-
-    t_interval = tspan[-1] - tspan[0]
-    if t_electrolysis:
-        if i_after > i_before + 1:
-            raise TypeError(
-                f"Can't adjust '{experiment}' at tspan={tspan} for t_electrolysis"
-                f"because the experiment has icpms samples taken during tspan"
-            )
-        n_during_interval = n_vec[i_after] * t_interval / t_electrolysis
-    else:
-        if i_after > i_before + 1:
-            n_during_interval = (
-                n_vec[i_before + 1]
-                * (t_vec[i_before + 1] - tspan[0])
-                / (t_vec[i_before + 1] - t_vec[i_before])
-            )
-            for i in range(i_before + 2, i_after):
-                n_during_interval += n_vec[i]
-            n_during_interval += (
-                n_vec[i_after]
-                * (tspan[-1] - t_vec[i_after - 1])
-                / (t_vec[i_after] - t_vec[i_after - 1])
-            )
-        else:
-            n_during_interval = (
-                n_vec[i_after] * t_interval / (t_vec[i_after] - t_vec[i_after - 1])
-            )
-
-    return n_during_interval / t_interval
-
-
-def calc_exchange_rate(experiment, tspan):
-    """Return the average rate of lattice O incorporation in O2 in [mol/s] over tspan"""
-    beta = experiment.beta
-    x_32, y_32 = experiment.calc_flux("O2_M32", tspan=tspan, unit="mol/s")
-    x_34, y_34 = experiment.calc_flux("O2_M34", tspan=tspan, unit="mol/s")
-    return np.mean(y_34) - np.mean(y_32) * beta
-
-
-def calc_potential(experiment, tspan):
-    """Return the average potential vs RHE in [V] during the experiment over tspan"""
-    t, U = experiment.dataset.get_potential(tspan=tspan)
-    return np.mean(U)
 
 
 @singleton_decorator
@@ -107,7 +47,8 @@ def all_tof_sets(tof_dir=TOF_DIR):
 
 class TurnOverSet:
     def __init__(
-        self, t_ids=None,
+        self,
+        t_ids=None,
     ):
         """Initiate a set of turn-over-frequencies taken from one point in an experiment
 
@@ -156,6 +97,9 @@ class TurnOverSet:
     def __getitem__(self, item):
         return self.get_tof(item)
 
+    def __iter__(self):
+        yield from self._tofs.values()
+
     def __getattr__(self, item):
         try:
             return self.get_tof(item)
@@ -171,10 +115,30 @@ class TurnOverSet:
         return self.experiment.sample_name
 
 
+class TOFCollection:
+    """A group of turnoverfrequencies"""
+
+    def __init__(self, tof_list=None):
+        self.tof_list = tof_list
+
+    def __iter__(self):
+        yield from self.tof_list
+
+    def mean_rate(self):
+        return np.mean(np.array([tof.rate for tof in self]))
+
+    def std(self):
+        return np.mean(np.array([tof.rate for tof in self]))
+
+
 class TurnOverFrequency:
     def __init__(
         self,
         tof_type=None,
+        rate=None,
+        tof=None,
+        current=None,
+        potential=None,
         e_id=None,
         experiment=None,
         tspan=None,
@@ -182,7 +146,6 @@ class TurnOverFrequency:
         rate_calc_kwargs=None,
         description=None,
         t_id=None,
-        rate=None,
         amount=None,
     ):
         """Iinitiate a TurnOverFrequency
@@ -190,6 +153,7 @@ class TurnOverFrequency:
         Args:
             tof_type (str): The type of TOF. Options are 'activity', 'exchange', and
                 'dissolution'.
+            rate (float): The un-normalized rate, if known, in [mol/s]
             e_id (int): The id of the associated experiment
             experiment (Experiment): optionally, the Experiment itself can be given to
                 save time.
@@ -204,7 +168,10 @@ class TurnOverFrequency:
         self.tspan = tspan
         self.r_id = r_id
         self._experiment = experiment
-        self._potential = None
+        self._rate = rate
+        self._tof = tof
+        self._potential = potential
+        self._current = current
         self.description = description
         self.rate_calc_kwargs = rate_calc_kwargs or {}
         self.id = t_id or TOFCounter().id
@@ -215,6 +182,10 @@ class TurnOverFrequency:
         """The dictionary represnetation of the TOF's metadata"""
         return dict(
             tof_type=self.tof_type,
+            rate=self._rate,  # result!
+            tof=self._tof,  # result!
+            potential=self._potential,  # result!
+            current=self._current,  # result!
             e_id=self.e_id,
             tspan=self.tspan,
             r_id=self.r_id,
@@ -222,7 +193,6 @@ class TurnOverFrequency:
             description=self.description,
             t_id=self.id,
             amount=self._amount,
-            rate=self._rate,
         )
 
     def save(self):
@@ -321,6 +291,20 @@ class TurnOverFrequency:
             self.calc_rate()
         return self._rate
 
+    def calc_tof(self):
+        self._tof = self.rate / self.experiment.n_sites
+        return self._tof
+
+    @property
+    def tof(self):
+        if not self._tof:
+            self.calc_tof()
+        return self._tof
+
+    def calc_potential(self):
+        self._potential = calc_potential(self.experiment, self.tspan)
+        return self._potential
+
     @property
     def amount(self):
         """The rate (activity, dissolution, or exchange) in [mol]"""
@@ -332,5 +316,21 @@ class TurnOverFrequency:
     def potential(self):
         """The potential vs RHE in [V]"""
         if not self._potential:
-            self._potential = calc_potential(self.experiment, self.tspan)
+            self.calc_potential()
         return self._potential
+
+    def calc_current(self):
+        self._current = calc_current(self.experiment, self.tspan)
+        return self._current
+
+    @property
+    def current(self):
+        """The potential vs RHE in [V]"""
+        if not self._current:
+            self.calc_current()
+        return self._current
+
+    def calc_faradaic_efficiency(self, n_el=4, mol=None):
+        rate = self.calc_rate(mol=mol) if mol else self.rate
+        FE = rate * n_el * FARADAYS_CONSTANT / self.current
+        return FE

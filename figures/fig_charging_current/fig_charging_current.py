@@ -53,7 +53,10 @@ for name, spec in data_specs.items():
     I = I * 1e6 / A_el  # A to uA/cm^2
 
     ax = subset.plot_experiment(
-        mols=[[], [O2]], unit="pmol/s/cm^2", plotcurrent=False, logplot=False,
+        mols=[[], [O2]],
+        unit="pmol/s/cm^2",
+        plotcurrent=False,
+        logplot=False,
     )
 
     factor = 1e-12 * 4 * Chem.Far * 1e6

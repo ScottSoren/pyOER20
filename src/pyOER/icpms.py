@@ -186,7 +186,14 @@ class ICPMSPoint:
 
 class ICPMSCalibration:
     def __init__(
-        self, ic_id, date, element, mass, ppbs, signals, wash_signals,
+        self,
+        ic_id,
+        date,
+        element,
+        mass,
+        ppbs,
+        signals,
+        wash_signals,
     ):
         """Initiate an ICP-MS calibration
 

@@ -1,98 +1,62 @@
 from matplotlib import pyplot as plt
+import numpy as np
 
-from pyOER import Measurement, all_measurements
-from EC_MS import Chem, colorax
+from pyOER import Measurement
+from EC_MS import CyclicVoltammagram, Chem
+
 
 plt.close("all")
 
-all_data_specs = [
-    (m.name, {"m_id": m.id, "tspan": None, "tspan_ref": None})
-    for m in all_measurements()
-    if
-    # "activity" in m.category and "failed" not in m.category and
-    not m.isotope == "18" and m.sample_name and ("Reshma4A" in m.sample_name)
-]
+T = 298.15
 A_el = 0.196
 
-data_specs = {
-    "Reshma4": {
-        "m_id": 135,
-        "tspan": [2300, 2500],
-        "tspan_ref": [7400, 7430],
-        "tspan_bg": [5000, 5100],
-    },
-    # "Reshma1A": {"m_id": 10, "tspan": [2430, 2600], "tspan_ref": [3500, 3550]},
-    "Reshma1A": {
-        "m_id": 10,
-        "t_start": 550,
-        "tspan_ref": [3500, 3550],
-        "tspan_bg": [2810, 2840],
-    },
-    "Reshma1B": {
-        "m_id": 77,
-        "tspan": [],
-        "tspan_ref": [3750, 3800],
-        "t_start": 2650,
-        "tspan_bg": [3040, 3060],
-    },
-    "Reshma4_again": {"m_id": 134,},
-    "Evans10": {
-        "m_id": 132,
-        "tspan": [3800, 4100],
-        "tspan_ref": [8500, 8550],
-        "tspan_bg": [5600, 5700],
-    },
-}
+measurement = Measurement.open(10)
 
-plots_open = 0
-continue_from = 50
+dataset = measurement.dataset
 
-for name, spec in all_data_specs:
-    m_id = spec["m_id"]
-    m = Measurement.open(m_id)
+dataset.plot_experiment()
 
-    if True:
-        if m_id < continue_from:
-            continue
-        try:
-            ax = m.plot_experiment()
-        except Exception:
-            input(f"measurement m{m.id} is likely broken.")
-        ax[1].set_title(name)
-        plots_open += 1
-        if plots_open > 20:
-            break
-        continue
+V_str, J_str = dataset.sync_metadata(RE_vs_RHE=0.715, A_el=0.196)
 
-    tspan = spec["tspan"]
-    tspan_ref = spec["tspan_ref"]
-    tspan_bg = spec["tspan_bg"]
+O2 = dataset.point_calibration(mol="O2", mass="M32", tspan=[300, 350], n_el=4)
 
-    dataset = m.dataset
-    dataset.sync_metadata(RE_vs_RHE=0.715, A_el=A_el)
+cv = CyclicVoltammagram(dataset=dataset, tspan=[6370, 6700], t_zero="start")
 
-    O2 = dataset.point_calibration(
-        mol="O2", mass="M32", n_el=4, tspan=tspan_ref, tspan_bg=tspan_bg
-    )
+ax = cv.plot_experiment(
+    mols=[O2],
+    logplot=False,
+    t_bg=[0, 20],
+    # J_str="cycle"
+)
+ax[0].get_figure().savefig("Reshma1A cv vs time.png")
+ax[0].get_figure().savefig("Reshma1A cv vs time.svg")
 
-    dataset.set_background(t_bg=tspan_bg)
 
-    subset = dataset.cut(tspan=tspan, t_zero="start")
+cv1 = cv.cut(tspan=[86, 172])
 
-    t_I, I = subset.get_current(unit="A")
-    I = I * 1e6 / A_el  # A to uA/cm^2
+v, j = cv1[V_str], cv1[J_str]
 
-    ax = subset.plot_experiment(
-        mols=[[], [O2]], unit="pmol/s/cm^2", plotcurrent=False, logplot=False,
-    )
+fig, ax = plt.subplots()
+ax.plot(v, j, "b")
 
-    factor = 1e-12 * 4 * Chem.Far * 1e6
+x, y = cv1.get_flux(O2, unit="mol/s", t_bg=[90, 100])
+n_dot_O2 = np.trapz(y, x)  # in mol
 
-    ax[0].plot(t_I, I, color="r")
-    ax[0].set_ylabel("(partial) J / [$\mu$A cm$^{-2}$]")
-    ax[-1].set_ylabel("(implied) O$_2$ / [pmol s$^{-1}$cm$^{-2}$]")
-    colorax(ax[0], "r")
-    ax[0].set_ylim([-5, 50])
-    ax[-1].set_ylim([lim / factor for lim in ax[0].get_ylim()])
+Q_O2 = n_dot_O2 * 4 * Chem.Far  # in C
+q_O2 = Q_O2 * 1e3 / A_el  # in mC/cm^2
 
-    ax[0].get_figure().savefig(name + ".png")
+V_times_J_O2 = 20e-3 * q_O2 / 2  # in V/s * mC/cm^2 = V * mA/cm^2
+
+v_max = max(v)
+
+nernst = Chem.R * T / Chem.Far  # 26 mV per factor e  (60 mV per decade)
+
+v_O2_model = np.linspace(1.23, v_max, 100)
+j_O2_model = V_times_J_O2 / nernst * np.exp((v_O2_model - v_max) / nernst)
+zero_O2_model = np.zeros(v_O2_model.shape)
+
+ax.fill_between(v_O2_model, j_O2_model, zero_O2_model, color="k", alpha=0.5)
+ax.set_xlabel(V_str)
+ax.set_ylabel(J_str)
+ax.get_figure().savefig("Reshma1A cv with J_O2.png")
+ax.get_figure().savefig("Reshma1A cv with J_O2.svg")

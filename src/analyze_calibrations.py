@@ -25,13 +25,17 @@ def generate_calibrations():
             print(f"skipping {measurement.make_name()}")
             continue
 
-        calibration = Calibration(m_id=measurement.id,)
+        calibration = Calibration(
+            m_id=measurement.id,
+        )
         calibration.save()
 
 
 def add_calibration(m_id):
     """Create a calibration json file referencing measurement with given id"""
-    calibration = Calibration(m_id=m_id,)
+    calibration = Calibration(
+        m_id=m_id,
+    )
     calibration.save()
 
 

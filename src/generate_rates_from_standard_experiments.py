@@ -45,7 +45,10 @@ for se in all_standard_experiments():
         )
         print(f"activity = {tof_act.rate} [mol/s]")
         tof_exc = TurnOverFrequency(
-            e_id=se.id, tspan=tspan, tof_type="exchange", description=description,
+            e_id=se.id,
+            tspan=tspan,
+            tof_type="exchange",
+            description=description,
         )
         print(f"exchange = {tof_exc.rate} [mol/s]")
 

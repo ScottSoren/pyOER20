@@ -191,7 +191,10 @@ class Calibration:
         Y_cum = 0
         for mass in ["M32", "M34", "M36"]:
             x, y = self.extraction.get_signal(
-                mass=mass, tspan=self.tspan, t_bg=self.t_bg, unit="A",
+                mass=mass,
+                tspan=self.tspan,
+                t_bg=self.t_bg,
+                unit="A",
             )
             Y = np.trapz(y, x)
             Y_cum += Y
