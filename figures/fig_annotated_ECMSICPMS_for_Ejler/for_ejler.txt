@@ -1,0 +1,98 @@
+
+ --- John4A ---
+activity rate at first 2 min = 4.152111379068663e-12 [mol/s] 
+	or 8.304222758137325e-10 [mol] over the 200.0 [s] interval
+	with average potential = 1.2054588208445947 [V] vs RHE.
+exchange rate at first 2 min = -6.6308033624286485e-15 [mol/s] 
+	or -1.3261606724857297e-12 [mol] over the 200.0 [s] interval
+	with average potential = 1.2054588208445947 [V] vs RHE.
+dissolution rate at first 2 min = 8.510168261827355e-12 [mol/s] 
+	or 1.702033652365471e-09 [mol] over the 200.0 [s] interval
+	with average potential = 1.2054588208445947 [V] vs RHE.
+activity rate at steady (30 min) = 1.6622797522483845e-10 [mol/s] 
+	or 2.659647603597415e-07 [mol] over the 1600.0 [s] interval
+	with average potential = 1.43299390811875 [V] vs RHE.
+exchange rate at steady (30 min) = 3.526633941928411e-14 [mol/s] 
+	or 5.6426143070854575e-11 [mol] over the 1600.0 [s] interval
+	with average potential = 1.43299390811875 [V] vs RHE.
+dissolution rate at steady (30 min) = 3.762369894934504e-12 [mol/s] 
+	or 6.019791831895206e-09 [mol] over the 1600.0 [s] interval
+	with average potential = 1.43299390811875 [V] vs RHE.
+
+ --- John4C ---
+activity rate at first 2 min = 1.8258659098237466e-12 [mol/s] 
+	or 3.0126787512091817e-10 [mol] over the 165.0 [s] interval
+	with average potential = 1.3053427215942028 [V] vs RHE.
+exchange rate at first 2 min = 5.047322179813911e-16 [mol/s] 
+	or 8.328081596692954e-14 [mol] over the 165.0 [s] interval
+	with average potential = 1.3053427215942028 [V] vs RHE.
+dissolution rate at first 2 min = 9.15294520596797e-13 [mol/s] 
+	or 1.510235958984715e-10 [mol] over the 165.0 [s] interval
+	with average potential = 1.3053427215942028 [V] vs RHE.
+activity rate at next 8 min = 1.579157455541555e-11 [mol/s] 
+	or 4.579556621070509e-09 [mol] over the 290.0 [s] interval
+	with average potential = 1.4106790758448278 [V] vs RHE.
+exchange rate at next 8 min = 1.2871388045458434e-15 [mol/s] 
+	or 3.732702533182946e-13 [mol] over the 290.0 [s] interval
+	with average potential = 1.4106790758448278 [V] vs RHE.
+dissolution rate at next 8 min = 1.820483250758121e-13 [mol/s] 
+	or 5.2794014271985506e-11 [mol] over the 290.0 [s] interval
+	with average potential = 1.4106790758448278 [V] vs RHE.
+activity rate at steady = 4.009606804958041e-11 [mol/s] 
+	or 6.014410207437062e-08 [mol] over the 1500.0 [s] interval
+	with average potential = 1.41117771805 [V] vs RHE.
+exchange rate at steady = 8.623907485298951e-15 [mol/s] 
+	or 1.2935861227948428e-11 [mol] over the 1500.0 [s] interval
+	with average potential = 1.41117771805 [V] vs RHE.
+dissolution rate at steady = 9.772816827036936e-14 [mol/s] 
+	or 1.4659225240555403e-10 [mol] over the 1500.0 [s] interval
+	with average potential = 1.41117771805 [V] vs RHE.
+
+ --- Decade1G ---
+activity rate at first 3 min = 1.2891490281685982e-10 [mol/s] 
+	or 2.4493831535203366e-08 [mol] over the 190.0 [s] interval
+	with average potential = 1.4619388690526316 [V] vs RHE.
+exchange rate at first 3 min = 3.390232133138142e-13 [mol/s] 
+	or 6.44144105296247e-11 [mol] over the 190.0 [s] interval
+	with average potential = 1.4619388690526316 [V] vs RHE.
+dissolution rate at first 3 min = 8.990188493695878e-13 [mol/s] 
+	or 1.7081358138022168e-10 [mol] over the 190.0 [s] interval
+	with average potential = 1.4619388690526316 [V] vs RHE.
+activity rate at next 10 min = 2.143399550201975e-10 [mol/s] 
+	or 1.2646057346191652e-07 [mol] over the 590.0 [s] interval
+	with average potential = 1.4701076105169493 [V] vs RHE.
+exchange rate at next 10 min = 1.7673828685945932e-13 [mol/s] 
+	or 1.04275589247081e-10 [mol] over the 590.0 [s] interval
+	with average potential = 1.4701076105169493 [V] vs RHE.
+dissolution rate at next 10 min = 2.451998838759498e-13 [mol/s] 
+	or 1.446679314868104e-10 [mol] over the 590.0 [s] interval
+	with average potential = 1.4701076105169493 [V] vs RHE.
+activity rate at steady = 2.2068146306288543e-10 [mol/s] 
+	or 3.4426308237810126e-07 [mol] over the 1560.0 [s] interval
+	with average potential = 1.4735163768920216 [V] vs RHE.
+exchange rate at steady = 1.3025221224320832e-13 [mol/s] 
+	or 2.03193451099405e-10 [mol] over the 1560.0 [s] interval
+	with average potential = 1.4735163768920216 [V] vs RHE.
+dissolution rate at steady = 1.7932532112193367e-13 [mol/s] 
+	or 2.797475009502165e-10 [mol] over the 1560.0 [s] interval
+	with average potential = 1.4735163768920216 [V] vs RHE.
+
+ --- Taiwan1C ---
+activity rate at first 2 min = 8.992139127470051e-11 [mol/s] 
+	or 8.992139127470051e-09 [mol] over the 100.0 [s] interval
+	with average potential = 1.41680135635 [V] vs RHE.
+exchange rate at first 2 min = 1.3559858015741955e-13 [mol/s] 
+	or 1.3559858015741956e-11 [mol] over the 100.0 [s] interval
+	with average potential = 1.41680135635 [V] vs RHE.
+dissolution rate at first 2 min = 1.2768656038837562e-11 [mol/s] 
+	or 1.2768656038837563e-09 [mol] over the 100.0 [s] interval
+	with average potential = 1.41680135635 [V] vs RHE.
+activity rate at steady (30 min) = 2.3979492540921977e-10 [mol/s] 
+	or 3.7887598214656724e-07 [mol] over the 1580.0 [s] interval
+	with average potential = 1.404193297436709 [V] vs RHE.
+exchange rate at steady (30 min) = 8.460359233709445e-14 [mol/s] 
+	or 1.3367367589260923e-10 [mol] over the 1580.0 [s] interval
+	with average potential = 1.404193297436709 [V] vs RHE.
+dissolution rate at steady (30 min) = 3.365886273154193e-12 [mol/s] 
+	or 5.318100311583625e-09 [mol] over the 1580.0 [s] interval
+	with average potential = 1.404193297436709 [V] vs RHE.

@@ -290,6 +290,17 @@ class Experiment:
         m = self.mdict[mol]
         return self.dataset.get_flux(m, tspan=tspan, **kwargs)
 
+    def get_tofs(self):
+        """Return a list of TOFS from the experiment"""
+        from .tof import all_tofs
+
+        tofs = []  # icpms points
+        for tof in all_tofs():
+            if tof.e_id == self.id:
+                tofs += [tof]
+
+        return tofs
+
 
 class StandardExperiment(Experiment):
     def __init__(
@@ -442,7 +453,7 @@ class StandardExperiment(Experiment):
 
         if highlight:  # highlight the labeled lattice oxygen evolution
             y34_interp = np.interp(x32, x34, y34)
-            axes[0].fill_between(x32, y32 * beta, y34_interp, color="r", alpha=0.5)
+            axes[0].fill_between(x32, y32 * beta, y34_interp, color="r", alpha=0.2)
 
         ax0.set_xlim(axes[1].get_xlim())
         ax0.tick_params(

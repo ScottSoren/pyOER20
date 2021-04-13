@@ -182,6 +182,8 @@ class TurnOverFrequency:
         rate_calc_kwargs=None,
         description=None,
         t_id=None,
+        rate=None,
+        amount=None,
     ):
         """Iinitiate a TurnOverFrequency
 
@@ -202,11 +204,12 @@ class TurnOverFrequency:
         self.tspan = tspan
         self.r_id = r_id
         self._experiment = experiment
-        self._rate = None
         self._potential = None
         self.description = description
         self.rate_calc_kwargs = rate_calc_kwargs or {}
         self.id = t_id or TOFCounter().id
+        self._rate = rate
+        self._amount = amount
 
     def as_dict(self):
         """The dictionary represnetation of the TOF's metadata"""
@@ -218,6 +221,8 @@ class TurnOverFrequency:
             rate_calc_kwargs=self.rate_calc_kwargs,
             description=self.description,
             t_id=self.id,
+            amount=self._amount,
+            rate=self._rate,
         )
 
     def save(self):
@@ -278,6 +283,11 @@ class TurnOverFrequency:
         return self.sample.element
 
     @property
+    def t_interval(self):
+        """float: The length of electrolysis time covered by the TOF"""
+        return self.tspan[-1] - self.tspan[0]
+
+    @property
     def rate_calculating_function(self):
         """The function that this TOF uses to calculate its rate"""
         if self.tof_type == "activity":
@@ -298,12 +308,25 @@ class TurnOverFrequency:
         self._rate = rate
         return rate
 
+    def calc_amount(self, **kwargs):
+        """Calculate and return the relevant amout in [mol]"""
+        amount = self.calc_rate(**kwargs) * self.t_interval  # noqa
+        self._amount = amount
+        return amount
+
     @property
     def rate(self):
         """The rate (activity, dissolution, or exchange) in [mol/s]"""
         if not self._rate:
             self.calc_rate()
         return self._rate
+
+    @property
+    def amount(self):
+        """The rate (activity, dissolution, or exchange) in [mol]"""
+        if not self._amount:
+            self.calc_amount()
+        return self._amount
 
     @property
     def potential(self):
