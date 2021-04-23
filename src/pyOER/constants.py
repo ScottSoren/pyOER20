@@ -60,3 +60,5 @@ FARADAYS_CONSTANT = 96485  # [C/mol]
 
 STANDARD_SITE_DENSITY = 166e-12  # 1 site per nm^2 in [mol/cm^2]
 STANDARD_SPECIFIC_CAPACITANCE = 200e-6  # specific capacitance in [Far]
+
+STANDARD_ELECTRODE_AREA = 0.196  # electrode area in [cm^2]

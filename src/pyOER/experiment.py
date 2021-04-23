@@ -14,7 +14,8 @@ CalibrationSeries. """
 from pathlib import Path
 import json
 import numpy as np
-from matplotlib import gridspec, pyplot as plt
+from matplotlib import pyplot as plt
+from matplotlib import gridspec
 
 from EC_MS import Molecule
 
@@ -505,7 +506,12 @@ class StandardExperiment(Experiment):
         return t_diff, n_dot_diff
 
     def plot_EC_MS_ICPMS(
-        self, tspan=None, highlight=True, showsamples=True, ylims=None
+        self,
+        tspan=None,
+        highlight=True,
+        showsamples=True,
+        ylims=None,
+        unit="pmol/s/cm^2",
     ):
         """Make a 3-panel plot showing EC-MS data with ICPMS samples
 
@@ -518,6 +524,7 @@ class StandardExperiment(Experiment):
                 are 0-4 as in list below. ylims defaults to self.plot_specs["ylims"]
                 Specifying axes[0].ylim automatically specifies axes[3].ylim according
                 to self.beta
+            unit (str): unit for MS data axes
         Returns list of Axes:
             0: The minority-isotope signals (^{18}O2 and ^{16}O^{18}O fluxes)
             1: The electrochemical potential
@@ -553,17 +560,21 @@ class StandardExperiment(Experiment):
             ax=axes,
             endpoints=10,
             verbose=False,
+            unit=unit,
         )
-
-        axes[0].set_ylabel("$^{18}$O signal / (pmol s$^{-1}$)")
-        axes[-1].set_ylabel("$^{16}$O$_2$ signal / (pmol s$^{-1}$)")
+        if unit == "pmol/s/cm^2":
+            axes[0].set_ylabel("$^{18}$O flux / \n (pmol s$^{-1}$cm$^{-2}$)")
+            axes[-1].set_ylabel("$^{16}$O$_2$ flux / \n (pmol s$^{-1}$cm$^{-2}$)")
+        else:
+            axes[0].set_ylabel("$^{18}$O / (" + unit + ")")
+            axes[-1].set_ylabel("$^{16}$O$_2$ / (" + unit + ")")
         axes[1].set_ylabel("U vs RHE / (V)")
         axes[2].set_ylabel("J / (mA cm$^{-2}$)")
         axes[1].set_xlabel("time / (s)")
         # colorax(ax[0], O2_M34.get_color(), lr='left')
 
-        x32, y32 = self.dataset.get_flux(O2_M32, unit="pmol/s", tspan=tspan)
-        x34, y34 = self.dataset.get_flux(O2_M34, unit="pmol/s", tspan=tspan)
+        x32, y32 = self.dataset.get_flux(O2_M32, unit=unit, tspan=tspan)
+        x34, y34 = self.dataset.get_flux(O2_M34, unit=unit, tspan=tspan)
 
         if highlight:  # highlight the labeled lattice oxygen evolution
             y34_interp = np.interp(x32, x34, y34)
@@ -586,19 +597,20 @@ class StandardExperiment(Experiment):
         except IndexError:
             print(f"{self.measurement} has no ICPMS points!")
         else:
-            ax0.set_ylabel(element + " diss. / (pmol s$^{-1}$)")
-            ax0.set_xlabel("time / (s)")
-            ax0.xaxis.set_label_position("top")
-
             t_diff, n_dot_diff = self.get_dissolution_differential(tspan=tspan)
-
+            if unit == "pmol/s/cm^2":
+                n_dot_diff = n_dot_diff / self.measurement.A_el
             ax0.plot(t_diff, n_dot_diff * 1e12, "k-")
             ax0.set_ylim(bottom=0)
             ax0.set_xlim(axes[0].get_xlim())
             ax0.tick_params(
                 axis="x", bottom=False, top=True, labelbottom=False, labeltop=True
             )
-            ax0.set_ylabel(element + " diss. / (pmol s$^{-1}$)")
+            ax0.xaxis.set_label_position("top")
+            if unit == "pmol/s/cm^2":
+                ax0.set_ylabel(element + " dissolution / \n (pmol s$^{-1}$cm$^{-2}$)")
+            else:
+                ax0.set_ylabel(f"{element} + / ({unit})")
             ax0.set_xlabel("time / (s)")
             if showsamples:
                 ylim0 = ax0.get_ylim()
@@ -639,9 +651,18 @@ class StandardExperiment(Experiment):
 
 
 class ActExperiment(Experiment):
-    """Activity experiment. Doesn't actually need anything extra. Info in the TOFs."""
+    """Activity experiment. Only extra thing is the plotting. The info is in TOFs."""
 
     def plot_experiment(self, tspan=None, unit="pmol/s/cm^2", highlights=True):
+        """Plot an activity measurement
+
+        Args:
+            tspan (tspan): The timespan of the experiment to plot. Defaults to the
+                contaned tspan, self.tspan_plot
+            unit (str): The unit to plot with. Default is pmol/s/cm^2
+            highlights (bool): Whether to highlight the parts of the plot where the data
+                is integrated for activity measurement datapoints.
+        """
         tspan = tspan or self.tspan_plot
         mols = list(self.mdict.values())
         axes = self.dataset.plot_experiment(

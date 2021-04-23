@@ -7,7 +7,7 @@ import re
 import time
 import datetime
 from EC_MS import Dataset
-from .constants import MEASUREMENT_DIR, MEASUREMENT_ID_FILE
+from .constants import MEASUREMENT_DIR, MEASUREMENT_ID_FILE, STANDARD_ELECTRODE_AREA
 from .tools import singleton_decorator, CounterWithFile, FLOAT_MATCH
 from .settings import DATA_DIR
 
@@ -314,6 +314,10 @@ class Measurement:
         else:
             RE_vs_RHE = float(re.search(FLOAT_MATCH, RE_vs_RHE_str).group())
         return RE_vs_RHE
+
+    @property
+    def A_el(self):
+        return STANDARD_ELECTRODE_AREA
 
     @property
     def R_Ohm(self):

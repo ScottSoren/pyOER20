@@ -5,11 +5,11 @@ forpublication = True
 if forpublication:  # for the publication figure
     import matplotlib as mpl
 
-    mpl.rcParams['figure.figsize'] = (3.25, 2.75)
+    mpl.rcParams["figure.figsize"] = (3.25, 2.75)
     # plt.rc('text', usetex=True)  # crashingly slow
-    plt.rc('font', family='sans-serif')
-    plt.rc('font', size=6)
-    plt.rc('lines', linewidth=0.5)
+    plt.rc("font", family="sans-serif")
+    plt.rc("font", size=6)
+    plt.rc("lines", linewidth=0.5)
 else:
     plt.style.use("default")
 
