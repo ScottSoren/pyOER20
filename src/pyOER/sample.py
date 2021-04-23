@@ -59,7 +59,7 @@ def get_element_and_type(name, get="both"):
 
 
 def get_isotope(name):
-    for isotope, sample_names in SAMPLE_ISOTOPES:
+    for isotope, sample_names in SAMPLE_ISOTOPES.keys():
         for sample in [sample_names] if isinstance(sample_names, str) else sample_names:
             if name.startswith(sample):
                 return isotope

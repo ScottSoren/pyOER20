@@ -53,6 +53,9 @@ def all_standard_experiments(experiment_dir=EXPERIMENT_DIR):
             standard_experiment = StandardExperiment.open(
                 n, experiment_dir=experiment_dir
             )
+            if standard_experiment.experiment_type.startswith("a"):
+                # then it is an activity experiment
+                raise TypeError("wrong type of experiment")
         except (FileNotFoundError, TypeError) as e:
             print(f"itermeasurement skipping {n} due to error = \n{e}")
         else:
