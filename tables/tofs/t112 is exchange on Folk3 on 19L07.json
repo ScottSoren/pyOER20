@@ -1,5 +1,9 @@
 {
     "tof_type": "exchange",
+    "rate": 2.708756135314856e-15,
+    "tof": null,
+    "potential": null,
+    "current": null,
     "e_id": 30,
     "tspan": [
         1300.0,

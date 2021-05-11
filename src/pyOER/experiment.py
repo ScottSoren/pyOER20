@@ -14,7 +14,8 @@ CalibrationSeries. """
 from pathlib import Path
 import json
 import numpy as np
-from matplotlib import gridspec, pyplot as plt
+from matplotlib import pyplot as plt
+from matplotlib import gridspec
 
 from EC_MS import Molecule
 
@@ -23,11 +24,12 @@ from .constants import (
     EXPERIMENT_ID_FILE,
     STANDARD_ALPHA,
     STANDARD_EXPERIMENT_TAGS,
+    FARADAYS_CONSTANT,
 )
 from .tools import singleton_decorator, CounterWithFile
 from .measurement import Measurement
 from .calibration import CalibrationSeries
-
+from .calc import calc_current
 
 calibration_series = CalibrationSeries.load()
 
@@ -51,10 +53,26 @@ def all_standard_experiments(experiment_dir=EXPERIMENT_DIR):
             standard_experiment = StandardExperiment.open(
                 n, experiment_dir=experiment_dir
             )
+            if standard_experiment.experiment_type.startswith("a"):
+                # then it is an activity experiment
+                raise TypeError("wrong type of experiment")
         except (FileNotFoundError, TypeError) as e:
             print(f"itermeasurement skipping {n} due to error = \n{e}")
         else:
             yield standard_experiment
+
+
+def all_activity_experiments(experiment_dir=EXPERIMENT_DIR):
+    N_experiments = ExperimentCounter().last()
+    for n in range(1, N_experiments):
+        try:
+            activity_experiment = ActExperiment.open(n, experiment_dir=experiment_dir)
+            if not activity_experiment.experiment_type.startswith("a"):
+                raise TypeError("wrong type of experiment.")
+        except (FileNotFoundError, TypeError) as e:
+            print(f"itermeasurement skipping {n} due to error = \n{e}")
+        else:
+            yield activity_experiment
 
 
 @singleton_decorator
@@ -74,26 +92,18 @@ def open_experiment(e_id, experiment_dir=EXPERIMENT_DIR):
         )
     except StopIteration:
         raise FileNotFoundError(f"no standard experiment with id = e{e_id}")
-    with open(path_to_file, "r") as f:
-        e_as_dict = json.load(f)
-    e_type = e_as_dict["experiment_type"]
-    if e_type in STANDARD_EXPERIMENT_TAGS:
-        cls = StandardExperiment
-    else:
-        cls = Experiment
-    return cls(**e_as_dict)
+    return Experiment.open(e_id)
 
 
 class Experiment:
-    """This class describes the experiments from which 3x TOF measurements are derived
+    """Joins a pyOER measurement with extra metadata and methods for deriving results
 
-    These are EC-MS measurements of a labeled (or control) sample in non-labeled
-    elcctroyte at constant current, which ICP-MS samples taken during or between
-    measurements. The class wraps the corresponding measurement with extra functions.
-
-    They are best represented as an EC-MS-ICPMS plot where the MS panel has left and
-    rignt y-axes representing labeled and non-labeled O2, respectively. Such a plot
-    is made with StandardExperment.plot_EC_MS_ICPMS
+    This is a base class for more complex experiments, with methods and saveable
+    metadata (typically tspans) for subtracting background, plotting nicely,
+    calibrating signals, determining electrolyte isotopic composition, etc.
+    It also has a list of TOFs, which (separately) contain the metadata for deriving
+    specific results.
+    Inheriting classes will contain methods to
     """
 
     def __init__(
@@ -103,34 +113,43 @@ class Experiment:
         tspan_plot=None,
         F=None,
         alpha=None,
+        cap=None,
         tspan_bg=None,
+        tspan_bg_current=None,
         tspan_F=None,
         tspan_alpha=None,
+        tspan_cap=None,
+        V_DL=(1.22, 1.3),
         e_id=None,
         **kwargs,
     ):
-        """Initiate a standard experiment
+        """Initiate an experiment
 
         Args:
             m_id (int): The measurement id
             experiment_type (str): Tag for the type of standard experiment. Options are
+                - standard experiments (activity + exchange + dissolution):
                 "y": "yes, purely systematic",  # 30 minutes at one current density
                 "s": "starts systematic",
                 "k": "shortened systematic (<30 minutes)",
-                "c": "composite systematic"}  # one sample multiple current densities
-            tspan_plot (timespan): The timespan in which to make the EC-MS-ICPMS
+                "c": "composite systematic"  # one sample multiple current densities
+                - activity experiments (constant potential steps):
+            tspan_plot (timespan): The timespan in which to make the experiment
                 plot. If not given, the plot will use the measurement's tspan
             F (float): The O2 sensitivity in [C/mol]. By default the experiment will
                 use the O2 sensitivity given by the CalibrationSeries represented in
                 TREND.json in the calibration directory
             alhpa (float): The ^{16}O portion in the electrolyte. By default it takes
                 the natural value of 99.80%
+            cap (float): The capacitance- in [Farads], if known.
             tspan_bg (timespan): The timespan to consider the background
             tspan_F (timespan): The timespan from which O2 sensitivity (F) can be
                 calculated from the measurement
             tspan_alpha (timespan): The timespan from which the isotopic composition of
                 the electrolyte (alpha) can be calculated form the measurement F is to
                 be calculated from the measurement
+            tspan_cap (timespan): The timespan from which capacitance can be measured
+            V_DL (list of float): The voltage range for capacitance calculation / [V]
             plot_specs (dict): Additional specs for the plot, e.g. axis limits ("ylims")
             e_id (int): The StandardExperiment's principle key
         """
@@ -140,6 +159,7 @@ class Experiment:
         self._dataset = None
         self.tspan_plot = tspan_plot
         self.tspan_bg = tspan_bg
+        self.tspan_bg_current = tspan_bg_current
         self.tspan_F = tspan_F
         self.F_0 = F  # for saving, so that if no F is given and the CalibrationSeries
         # is updated, the updated CalibrationSeries will determine F upon loading.
@@ -149,8 +169,14 @@ class Experiment:
         self.alpha_0 = alpha  # for saving, so that if no alpha is given and the
         # natural ratio is updated, this will determine alpha upon loading.
         self._alpha = None
+        self._cap = cap
+        self.tspan_cap = tspan_cap
+        self.V_DL = V_DL
+        self._cap = None
         self._icpms_points = None
         self.id = e_id or ExperimentCounter().id
+        self.default_masses = ["M32", "M34", "M36"]
+        self._tofs = None
         self.extra_stuff = kwargs
 
     def as_dict(self):
@@ -159,7 +185,9 @@ class Experiment:
             experiment_type=self.experiment_type,
             tspan_plot=self.tspan_plot,
             tspan_bg=self.tspan_bg,
+            tspan_bg_current=self.tspan_bg_current,
             tspan_F=self.tspan_F,
+            tspan_cap=self.tspan_cap,
             tspan_alpha=self.tspan_alpha,
             F=self.F_0,
             alpha=self.alpha_0,
@@ -180,11 +208,18 @@ class Experiment:
         """Load a standard experiment given the path to its json file."""
         with open(file, "r") as f:
             self_as_dict = json.load(f)
-        if "ylims" in self_as_dict["plot_specs"]:  # json turns integer keys to strings
+        if "plot_specs" in self_as_dict and "ylims" in self_as_dict["plot_specs"]:
+            # json turns integer keys to strings. This fixes.
             self_as_dict["plot_specs"]["ylims"] = {
                 int(s): ylim for s, ylim in self_as_dict["plot_specs"]["ylims"].items()
             }
-        return cls(**self_as_dict)
+        experiment_class = cls
+        if "experiment_type" in self_as_dict:
+            if self_as_dict["experiment_type"].startswith("a"):
+                experiment_class = ActExperiment
+            elif self_as_dict["experiment_type"] in STANDARD_EXPERIMENT_TAGS:
+                experiment_class = StandardExperiment
+        return experiment_class(**self_as_dict)
 
     @classmethod
     def open(cls, e_id, experiment_dir=EXPERIMENT_DIR):
@@ -203,8 +238,11 @@ class Experiment:
         if not self._dataset:
             dataset = self.measurement.dataset
             dataset.sync_metadata(
-                RE_vs_RHE=self.measurement.RE_vs_RHE, A_el=0.196,
+                RE_vs_RHE=self.measurement.RE_vs_RHE,
+                A_el=0.196,
             )
+            if self.measurement.R_Ohm:
+                dataset.correct_ohmic_drop(self.measurement.R_Ohm)
             if self.tspan_bg:
                 dataset.set_background(self.tspan_bg)
             self._dataset = dataset
@@ -224,8 +262,41 @@ class Experiment:
     def sample(self):
         return self.measurement.sample
 
+    @property
     def sample_name(self):
         return self.measurement.sample_name
+
+    @property
+    def tofs(self):
+        if not self._tofs:
+            self.load_tofs()
+        return self._tofs
+
+    def load_tofs(self):
+        from .tof import all_tofs
+
+        self._tofs = [tof for tof in all_tofs() if tof.e_id == self.id]
+
+    @property
+    def mol_list(self):
+        return [f"O2_{mass}" for mass in self.mass_list]
+
+    @property
+    def mass_list(self):
+        if "18" in (self.measurement.isotope or ""):
+            mass_list = ["M34", "M36"]
+        elif "16" in (self.measurement.isotope or ""):
+            mass_list = ["M32"]
+        else:
+            print(f"The electrolyte isotope for '{self}' is not known!")
+            mass_list = ["M32", "M34", "M36"]
+        return mass_list
+
+    @property
+    def tof_sets(self):
+        from .tof import all_tof_sets
+
+        return [t_set for t_set in all_tof_sets() if t_set.experiment.id == self.id]
 
     def calc_alpha(self, tspan=None):
         """Return fraction ^{16}O in the electrolyte based on tspan with steady OER"""
@@ -235,6 +306,25 @@ class Experiment:
         gamma = np.mean(y_34) / np.mean(y_32)
         alpha = 2 / (2 + gamma)
         return alpha
+
+    @property
+    def cap(self):
+        """Capacitance in Farads"""
+        if not self._cap:
+            cap_cv = self.dataset.cut(self.tspan_cap).as_cv()
+            self._cap = cap_cv.get_capacitance(V_DL=self.V_DL) * self.dataset.A_el
+            # Farad/cm^2 * cm^2
+        return self._cap
+
+    @property
+    def ECSA(self):
+        """Electrochemical surface area in [cm^2]"""
+        return self.cap / self.sample.specific_capacitance  # Farad / (Farad/cm^2)
+
+    @property
+    def n_sites(self):
+        """Number of sites in [mol]"""
+        return self.ECSA * self.sample.site_density  # cm^2 * mol/cm^2
 
     def populate_mdict(self):
         """Fill in self.mdict with the EC-MS.Molecules O2_M32, O2_M34, and O2_M36"""
@@ -255,12 +345,22 @@ class Experiment:
     def F(self):
         if not self._F:
             if self.tspan_F:
-                F = self.dataset.point_calibration(
-                    mol="O2", mass="M32", n_el=4, tspan=self.tspan_F,
-                )
-            else:
+                F = 0
+                for mass in self.mass_list:
+                    try:
+                        x, y = self.dataset.get_signal(
+                            mass, tspan=self.tspan_F, unit="A"
+                        )
+                        I = calc_current(self, tspan=self.tspan_F)
+                        F_M = np.mean(y) / (I / (4 * FARADAYS_CONSTANT))
+                        F += F_M
+                    except KeyError:
+                        continue
+            elif self.F_0:
                 F = self.F_0
-            self._F = F or calibration_series.F_of_tstamp(self.dataset.tstamp)
+            else:
+                F = calibration_series.F_of_tstamp(self.dataset.tstamp)
+            self._F = F
         return self._F
 
     @property
@@ -278,8 +378,46 @@ class Experiment:
         m = self.mdict[mol]
         return self.dataset.get_flux(m, tspan=tspan, **kwargs)
 
+    def get_tofs(self):
+        """Return a list of TOFS from the experiment"""
+        from .tof import all_tofs
+
+        tofs = []  # icpms points
+        for tof in all_tofs():
+            if tof.e_id == self.id:
+                tofs += [tof]
+
+        return tofs
+
+    def calc_background_current(self):
+        cap_cv = self.dataset.cut(self.tspan_cap).as_cv()
+        t, J = cap_cv.get_capacitance(V_DL=self.V_DL, out=["t", "J"])
+        J_bg = np.mean(J)
+        I_bg = J_bg * self.dataset.A_el * 1e-3
+        return I_bg
+
+    def correct_current(self):
+        I_bg = self.calc_background_current()
+        I_str = self.dataset.I_str
+        J_str = self.dataset.J_str
+        A_el = self.dataset.data["A_el"]
+        print(f"subtracting {I_bg * 1e3 * A_el} from '{J_str}'")
+        self.dataset.data[I_str] = self.dataset.data[I_str] - I_bg * 1e3
+        self.dataset.data[J_str] = self.dataset.data[J_str] - I_bg * 1e3 / A_el
+
 
 class StandardExperiment(Experiment):
+    """This class describes the experiments from which 3x TOF measurements are derived
+
+    These are EC-MS measurements of a labeled (or control) sample in non-labeled
+    elcctroyte at constant current, which ICP-MS samples taken during or between
+    measurements. The class wraps the corresponding measurement with extra functions.
+
+    They are best represented as an EC-MS-ICPMS plot where the MS panel has left and
+    rignt y-axes representing labeled and non-labeled O2, respectively. Such a plot
+    is made with StandardExperment.plot_EC_MS_ICPMS
+    """
+
     def __init__(
         self,
         m_id,
@@ -339,7 +477,10 @@ class StandardExperiment(Experiment):
         t_last = 0
         t_vec = np.array([])
         n_dot_vec = np.array([])
-        for t, n, in zip(t_points, n_points):
+        for (
+            t,
+            n,
+        ) in zip(t_points, n_points):
             if t == 0:
                 continue
             if t == t_last:
@@ -368,7 +509,12 @@ class StandardExperiment(Experiment):
         return t_diff, n_dot_diff
 
     def plot_EC_MS_ICPMS(
-        self, tspan=None, highlight=True, showsamples=True, ylims=None
+        self,
+        tspan=None,
+        highlight=True,
+        showsamples=True,
+        ylims=None,
+        unit="pmol/s/cm^2",
     ):
         """Make a 3-panel plot showing EC-MS data with ICPMS samples
 
@@ -381,6 +527,7 @@ class StandardExperiment(Experiment):
                 are 0-4 as in list below. ylims defaults to self.plot_specs["ylims"]
                 Specifying axes[0].ylim automatically specifies axes[3].ylim according
                 to self.beta
+            unit (str): unit for MS data axes
         Returns list of Axes:
             0: The minority-isotope signals (^{18}O2 and ^{16}O^{18}O fluxes)
             1: The electrochemical potential
@@ -416,21 +563,25 @@ class StandardExperiment(Experiment):
             ax=axes,
             endpoints=10,
             verbose=False,
+            unit=unit,
         )
-
-        axes[0].set_ylabel("$^{18}$O signal / (pmol s$^{-1}$)")
-        axes[-1].set_ylabel("$^{16}$O$_2$ signal / (pmol s$^{-1}$)")
+        if unit == "pmol/s/cm^2":
+            axes[0].set_ylabel("$^{18}$O flux / \n (pmol s$^{-1}$cm$^{-2}$)")
+            axes[-1].set_ylabel("$^{16}$O$_2$ flux / \n (pmol s$^{-1}$cm$^{-2}$)")
+        else:
+            axes[0].set_ylabel("$^{18}$O / (" + unit + ")")
+            axes[-1].set_ylabel("$^{16}$O$_2$ / (" + unit + ")")
         axes[1].set_ylabel("U vs RHE / (V)")
         axes[2].set_ylabel("J / (mA cm$^{-2}$)")
         axes[1].set_xlabel("time / (s)")
         # colorax(ax[0], O2_M34.get_color(), lr='left')
 
-        x32, y32 = self.dataset.get_flux(O2_M32, unit="pmol/s", tspan=tspan)
-        x34, y34 = self.dataset.get_flux(O2_M34, unit="pmol/s", tspan=tspan)
+        x32, y32 = self.dataset.get_flux(O2_M32, unit=unit, tspan=tspan)
+        x34, y34 = self.dataset.get_flux(O2_M34, unit=unit, tspan=tspan)
 
         if highlight:  # highlight the labeled lattice oxygen evolution
             y34_interp = np.interp(x32, x34, y34)
-            axes[0].fill_between(x32, y32 * beta, y34_interp, color="r", alpha=0.5)
+            axes[0].fill_between(x32, y32 * beta, y34_interp, color="r", alpha=0.2)
 
         ax0.set_xlim(axes[1].get_xlim())
         ax0.tick_params(
@@ -449,19 +600,20 @@ class StandardExperiment(Experiment):
         except IndexError:
             print(f"{self.measurement} has no ICPMS points!")
         else:
-            ax0.set_ylabel(element + " diss. / (pmol s$^{-1}$)")
-            ax0.set_xlabel("time / (s)")
-            ax0.xaxis.set_label_position("top")
-
             t_diff, n_dot_diff = self.get_dissolution_differential(tspan=tspan)
-
+            if unit == "pmol/s/cm^2":
+                n_dot_diff = n_dot_diff / self.measurement.A_el
             ax0.plot(t_diff, n_dot_diff * 1e12, "k-")
             ax0.set_ylim(bottom=0)
             ax0.set_xlim(axes[0].get_xlim())
             ax0.tick_params(
                 axis="x", bottom=False, top=True, labelbottom=False, labeltop=True
             )
-            ax0.set_ylabel(element + " diss. / (pmol s$^{-1}$)")
+            ax0.xaxis.set_label_position("top")
+            if unit == "pmol/s/cm^2":
+                ax0.set_ylabel(element + " dissolution / \n (pmol s$^{-1}$cm$^{-2}$)")
+            else:
+                ax0.set_ylabel(f"{element} + / ({unit})")
             ax0.set_xlabel("time / (s)")
             if showsamples:
                 ylim0 = ax0.get_ylim()
@@ -499,3 +651,110 @@ class StandardExperiment(Experiment):
                 axes[3].set_ylim([lim / beta for lim in ylim])
 
         return axes
+
+
+class ActExperiment(Experiment):
+    """Activity experiment. Only extra thing is the plotting. The info is in TOFs."""
+
+    def plot_experiment(self, tspan=None, unit="pmol/s/cm^2", highlights=True):
+        """Plot an activity measurement
+
+        Args:
+            tspan (tspan): The timespan of the experiment to plot. Defaults to the
+                contaned tspan, self.tspan_plot
+            unit (str): The unit to plot with. Default is pmol/s/cm^2
+            highlights (bool): Whether to highlight the parts of the plot where the data
+                is integrated for activity measurement datapoints.
+        """
+        tspan = tspan or self.tspan_plot
+        mols = list(self.mdict.values())
+        axes = self.dataset.plot_experiment(
+            mols=mols, tspan=tspan, unit=unit, logplot=False
+        )
+        if highlights:
+            if self.tspan_F:
+                self.dataset.plot_flux(
+                    mols=mols,
+                    tspan=self.tspan_F,
+                    ax=axes[0],
+                    alpha_under=0.3,
+                    unit=unit,
+                    logplot=False,
+                )
+            if self.tspan_cap and (tspan == "all" or not tspan):
+                cap_cv = self.dataset.cut(self.tspan_cap).as_cv()
+                t, J = cap_cv.get_capacitance(V_DL=self.V_DL, out=["t", "J"])
+                axes[2].fill_between(t, J, np.zeros(t.shape), color="0.5", alpha=0.3)
+            for tof in self.tofs:
+                self.dataset.plot_flux(
+                    mols=mols,
+                    tspan=tof.tspan,
+                    ax=axes[0],
+                    alpha_under=0.15,
+                    unit=unit,
+                    logplot=False,
+                )
+        return axes
+
+    def plot_faradaic_efficiency(
+        self,
+        axes=None,
+        offset=0,
+        width=0.005,
+        alpha=0.5,
+        cutoff=1.33,
+    ):
+        if not axes:
+            fig, ax1 = plt.subplots()
+            ax2 = ax1.twinx()
+            ax1.set_xlabel(self.dataset.V_str)
+            ax1.set_ylabel("Faradaic efficiency / [%]")
+            ax2.set_ylabel(self.dataset.J_str)
+        else:
+            ax1, ax2 = axes
+
+        mol_list = self.mol_list
+
+        currents = {}
+        FEs = {}
+        for tof in self.tofs:
+            potential = np.round(tof.potential, decimals=2)
+            if potential < cutoff:
+                continue
+            if potential not in currents:
+                currents[potential] = []
+                FEs[potential] = {mol: [] for mol in mol_list}
+            currents[potential].append(tof.current)
+            for mol in mol_list:
+                FEs[potential][mol].append(tof.calc_faradaic_efficiency(mol=mol) * 100)
+
+        for potential, current_list in currents.items():
+            current_density = np.mean(current_list) * 1e3 / self.dataset.A_el
+            ax2.plot(potential, current_density, "ko")
+            cum_FE = 0
+            for mol, FE_list in FEs[potential].items():
+                color = self.mdict[mol].get_color()
+                FE = np.mean(FE_list)
+                if len(FE_list) > 1:
+                    FE_std = np.std(FE_list)
+                    ax1.plot(
+                        [potential + offset, potential + offset],
+                        [FE + cum_FE - FE_std, FE + cum_FE + FE_std],
+                        marker="_",
+                        color=color,
+                    )
+                ax1.bar(
+                    potential + offset,
+                    FE,
+                    bottom=cum_FE,
+                    width=width,
+                    color=color,
+                    alpha=alpha,
+                )
+                cum_FE += FE
+        ax1.set_ylim(bottom=0)
+        ax2.set_ylim(bottom=0)
+        xlim = ax1.get_xlim()
+        ax1.plot(ax1.get_xlim(), [100, 100], "k--", alpha=0.5)
+        ax1.set_xlim(xlim)
+        return [ax1, ax2]

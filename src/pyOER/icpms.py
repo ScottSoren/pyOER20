@@ -38,7 +38,8 @@ def all_icpms_points(icpms_dir=ICPMS_DIR):
         try:
             icpms_point = ICPMSPoint.open(n, icpms_dir=icpms_dir)
         except FileNotFoundError as e:
-            print(f"itermeasurement skipping {n} due to error = \n{e}")
+            # print(f"skipping {n} due to error = \n{e}")
+            continue
         else:
             yield icpms_point
 
@@ -185,7 +186,14 @@ class ICPMSPoint:
 
 class ICPMSCalibration:
     def __init__(
-        self, ic_id, date, element, mass, ppbs, signals, wash_signals,
+        self,
+        ic_id,
+        date,
+        element,
+        mass,
+        ppbs,
+        signals,
+        wash_signals,
     ):
         """Initiate an ICP-MS calibration
 

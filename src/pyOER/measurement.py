@@ -7,7 +7,7 @@ import re
 import time
 import datetime
 from EC_MS import Dataset
-from .constants import MEASUREMENT_DIR, MEASUREMENT_ID_FILE
+from .constants import MEASUREMENT_DIR, MEASUREMENT_ID_FILE, STANDARD_ELECTRODE_AREA
 from .tools import singleton_decorator, CounterWithFile, FLOAT_MATCH
 from .settings import DATA_DIR
 
@@ -210,9 +210,14 @@ class Measurement:
 
     @property
     def sample(self):
+        if not self.sample_name:
+            return
         from .sample import Sample
 
-        return Sample.open(self.sample_name)
+        try:
+            return Sample.open(self.sample_name)
+        except FileNotFoundError:
+            return Sample(name=self.sample_name)
 
     @property
     def dataset(self):
@@ -255,6 +260,9 @@ class Measurement:
     def plot_experiment(self, *args, **kwargs):
         """shortcut to self.dataset.plot_experiment"""
         return self.dataset.plot_experiment(*args, **kwargs)
+
+    def cut_dataset(self, *args, **kwargs):
+        self._dataset = self.dataset.cut(*args, **kwargs)
 
     def open_elog(self):
         from .elog import ElogEntry
@@ -306,6 +314,26 @@ class Measurement:
         else:
             RE_vs_RHE = float(re.search(FLOAT_MATCH, RE_vs_RHE_str).group())
         return RE_vs_RHE
+
+    @property
+    def A_el(self):
+        return STANDARD_ELECTRODE_AREA
+
+    @property
+    def R_Ohm(self):
+        try:
+            R_ohm_str = self.elog.field_data["Resistor"]
+            if R_ohm_str == "":
+                raise KeyError
+        except AttributeError:
+            print(f"WARNING!!! Measurement '{self}' has no elog :(")
+            R_ohm = None
+        except (KeyError, TypeError):
+            print(f"WARNING!!! No R_ohm in ({self.elog}), the elog for '{self}'")
+            R_ohm = None
+        else:
+            R_ohm = float(re.search(FLOAT_MATCH, R_ohm_str).group())
+        return R_ohm
 
     def get_icpms_points(self):
         """Return a list of ICPMSPoints from the measurement"""

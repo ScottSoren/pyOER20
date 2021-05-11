@@ -11,7 +11,7 @@
         "Tag": "Reshma4E, Easter1A, Easter1B",
         "Sample Name": "Reshma4E waas sputtered last month at 400 C in 16(O), Easter1B was sputtered at RT 19D19 in (18)O",
         "Removed from vacuum": "both in theta-probe until 19D24",
-        "RE_vs_RHE": "",
+        "RE_vs_RHE": "0.715",
         "Resistor": "100",
         "Chip": "First non-aqueous chip",
         "Electrolyte": "",

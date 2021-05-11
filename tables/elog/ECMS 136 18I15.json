@@ -2,7 +2,9 @@
     "setup": "ECMS",
     "number": "136",
     "date": "18I15",
-    "field_data": null,
+    "field_data": {
+        "RE_vs_RHE": "0.720"
+    },
     "sample_measurements": {
         "Emil1": [
             56

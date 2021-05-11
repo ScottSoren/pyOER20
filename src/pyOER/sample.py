@@ -2,12 +2,14 @@
 
 import json
 
-from .constants import SAMPLE_DIR
+from .constants import SAMPLE_DIR, STANDARD_SITE_DENSITY, STANDARD_SPECIFIC_CAPACITANCE
 from .measurement import Measurement, all_measurements
 
 SAMPLE_TYPES = {
     "Ru": {
-        "hydrous": ["Taiwan1G",],
+        "hydrous": [
+            "Taiwan1G",
+        ],
         "metallic": ["Melih", "Bernie"],
         "foam": "Evans",
         "rutile": ["Reshma4", "Maundy", "Stoff", "Sofie", "Mette", "John"],
@@ -57,7 +59,7 @@ def get_element_and_type(name, get="both"):
 
 
 def get_isotope(name):
-    for isotope, sample_names in SAMPLE_ISOTOPES:
+    for isotope, sample_names in SAMPLE_ISOTOPES.keys():
         for sample in [sample_names] if isinstance(sample_names, str) else sample_names:
             if name.startswith(sample):
                 return isotope
@@ -104,6 +106,16 @@ class Sample:
         return get_element_and_type(self.name, get="element")
 
     @property
+    def site_density(self):
+        """Density of sites in mol/cm^2. TODO: module dictionary with elements"""
+        return STANDARD_SITE_DENSITY  # 1 site/nm^2 in mol/cm^2
+
+    @property
+    def specific_capacitance(self):
+        """Specific capacitance in Farad/cm^2. TODO: module dictionary with elements"""
+        return STANDARD_SPECIFIC_CAPACITANCE
+
+    @property
     def oxide_type(self):
         return get_element_and_type(self.name, get="oxide_type")
 
@@ -129,3 +141,15 @@ class Sample:
         # sort by tstamp:
         ms = sorted(ms)
         return ms
+
+    @property
+    def tofs(self):
+        from .tof import all_tofs
+
+        return [tof for tof in all_tofs() if tof.sample_name == self.name]
+
+    @property
+    def tof_sets(self):
+        from .tof import all_tof_sets
+
+        return [t_set for t_set in all_tof_sets() if t_set.sample_name == self.name]
