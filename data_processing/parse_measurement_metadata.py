@@ -6,7 +6,7 @@ from pyOER import Measurement
 from pyOER.elog import ElogEntry, read_elog_html
 
 ELOG_FILE = Path("../elog/full_NOTES_cinfelog.html")
-METADATA_DOC = Path("../descriptions/metadata_from_elog.txt")
+METADATA_DOC = Path("../notes/metadata_from_elog.txt")
 
 MATCHERS = {  # regular expressions to match things from the metadata file
     "sample": r"([A-Z][a-z]+[0-9]+[A-Z]?)",

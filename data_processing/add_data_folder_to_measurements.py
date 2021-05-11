@@ -5,7 +5,7 @@ I don't actually think it's necessary to copy it.
 from pathlib import Path
 from pyOER import Measurement
 from pyOER.measurement import all_measurements
-from generate_measurements import (
+from data_processing.generate_measurements import (
     get_pickle_paths,
     read_metadata_from_path,
     check_if_EC_MS_pickle,

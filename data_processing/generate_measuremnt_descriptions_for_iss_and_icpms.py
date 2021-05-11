@@ -4,7 +4,7 @@ import numpy as np
 from pyOER import Measurement
 
 
-with open("./systematic_measurements.json", "r") as f:
+with open("notes/systematic_measurements.json", "r") as f:
     systematic_m_ids = {int(key): value for key, value in json.load(f).items()}
 
 sample_types = {
@@ -134,8 +134,8 @@ for m_id, tag in systematic_m_ids.items():
             + f"{I_avg},\t{U_avg}\n"
         ]
 
-    with open("ecms_measurements_hopefully_iss_before_and_after.txt", "w") as f:
+    with open("notes/ecms_measurements_hopefully_iss_before_and_after.txt", "w") as f:
         f.writelines(iss_lines)
 
-    with open("icpms_results_from_operando_ecms.txt", "w") as f:
+    with open("notes/icpms_results_from_operando_ecms.txt", "w") as f:
         f.writelines(icpms_operando_lines)

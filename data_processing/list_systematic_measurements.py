@@ -9,7 +9,7 @@ from pyOER import all_measurements
 systematic_measurements_file = Path("./systematic_measurements.json")
 
 if systematic_measurements_file.exists():
-    with open("./systematic_measurements.json", "r") as f:
+    with open("notes/systematic_measurements.json", "r") as f:
         systematic_m_ids = {int(key): value for key, value in json.load(f).items()}
 else:
     systematic_m_ids = {}
@@ -60,5 +60,5 @@ else:
     print("all done.")
 
 
-with open("./systematic_measurements.json", "w") as f:
+with open("notes/systematic_measurements.json", "w") as f:
     json.dump(systematic_m_ids, f, indent=4)

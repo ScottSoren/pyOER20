@@ -3,7 +3,7 @@ import json
 
 from pyOER.experiment import StandardExperiment
 
-DESCRIPTIONS_DIR = Path(__file__).parent.parent / "descriptions"
+DESCRIPTIONS_DIR = Path(__file__).parent.parent / "notes"
 
 standard_measurements_file = DESCRIPTIONS_DIR / "systematic_measurements.json"
 
