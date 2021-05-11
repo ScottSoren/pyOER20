@@ -12,5 +12,6 @@
     "r_id": null,
     "rate_calc_kwargs": {},
     "description": null,
-    "t_id": 315
+    "t_id": 315,
+    "amount": null
 }

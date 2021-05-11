@@ -58,7 +58,9 @@ TOF_ID_FILE = TOF_DIR / "LAST_TOF_ID.pyOER20"
 
 FARADAYS_CONSTANT = 96485  # [C/mol]
 
-STANDARD_SITE_DENSITY = 166e-12  # 1 site per nm^2 in [mol/cm^2]
+STANDARD_SITE_DENSITY = 5 * 166e-12  # 5 sites per nm^2 in [mol/cm^2]
+# five sites is based on Ru(110) cus site density.
+
 STANDARD_SPECIFIC_CAPACITANCE = 200e-6  # specific capacitance in [Far]
 
 STANDARD_ELECTRODE_AREA = 0.196  # electrode area in [cm^2]

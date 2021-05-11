@@ -129,6 +129,7 @@ sample_plot_specs = {
     "IrOx/Ir": {"color": "g", "marker": "s"},
 }
 
+
 def nested_update(dict_1, dict_2):
     for key, value in dict_2.items():
         if key in dict_1 and isinstance(dict_1[key], dict):
@@ -142,7 +143,9 @@ def get_stats(sample_type, current_point, tof_time):
     diss = np.array(
         [
             TurnOverFrequency.open(t_id).rate
-            for t_id in tof_collection[sample_type][current_point]["dissolution"][tof_time]
+            for t_id in tof_collection[sample_type][current_point]["dissolution"][
+                tof_time
+            ]
         ]
     )
     diss = diss[~np.isnan(diss)]
@@ -168,22 +171,24 @@ def get_stats(sample_type, current_point, tof_time):
     S_number_lattice = np.mean(act) / np.mean(exc)
     if len(diss) > 1:
         sigma_S = S_number * np.sqrt(
-            (np.std(act) / np.mean(act)) ** 2
-            + (np.std(diss) / np.mean(diss)) ** 2
+            (np.std(act) / np.mean(act)) ** 2 + (np.std(diss) / np.mean(diss)) ** 2
         )
         stats[sample_type][current_point]["S_number"][tof_time] = [S_number, sigma_S]
     else:
         stats[sample_type][current_point]["S_number"][tof_time] = [S_number, None]
     if len(exc) > 1:
         sigma_S_lattice = S_number_lattice * np.sqrt(
-            (np.std(act) / np.mean(act)) ** 2
-            + (np.std(exc) / np.mean(exc)) ** 2
+            (np.std(act) / np.mean(act)) ** 2 + (np.std(exc) / np.mean(exc)) ** 2
         )
         stats[sample_type][current_point]["S_number_lattice"][tof_time] = [
-            S_number_lattice, sigma_S_lattice
+            S_number_lattice,
+            sigma_S_lattice,
         ]
     else:
-        stats[sample_type][current_point]["S_number_lattice"][tof_time] = [S_number_lattice, None]
+        stats[sample_type][current_point]["S_number_lattice"][tof_time] = [
+            S_number_lattice,
+            None,
+        ]
 
     return stats
 
@@ -194,24 +199,26 @@ if True:  # fig 3a
     current_positions = {"0.05": 1, "0.15": 2, "0.5": 3, "1.0": 4}
     number_specs = {
         "S_number": {"marker": "^", "color": "k"},
-        "S_number_lattice": {"marker": "v", "color": "#54bdebff"}
+        "S_number_lattice": {"marker": "v", "color": "#54bdebff"},
     }
     for current_point, position in current_positions.items():
-        for tof_time in [# "start",
-                         "steady"
-                         ]:
+        for tof_time in ["steady"]:  # "start",
             stats = get_stats(fig3a_sample_type, current_point, tof_time)
             for number_name, specs in number_specs.items():
-                specs["markerfacecolor"] = "w" if tof_time == "start" else specs["color"]
-                number, sigma_number = stats[fig3a_sample_type][current_point][number_name][tof_time]
+                specs["markerfacecolor"] = (
+                    "w" if tof_time == "start" else specs["color"]
+                )
+                number, sigma_number = stats[fig3a_sample_type][current_point][
+                    number_name
+                ][tof_time]
                 ax3a.plot(position, number, **specs)
                 if sigma_number:
                     error_specs = specs.copy()
                     error_specs.update(marker="_")
                     ax3a.plot(
                         [position, position],
-                        [number-sigma_number, number + sigma_number],
-                        **error_specs
+                        [number - sigma_number, number + sigma_number],
+                        **error_specs,
                     )
     ax3a.set_yscale("log")
 
@@ -238,14 +245,19 @@ if True:  # fig 3b
         specs = sample_plot_specs[sample_type]
         for tof_time in ["start", "steady"]:
             stats = get_stats(
-                sample_type=sample_type, current_point=fig3b_current_point, tof_time=tof_time
+                sample_type=sample_type,
+                current_point=fig3b_current_point,
+                tof_time=tof_time,
             )
             nested_update(stats_collection, stats)
             specs["markerfacecolor"] = "w" if tof_time == "start" else specs["color"]
 
-            S_number, sigma_S = stats_collection[sample_type][fig3b_current_point]["S_number"][tof_time]
-            S_number_lattice, sigma_S_lattice = \
-                stats_collection[sample_type][fig3b_current_point]["S_number_lattice"][tof_time]
+            S_number, sigma_S = stats_collection[sample_type][fig3b_current_point][
+                "S_number"
+            ][tof_time]
+            S_number_lattice, sigma_S_lattice = stats_collection[sample_type][
+                fig3b_current_point
+            ]["S_number_lattice"][tof_time]
 
             ax3b.plot(S_number_lattice, S_number, **specs)
 
@@ -255,15 +267,18 @@ if True:  # fig 3b
                 ax3b.plot(
                     [S_number_lattice, S_number_lattice],
                     [S_number - sigma_S, S_number + sigma_S],
-                    **diss_error_specs
+                    **diss_error_specs,
                 )
             if sigma_S_lattice:
                 exc_error_specs = specs.copy()
                 exc_error_specs.update(marker="|", linestyle="-", markersize=5)
                 ax3b.plot(
-                    [S_number_lattice - sigma_S_lattice, S_number_lattice + sigma_S_lattice],
+                    [
+                        S_number_lattice - sigma_S_lattice,
+                        S_number_lattice + sigma_S_lattice,
+                    ],
                     [S_number, S_number],
-                    **exc_error_specs
+                    **exc_error_specs,
                 )
 
     lims = [5, 1e5]
