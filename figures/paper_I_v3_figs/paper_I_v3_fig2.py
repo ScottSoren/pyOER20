@@ -15,14 +15,6 @@ if forpublication:  # for the publication figure
 else:
     plt.style.use("default")
 
-exp_dict = dict(
-    exp_Reshma1_16O=Experiment.open(47),
-    # exp_Reshma4_16O=Experiment.open(49),  # or 49 or 50 or 73
-    exp_Reshma1_18O=Experiment.open(54),  # or 55?
-    # exp_Reshma4_18O=Experiment.open(59),  # or 63 or 59 or 75, 76, 77
-)
-exp_dict["exp_Reshma1_16O"].tspan_plot = [1700, 5400]
-exp_dict["exp_Reshma1_18O"].tspan_plot = [1100, 4800]
 
 if True:  # fig 2a, Reshma1 in 16-O electrolyte
     exp = Experiment.open(47)
@@ -43,7 +35,7 @@ if True:  # fig 2a, Reshma1 in 16-O electrolyte
         )
         axes[0].set_ylabel("O$_2$ / (pmol s$^{-1}$cm$^{-2}_{geo})$")
         axes[1].set_ylabel("E vs RHE / (V)")
-        axes[2].set_ylabel("J / ($\mu$A cm$^{-2}_{geo}$)")
+        axes[2].set_ylabel("J / (mA cm$^{-2}_{geo}$)")
         axes[0].set_xlabel("time / (s)")
         axes[1].set_xlabel("time / (s)")
         axes[0].set_yscale("log")
@@ -74,7 +66,7 @@ if True:  # fig 2b, Reshma1 in 18-O electrolyte  (wierd FE)
         )
         axes[0].set_ylabel("O$_2$ / (pmol s$^{-1}$cm$^{-2}_{geo})$")
         axes[1].set_ylabel("E vs RHE / (V)")
-        axes[2].set_ylabel("J / ($\mu$A cm$^{-2}_{geo}$)")
+        axes[2].set_ylabel("J / (mA cm$^{-2}_{geo}$)")
         axes[0].set_xlabel("time / (s)")
         axes[1].set_xlabel("time / (s)")
         axes[0].set_yscale("log")
@@ -96,7 +88,7 @@ if True:  # fig 2c, Reshma1 in 18-O electrolyte  (sensible FE)
         axes[1].set_ylim([0, 0.32])
         axes[0].set_ylabel("Faradaic efficiency / (%)")
         axes[0].set_xlabel("E vs RHE / (V)")
-        axes[1].set_ylabel("Current density / ($\mu$A cm$^{-2}_{geo}$)")
+        axes[1].set_ylabel("Current density / (mA cm$^{-2}_{geo}$)")
         if forpublication:
             fig.savefig(f"paper_I_v3_fig2c.png")
             fig.savefig(f"paper_I_v3_fig2c.svg")
@@ -114,7 +106,7 @@ if True:  # fig 2c, Reshma1 in 18-O electrolyte  (sensible FE)
 
 if True:  # fig 2d, with the
     exp = Experiment.open(71)
-    axes = exp.measurement.plot_experiment(
+    exp.measurement.plot_experiment(
         mols=[exp.mdict["O2_M36"], exp.mdict["O2_M34"]],
         unit="pmol/s/cm^2",
         removebackground=True,
@@ -131,7 +123,7 @@ if True:  # fig 2d, with the
     )  # garbage plot
     axes[0].set_ylabel("O$_2$ / (pmol s$^{-1}$cm$^{-2}_{geo})$")
     axes[1].set_ylabel("E vs RHE / (V)")
-    axes[2].set_ylabel("J / ($\mu$A cm$^{-2}_{geo}$)")
+    axes[2].set_ylabel("J / (mA cm$^{-2}_{geo}$)")
     axes[0].set_xlabel("time / (s)")
     axes[1].set_xlabel("time / (s)")
     axes[0].set_yscale("log")

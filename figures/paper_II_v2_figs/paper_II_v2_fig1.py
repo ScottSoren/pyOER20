@@ -27,7 +27,12 @@ axes_a = e1.measurement.plot_experiment(
 )
 
 axes_a[0].set_ylim([1e-13, 1e-7])
+axes_a[0].set_ylabel("raw MS signal / (A)")
+axes_a[1].set_ylabel("E vs RHE / (V)")
+axes_a[2].set_ylabel("J / (mA cm$^{-2}_{geo}$)")
+axes_a[0].set_xlabel("time / (s)")
+axes_a[1].set_xlabel("time / (s)")
 
 fig_a = axes_a[0].get_figure()
-fig_a.savefig("Taiwan1C_raw.png")
-fig_a.savefig("Taiwan1C_raw.svg")
+fig_a.savefig("paper_II_fig_1b.png")
+fig_a.savefig("paper_II_fig_1b.svg")

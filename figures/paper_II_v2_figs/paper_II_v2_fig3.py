@@ -225,12 +225,12 @@ if True:  # fig 3a
     ticklabels = ["0.05", "0.15", "0.5", "1.0"]
     ax3a.set_xticks([current_positions[c] for c in ticklabels])
     ax3a.set_xticklabels(ticklabels)
-    ax3a.set_ylabel("lattice or metal stability number")
-    ax3a.set_xlabel("current density / [$\mu$A/cm$^2$]")
+    ax3a.set_ylabel("stability number")
+    ax3a.set_xlabel("current density / (mA cm$^{-2}_{geo}$)")
     ax_r = ax3a.twinx()
     ax_r.set_yscale("log")
     ax_r.set_ylim([1 / y for y in ax3a.get_ylim()])
-    ax_r.set_ylabel("atoms per O2")
+    ax_r.set_ylabel("atoms per O$_2$")
 
     if forpublication:
         fig3a.savefig("paper_II_fig_3a.png")
@@ -286,19 +286,19 @@ if True:  # fig 3b
     ax3b.set_ylim(lims)
     ax3b.plot(lims, lims, "k--")
 
-    ax3b.set_xlabel("lattice stability number")
-    ax3b.set_ylabel("stability number")
+    ax3b.set_xlabel("lattice oxygen stability number")
+    ax3b.set_ylabel("metal stability number")
     ax3b.set_xscale("log")
     ax3b.set_yscale("log")
 
     ax_r = ax3b.twinx()
     ax_r.set_yscale("log")
     ax_r.set_ylim([1 / y for y in ax3b.get_ylim()])
-    ax_r.set_ylabel("dissolved metal atoms per O2")
+    ax_r.set_ylabel("dissolved metal ions per O$_2$")
     ax_t = ax3b.twiny()
     ax_t.set_xlim([1 / x for x in ax3b.get_xlim()])
     ax_t.set_xscale("log")
-    ax_t.set_xlabel("lattice O per O2")
+    ax_t.set_xlabel("lattice O per O$_2$")
 
     if forpublication:
         fig3b.savefig("paper_II_fig_3b.png")

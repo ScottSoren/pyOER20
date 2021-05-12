@@ -39,7 +39,7 @@ axes = cv.plot_experiment(
 )
 axes[0].set_ylabel("O$_2$ / (pmol s$^{-1}$cm$^{-2}_{geo})$")
 axes[1].set_ylabel("E vs RHE / (V)")
-axes[2].set_ylabel("J / ($\mu$A cm$^{-2}_{geo}$)")
+axes[2].set_ylabel("J / (mA cm$^{-2}_{geo}$)")
 axes[0].set_xlabel("time / (s)")
 axes[1].set_xlabel("time / (s)")
 
@@ -57,7 +57,7 @@ ax.plot(v, j, "b")
 
 x, y = cv1.get_flux(O2, unit="mol/s", t_bg=[90, 100])
 
-if True:  # use the integral and a modeled shape
+if False:  # use the integral and a modeled shape
     n_dot_O2 = np.trapz(y, x)  # in mol
     Q_O2 = n_dot_O2 * 4 * Chem.Far  # in C
     q_O2 = Q_O2 * 1e3 / A_el  # in mC/cm^2
@@ -100,7 +100,7 @@ else:  # use the measured signal
 
 
 ax.set_xlabel("E vs RHE / (V)")
-ax.set_ylabel("J / ($\mu$A cm$^{-2}_{geo}$)")
+ax.set_ylabel("J / (mA cm$^{-2}_{geo}$)")
 
 if forpublication:
     ax.get_figure().savefig("paper_I_v3_fig1e.png")
