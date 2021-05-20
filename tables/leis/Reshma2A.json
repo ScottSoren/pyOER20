@@ -1,0 +1,44 @@
+{
+    "data": {
+        "0": {
+            "raw_data_path": "/home/jejsor/Dropbox/Characterizations/Ruthenium/Reshma2/20180830-130018_01-Reshma2A-ESpHybrid_NanoSAM_ISS--8_1-Detector_Region.vms",
+            "pickle_name": "Reshma2A__2018-08-30 13:00:18__omicron__01.pickle",
+            "recorded_on": "omicron",
+            "datetime": "2018-08-30 13:00:18",
+            "timestamp": 1535626818.0,
+            "comment": "01",
+            "note": [
+                "\n"
+            ],
+            "num_of_datasets": 11
+        },
+        "1": {
+            "raw_data_path": "/home/jejsor/Dropbox/Characterizations/Ruthenium/Reshma2/20180830-165419_03-Reshma2A-ESpHybrid_NanoSAM_ISS--2_1-Detector_Region.vms",
+            "pickle_name": "Reshma2A__2018-08-30 16:54:19__omicron__03.pickle",
+            "recorded_on": "omicron",
+            "datetime": "2018-08-30 16:54:19",
+            "timestamp": 1535640859.0,
+            "comment": "03",
+            "note": [
+                "Sputtered 30 minutes (total).\n"
+            ],
+            "num_of_datasets": 3
+        },
+        "2": {
+            "raw_data_path": "/home/jejsor/Dropbox/Characterizations/Ruthenium/Reshma2/20180830-155216_02-Reshma2A-ESpHybrid_NanoSAM_ISS--1_1-Detector_Region.vms",
+            "pickle_name": "Reshma2A__2018-08-30 15:52:16__omicron__02.pickle",
+            "recorded_on": "omicron",
+            "datetime": "2018-08-30 15:52:16",
+            "timestamp": 1535637136.0,
+            "comment": "02",
+            "note": [
+                "Sputtered 10 minutes.\n"
+            ],
+            "num_of_datasets": 3
+        }
+    },
+    "custom": {
+        "results": {},
+        "measurements": {}
+    }
+}

@@ -1,0 +1,28 @@
+{
+    "data": {
+        "0": {
+            "raw_data_path": "/home/jejsor/Dropbox/DTU-MIT RuO2/Thetaprobe/All_data_and_text_files/19J22_after_new_tests/19J22_first_ISS/Iteration #008 - before crash/Mono 400\u00b5m/Soff4D/He ISS.avg",
+            "pickle_name": "Soff4D__2019-10-22 22:28:39__thetaprobe__.pickle",
+            "recorded_on": "thetaprobe",
+            "datetime": "2019-10-22 22:28:39",
+            "timestamp": 1571776119.0,
+            "comment": "",
+            "note": "'19J22_after_new_tests'",
+            "num_of_datasets": 1
+        },
+        "1": {
+            "raw_data_path": "/home/jejsor/Dropbox/DTU-MIT RuO2/Thetaprobe/All_data_and_text_files/19J22_after_new_tests/19J22_XPS_and_ISS/Iteration #008/Mono 400\u00b5m/Soff4D/He ISS.avg",
+            "pickle_name": "Soff4D__2019-10-22 23:23:35__thetaprobe__.pickle",
+            "recorded_on": "thetaprobe",
+            "datetime": "2019-10-22 23:23:35",
+            "timestamp": 1571779415.0,
+            "comment": "",
+            "note": "'19J22_after_new_tests'",
+            "num_of_datasets": 1
+        }
+    },
+    "custom": {
+        "results": {},
+        "measurements": {}
+    }
+}

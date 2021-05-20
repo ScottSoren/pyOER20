@@ -1,0 +1,20 @@
+{
+    "data": {
+        "0": {
+            "raw_data_path": "/home/jejsor/Dropbox/Characterizations/Ruthenium/Reshma1F/20180918-143230_Isotope 01-Reshma 1F-ESpHybrid_NanoSAM_ISS--10_1-Detector_Region.vms",
+            "pickle_name": "Reshma1F__2018-09-18 14:32:30__omicron__Isotope 01.pickle",
+            "recorded_on": "omicron",
+            "datetime": "2018-09-18 14:32:30",
+            "timestamp": 1537273950.0,
+            "comment": "Isotope 01",
+            "note": [
+                "\n"
+            ],
+            "num_of_datasets": 11
+        }
+    },
+    "custom": {
+        "results": {},
+        "measurements": {}
+    }
+}

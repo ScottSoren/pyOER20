@@ -1,0 +1,20 @@
+{
+    "data": {
+        "0": {
+            "raw_data_path": "/home/jejsor/Dropbox/Characterizations/Ruthenium/Evans/20190224-141309_After EC-Evans 1-ESpHybrid_NanoSAM_ISS--4_1-Detector_Region.vms",
+            "pickle_name": "Evans1__2019-02-24 14:13:09__omicron__After EC.pickle",
+            "recorded_on": "omicron",
+            "datetime": "2019-02-24 14:13:09",
+            "timestamp": 1551013989.0,
+            "comment": "After EC",
+            "note": [
+                "High surface area RuO2. Check for O-18.\n"
+            ],
+            "num_of_datasets": 11
+        }
+    },
+    "custom": {
+        "results": {},
+        "measurements": {}
+    }
+}

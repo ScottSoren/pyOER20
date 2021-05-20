@@ -1,0 +1,102 @@
+{
+    "data": {
+        "0": {
+            "raw_data_path": "/home/jejsor/Dropbox/DTU-MIT RuO2/Thetaprobe/All_data_and_text_files/19D19_labeled_RuO2/19D19_ISS_cont/Mono 400\u00b5m/Melih2/He ISS.avg",
+            "pickle_name": "Melih2__2019-04-19 16:17:56__thetaprobe__.pickle",
+            "recorded_on": "thetaprobe",
+            "datetime": "2019-04-19 16:17:56",
+            "timestamp": 1555683476.0,
+            "comment": "",
+            "note": "'19D19_labeled_RuO2'",
+            "num_of_datasets": 1
+        },
+        "1": {
+            "raw_data_path": "/home/jejsor/Dropbox/Characterizations/Ruthenium/Melih2/20190226-043610_Treated 05-Melih 2-ESpHybrid_NanoSAM_ISS--2_1-Detector_Region.vms",
+            "pickle_name": "Melih2__2019-02-26 04:36:10__omicron__Treated 05.pickle",
+            "recorded_on": "omicron",
+            "datetime": "2019-02-26 04:36:10",
+            "timestamp": 1551152170.0,
+            "comment": "Treated 05",
+            "note": [
+                "Metallic Ru. Oxidized in O18 90 minutes 300C.\n"
+            ],
+            "num_of_datasets": 4
+        },
+        "2": {
+            "raw_data_path": "/home/jejsor/Dropbox/Characterizations/Ruthenium/Melih2/20190225-035244_Treated 03-Melih 2-ESpHybrid_NanoSAM_ISS--1_1-Detector_Region.vms",
+            "pickle_name": "Melih2__2019-02-25 03:52:44__omicron__Treated 03.pickle",
+            "recorded_on": "omicron",
+            "datetime": "2019-02-25 03:52:44",
+            "timestamp": 1551063164.0,
+            "comment": "Treated 03",
+            "note": [
+                "Metallic Ru. Annealed 30 minutes 200C.\n"
+            ],
+            "num_of_datasets": 2
+        },
+        "3": {
+            "raw_data_path": "/home/jejsor/Dropbox/Characterizations/Ruthenium/Melih2/20190226-225100_Air exposure-Melih 2-ESpHybrid_NanoSAM_ISS--6_1-Detector_Region.vms",
+            "pickle_name": "Melih2__2019-02-26 22:51:00__omicron__Air exposure.pickle",
+            "recorded_on": "omicron",
+            "datetime": "2019-02-26 22:51:00",
+            "timestamp": 1551217860.0,
+            "comment": "Air exposure",
+            "note": [
+                "O18 labelled Ru exposed in air 12 hrs.\n"
+            ],
+            "num_of_datasets": 8
+        },
+        "4": {
+            "raw_data_path": "/home/jejsor/Dropbox/Characterizations/Ruthenium/Melih2/20190225-014442_Treated 02-Melih 2-ESpHybrid_NanoSAM_ISS--1_1-Detector_Region.vms",
+            "pickle_name": "Melih2__2019-02-25 01:44:42__omicron__Treated 02.pickle",
+            "recorded_on": "omicron",
+            "datetime": "2019-02-25 01:44:42",
+            "timestamp": 1551055482.0,
+            "comment": "Treated 02",
+            "note": [
+                "Metallic Ru. Sputtered 60 min total.\n"
+            ],
+            "num_of_datasets": 2
+        },
+        "5": {
+            "raw_data_path": "/home/jejsor/Dropbox/Characterizations/Ruthenium/Melih2/20190224-232058_As prepared-Melih 2-ESpHybrid_NanoSAM_ISS--2_1-Detector_Region.vms",
+            "pickle_name": "Melih2__2019-02-24 23:20:58__omicron__As prepared.pickle",
+            "recorded_on": "omicron",
+            "datetime": "2019-02-24 23:20:58",
+            "timestamp": 1551046858.0,
+            "comment": "As prepared",
+            "note": [
+                "Metallic Ru.\n"
+            ],
+            "num_of_datasets": 10
+        },
+        "6": {
+            "raw_data_path": "/home/jejsor/Dropbox/Characterizations/Ruthenium/Melih2/20190225-054956_Treated 04-Melih 2-ESpHybrid_NanoSAM_ISS--6_1-Detector_Region.vms",
+            "pickle_name": "Melih2__2019-02-25 05:49:56__omicron__Treated 04.pickle",
+            "recorded_on": "omicron",
+            "datetime": "2019-02-25 05:49:56",
+            "timestamp": 1551070196.0,
+            "comment": "Treated 04",
+            "note": [
+                "Metallic Ru. Annealed in O18 for 30 minutes 250C.\n"
+            ],
+            "num_of_datasets": 7
+        },
+        "7": {
+            "raw_data_path": "/home/jejsor/Dropbox/Characterizations/Ruthenium/Melih2/20190225-005415_Treated 01-Melih 2-ESpHybrid_NanoSAM_ISS--2_1-Detector_Region.vms",
+            "pickle_name": "Melih2__2019-02-25 00:54:15__omicron__Treated 01.pickle",
+            "recorded_on": "omicron",
+            "datetime": "2019-02-25 00:54:15",
+            "timestamp": 1551052455.0,
+            "comment": "Treated 01",
+            "note": [
+                "Metallic Ru. Sputtered 30 min.\n"
+            ],
+            "num_of_datasets": 2
+        }
+    },
+    "custom": {
+        "results": {},
+        "measurements": {}
+    }
+}

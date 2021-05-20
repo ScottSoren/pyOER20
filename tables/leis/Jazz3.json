@@ -1,0 +1,38 @@
+{
+    "data": {
+        "0": {
+            "raw_data_path": "/home/jejsor/Dropbox/DTU-MIT RuO2/Thetaprobe/All_data_and_text_files/19L08_Taiwan_after_first_testing/XPS_and_ISS/Mono 400\u00b5m ISS/Jazz3/He ISS.avg",
+            "pickle_name": "Jazz3__2019-12-09 07:02:13__thetaprobe__.pickle",
+            "recorded_on": "thetaprobe",
+            "datetime": "2019-12-09 07:02:13",
+            "timestamp": 1575871333.0,
+            "comment": "",
+            "note": "'19L08_Taiwan_after_first_testing'",
+            "num_of_datasets": 1
+        },
+        "1": {
+            "raw_data_path": "/home/jejsor/Dropbox/DTU-MIT RuO2/Thetaprobe/All_data_and_text_files/19L08_Taiwan_after_first_testing/first_ISS/Mono 400\u00b5m/Jazz3_2/He ISS.avg",
+            "pickle_name": "Jazz3__2019-12-09 05:28:19__thetaprobe__2.pickle",
+            "recorded_on": "thetaprobe",
+            "datetime": "2019-12-09 05:28:19",
+            "timestamp": 1575865699.0,
+            "comment": "2",
+            "note": "'19L08_Taiwan_after_first_testing'",
+            "num_of_datasets": 1
+        },
+        "2": {
+            "raw_data_path": "/home/jejsor/Dropbox/DTU-MIT RuO2/Thetaprobe/All_data_and_text_files/19L08_Taiwan_after_first_testing/first_ISS/Mono 400\u00b5m/Jazz3/He ISS.avg",
+            "pickle_name": "Jazz3__2019-12-09 05:28:19__thetaprobe__.pickle",
+            "recorded_on": "thetaprobe",
+            "datetime": "2019-12-09 05:28:19",
+            "timestamp": 1575865699.0,
+            "comment": "",
+            "note": "'19L08_Taiwan_after_first_testing'",
+            "num_of_datasets": 1
+        }
+    },
+    "custom": {
+        "results": {},
+        "measurements": {}
+    }
+}

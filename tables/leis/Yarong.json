@@ -1,0 +1,48 @@
+{
+    "data": {
+        "0": {
+            "raw_data_path": "/home/jejsor/Dropbox/DTU-MIT RuO2/Thetaprobe/All_data_and_text_files/19E09_tested_IrO2/19E09_ISS/Mono 400\u00b5m/Yarong_GC_point_2/He ISS.avg",
+            "pickle_name": "Yarong__2019-05-09 16:17:01__thetaprobe__GC-point-2.pickle",
+            "recorded_on": "thetaprobe",
+            "datetime": "2019-05-09 16:17:01",
+            "timestamp": 1557411421.0,
+            "comment": "GC-point-2",
+            "note": "'19E09_tested_IrO2'",
+            "num_of_datasets": 1
+        },
+        "1": {
+            "raw_data_path": "/home/jejsor/Dropbox/DTU-MIT RuO2/Thetaprobe/All_data_and_text_files/19E09_tested_IrO2/19E09_ISS/Mono 400\u00b5m/Yarong_GC_point_1/He ISS.avg",
+            "pickle_name": "Yarong__2019-05-09 16:17:00__thetaprobe__GC-point-1.pickle",
+            "recorded_on": "thetaprobe",
+            "datetime": "2019-05-09 16:17:00",
+            "timestamp": 1557411420.0,
+            "comment": "GC-point-1",
+            "note": "'19E09_tested_IrO2'",
+            "num_of_datasets": 1
+        },
+        "2": {
+            "raw_data_path": "/home/jejsor/Dropbox/DTU-MIT RuO2/Thetaprobe/All_data_and_text_files/19E09_tested_IrO2/19E10_ISS_try3/Mono 400\u00b5m/Yarong_GC_point_2/He ISS.avg",
+            "pickle_name": "Yarong__2019-05-10 10:38:42__thetaprobe__GC-point-2.pickle",
+            "recorded_on": "thetaprobe",
+            "datetime": "2019-05-10 10:38:42",
+            "timestamp": 1557477522.0,
+            "comment": "GC-point-2",
+            "note": "'19E09_tested_IrO2'",
+            "num_of_datasets": 1
+        },
+        "3": {
+            "raw_data_path": "/home/jejsor/Dropbox/DTU-MIT RuO2/Thetaprobe/All_data_and_text_files/19E09_tested_IrO2/19E10_ISS_try3/Mono 400\u00b5m/Yarong_GC_point_1/He ISS.avg",
+            "pickle_name": "Yarong__2019-05-10 10:38:41__thetaprobe__GC-point-1.pickle",
+            "recorded_on": "thetaprobe",
+            "datetime": "2019-05-10 10:38:41",
+            "timestamp": 1557477521.0,
+            "comment": "GC-point-1",
+            "note": "'19E09_tested_IrO2'",
+            "num_of_datasets": 1
+        }
+    },
+    "custom": {
+        "results": {},
+        "measurements": {}
+    }
+}
