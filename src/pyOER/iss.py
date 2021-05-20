@@ -1,39 +1,46 @@
 """ISS handler module for pyOER.
 
-Simple usage:
-You have ISS of samples, "Reshma1" and "Reshma2". You can load all these samples by
-loading "Reshma" without a postfix. The following piece of code will load ISS
-experiments for both sample series, create a plot of the isotopic oxygen ratios for
-every spectrum, and opening a plot verifying how accurate the peak decomposition is.
+    Simple usage:
+    You have ISS of samples, "Reshma1" and "Reshma2". You can load all
+    these samples by loading "Reshma" without a postfix. The following
+    piece of code will load ISS experiments for both sample series,
+    create a plot of the isotopic oxygen ratios for every spectrum, and
+    opening a plot verifying how accurate the peak decomposition is.
 
----- Code begin ----
-import pyOER
+    ---- Code begin ----
+    import pyOER
 
-# Load samples
-experiment_chain = pyOER.ISS('Reshma')
+    # Load samples
+    experiment_chain = pyOER.ISS('Reshma')
 
-# Plot isotopic oxygen ratios
-experiment_chain.plot_fit_ratios(True)
+    # Plot isotopic oxygen ratios
+    experiment_chain.plot_fit_ratios(True)
 
-# Spectrum number 7 appears to be the only outlier, so compare spectrum 6 and 7:
-experiment_chain.plot_fit(6)
-experiment_chain.plot_fit(7)
+    # Spectrum number 7 appears to be the only outlier, so compare
+    # spectrum 6 and spectrum 7:
+    experiment_chain.plot_fit(6)
+    experiment_chain.plot_fit(7)
 
-# The 5% O-18 could be explained by improper background subtraction and is therefore
-# seemingly within the fitting error.
----- Code end ----
+    # The 5% O-18 could be explained by improper background subtraction
+    # and is therefore seemingly within the fitting error.
+    ---- Code end ----
 """
 import pickle
 import pathlib
+
 import numpy as np
 
-import common_toolbox as ct
+#import common_toolbox as ct
+from .tools import smooth, get_range
+from .settings import DATA_DIR
 
 class ISS:
     def __init__(self, sample=None, fit=None):
         """ """
-        self.path = pathlib.Path(__file__).absolute().parent.parent.parent / 'tables' / 'iss_data'
-        self.files = self.get_list()
+        self.json_path = (pathlib.Path(__file__).absolute().parent.parent.parent
+                     / 'tables' / 'leis')
+        self.data_path = DATA_DIR / 'Data' / 'ISS' / 'organized_pickles'
+        self.files = self.get_list_of_all_pickles()
         self._active = None
         self._relative = None
         self._set_active = None
@@ -41,7 +48,7 @@ class ISS:
         if sample is not None:
             self.get_sample(sample)
         # All reference data
-        self._ref = pickle.load(open(self.path / 'iss_reference.pickle', 'rb'))
+        self._ref = pickle.load(open(self.data_path / 'iss_reference.pickle', 'rb'))
         self.fit_ratios = {}
         self.fit_coeffs = {}
         if fit is not None:
@@ -85,9 +92,10 @@ Set to None for certain effect."""
         ###
         self._set_active = value
 
-    def get_list(self):
+    def get_list_of_all_pickles(self):
         """Return a list of all iss pickles in data folder"""
-        list_ = [filename for filename in pathlib.os.listdir(self.path) if filename.endswith('.pickle')]
+        list_ = [filename for filename in pathlib.os.listdir(self.data_path)
+                 if filename.endswith('.pickle')]
         list_.sort()
         return list_
 
@@ -130,7 +138,7 @@ Set to None for certain effect."""
         """Take list of filenames and load it into sorted dictionary"""
         iss_dict = dict()
         for i, filename in enumerate(filenames):
-            with open(self.path / filename, 'rb') as f:
+            with open(self.data_path / filename, 'rb') as f:
                 iss_dict[i] = pickle.load(f)
             print(i, filename)
         print('load_set ', iss_dict)
@@ -138,14 +146,20 @@ Set to None for certain effect."""
 
     def plot(self, selection=[], mass_lines=[], show=True):
         """Plot selected spectra.
-'selection' must be a list of keys matching 'iss_dict' returned by self.load_set"""
+        'selection' must be a list of keys matching 'iss_dict' returned by
+        self.load_set.
+        """
         import matplotlib.pyplot as plt
         if len(selection) == 0:
             selection = self.keys
         plt.figure('iss autoplot')
         self.labels
         if len(mass_lines) > 0:
-            self._active[0].AddMassLines(mass_lines, color='gray', labels=False)
+            self._active[0].add_mass_lines(
+                mass_lines,
+                color='gray',
+                labels=False,
+                )
         for key in selection:
             data = self._active[key]
             plt.plot(data.x, data.y, label=f'{key} - {data.sample}')
@@ -162,65 +176,68 @@ Set to None for certain effect."""
         plt.show()
 
     # Maybe a @classmethod ?
-    def fit_with_reference(self, selection=None, peaks=[], plot=False, align=True):
+    def fit_with_reference(self, selection=None, peaks=[], plot=False,
+                           align=True):
         """Fit reference data to selected datasets.
 
-Input  :
-    selection (list) where each element is an integer representing a key in
-        self._active. Each of these ISS objects will be fit to the reference
-        data. Defaults to all datasets.
-    peaks (list) where each element is an integer representing the mass of the
-        elements to fit. If elements should be compared group-wise, as in O-16
-        or O-18 to total oxygen signal, nest them in a list of their own, e.g.
-        peaks=[[16, 18], 40]. No sensitivity factors are applied.
-    plot (bool): whether or not to autoplot results. Default False.
-    align (bool) has to be True (default) for now.
+    Input  :
+        selection (list): where each element is an integer representing
+            a key in self._active. Each of these ISS objects will be fit
+            to the  reference data. Defaults to all datasets.
+        peaks (list): where each element is an integer representing the
+            mass of the elements to fit. If elements should be compared
+            group-wise, as in O-16 or O-18 to total oxygen signal, nest
+            them in a list of their own, e.g. peaks=[[16, 18], 40]. No
+            sensitivity factors are applied.
+        plot (bool): whether or not to autoplot results. Default False.
+        align (bool): has to be True (default) for now.
 
-Output :
-    ratios (dict) which will contain the ratio of peak-to-peak(s) for every
-        combination of peak in ´peaks´.
+    Output :
+        ratios (dict): which will contain the ratio of peak-to-peak(s)
+            for every combination of peak in ´peaks´.
 
-Example:
->>> ratio = self.fit_with_reference(peaks=[[16, 18]])
->>> print(ratio['16/18'])
-2.917
->>> print(ratio['16'])
-0.7447
-    __________________________________________
-Notes:
+    Example:
+    >>> ratio = self.fit_with_reference(peaks=[[16, 18]])
+    >>> print(ratio['16/18'])
+    2.917
+    >>> print(ratio['16'])
+    0.7447
+        __________________________________________
+    Notes:
 
-REFERENCE DATA:
-    self._ref (nested dict)
-    self._ref[setup][peak].keys() =
+    REFERENCE DATA:
+        self._ref (nested dict)
+        self._ref[setup][peak].keys() =
 
-        'xy': xy-data of original spectrum
-        'background': peak-subtracted original spectrum
-        'peak': background-subtracted original spectrum
-        'area': integrated signal of 'peak'
-        'region': the [low, high] delimiter used for the peak identification/
-               background subtraction
-        'file': full path to original spectrum on host computer
-        'iss': original ISS object
+            'xy': xy-data of original spectrum
+            'background': peak-subtracted original spectrum
+            'peak': background-subtracted original spectrum
+            'area': integrated signal of 'peak'
+            'region': the [low, high] delimiter used for the peak
+                 identification/background subtraction
+            'file': full path to original spectrum on host computer
+            'iss': original ISS object
 
-FITTING METHOD:
-    for each spectrum in ´selection´:
-        for each peak in ´peaks´:
-            subtract background from spectrum using same region as ref;
-            for each nested peak (if any):
-                add scaled nested peaks to background subtracted data for
-                best fit;
-            save fit result to ´results´ dictionary;
+    FITTING METHOD:
+        for each spectrum in ´selection´:
+            for each peak in ´peaks´:
+                subtract background from spectrum using same region as /
+                ref;
+                for each nested peak (if any):
+                    add scaled nested peaks to background subtracted /
+                    data for best fit;
+                save fit result to ´results´ dictionary;
 
-RETURN METHOD:
-    for each result in ´results´:
-        for each other result in ´results´:
-            if result != other result:
-                save to ´ratios´: (result)/(other result)
-    for each nested peak:
-        save to ´ratios´:
-            'peak1' = peak1 / (peak1 + peak2)
-            'peak2' = peak2 / (peak1 + peak2)
-"""
+    RETURN METHOD:
+        for each result in ´results´:
+            for each other result in ´results´:
+                if result != other result:
+                    save to ´ratios´: (result)/(other result)
+        for each nested peak:
+            save to ´ratios´:
+                'peak1' = peak1 / (peak1 + peak2)
+                'peak2' = peak2 / (peak1 + peak2)
+    """
 
         from scipy.optimize import curve_fit
 
@@ -266,21 +283,31 @@ defined by the same region'
 {peak}\nMust be an integer or list of integers.')
 
                 # Subtract background and make accessible afterwards
-                background = subtract_single_background(np.vstack((data_set.shifted['oxygen'], data_set.smoothed['oxygen'])).T, ranges=[region])
+                background = subtract_single_background(
+                    np.vstack((data_set.shifted['oxygen'],
+                    data_set.smoothed['oxygen'])).T,
+                    ranges=[region],
+                    )
                 self.background[selected] = background
                 isolated_peak = data_set.y - background
                 isolated_peak[np.isnan(isolated_peak)] = 0.1
                 if plot is True:
                     plt.plot(data_set.x, background, 'k:', label='Background')
                     plt.plot(data_set.x, data_set.y, 'k-', label='Data')
-                    plt.plot(data_set.shifted['oxygen'], background, 'r:', label='Background 1')
-                    plt.plot(data_set.shifted['oxygen'], data_set.y, 'r-', label='Data 1')
+                    plt.plot(data_set.shifted['oxygen'],
+                             background, 'r:',
+                             label='Background 1',
+                             )
+                    plt.plot(data_set.shifted['oxygen'],
+                             data_set.y, 'r-',
+                             label='Data 1',
+                             )
 
                 import common_toolbox as ct
-                mask_dat = ct.get_range(data_set.shifted['oxygen'], *region)
+                mask_dat = get_range(data_set.shifted['oxygen'], *region)
                 mask_ref = {}
-                mask_ref[16] = ct.get_range(ref[16]['xy'][:, 0], *region)
-                mask_ref[18] = ct.get_range(ref[18]['xy'][:, 0], *region)
+                mask_ref[16] = get_range(ref[16]['xy'][:, 0], *region)
+                mask_ref[18] = get_range(ref[18]['xy'][:, 0], *region)
 
                 def func(x, *args):
                     """Fitting function"""
@@ -317,8 +344,12 @@ defined by the same region'
                     a2 = ref[peak2]['area']
                     c1 = coeffs[selected][peak1]
                     c2 = coeffs[selected][peak2]
-                    ratios[selected][f'{peak1}/{peak2}'] = coeffs[selected][peak1] * \
-ref[peak1]['area'] / coeffs[selected][peak2] / ref[peak2]['area']
+                    ratios[selected][f'{peak1}/{peak2}'] = (
+                        coeffs[selected][peak1]
+                        * ref[peak1]['area']
+                        / coeffs[selected][peak2]
+                        / ref[peak2]['area']
+                        )
             # Group ratios
             for peak in peaks:
                 if not isinstance(peak, list):
@@ -327,7 +358,9 @@ ref[peak1]['area'] / coeffs[selected][peak2] / ref[peak2]['area']
                 for peak_ in peak:
                     coefficient = coeffs[selected][peak_]
                     total += ref[peak_]['area']*coefficient
-                    ratios[selected][f'{peak_}'] = ref[peak_]['area']*coefficient
+                    ratios[selected][f'{peak_}'] = (
+                        ref[peak_]['area'] * coefficient
+                        )
                 for peak_ in peak:
                     ratios[selected][f'{peak_}'] /= total
             if plot is True:
@@ -360,7 +393,9 @@ ref[peak1]['area'] / coeffs[selected][peak2] / ref[peak2]['area']
                 counter += 1
                 continue
             # Plot good data
-            plt.plot(counter, self.fit_ratios[i]['16']*100, 'o', color=colors[0])
+            plt.plot(counter, self.fit_ratios[i]['16']*100,
+                     'o', color=colors[0],
+                     )
             plot_data.append([
                 self._active[i].sample,
                 self,
@@ -369,13 +404,18 @@ ref[peak1]['area'] / coeffs[selected][peak2] / ref[peak2]['area']
                 counter,
                 self.fit_ratios[i]['16'],
                 self.fit_ratios[i]['18'],
-            ])
+                ])
             counter += 1
 
         # Plot formatting
-        xticks = [i for (gen_name, data_object, name, date, i, r1, r2) in plot_data]
-        dates = [date_formatter(date) for (gen_name, data_object, name, date, i, r1, r2) in plot_data]
-        xlabels = [f'{gen_name} {name.lstrip(gen_name)} - {i}' for (gen_name, data_object, name, date, i, r1, r2) in plot_data]
+        xticks = [i for (gen_name, data_object, name, date, i, r1, r2)
+                  in plot_data]
+        dates = [date_formatter(date)
+                 for (gen_name, data_object, name, date, i, r1, r2)
+                 in plot_data]
+        xlabels = [f'{gen_name} {name.lstrip(gen_name)} - {i}'
+                   for (gen_name, data_object, name, date, i, r1, r2)
+                   in plot_data]
 
         secaxx = ax.secondary_xaxis('top')
         secaxy = ax.secondary_yaxis('right')
@@ -409,26 +449,55 @@ ref[peak1]['area'] / coeffs[selected][peak2] / ref[peak2]['area']
 
         # Initialize figure
         import matplotlib.pyplot as plt
-        plt.figure(f'Peak Deconvolution _ {self._active[index].sample} - {index}')
+        plt.figure(
+            f'Peak Deconvolution _ {self._active[index].sample} - {index}'
+            )
 
         setup = self._active[index].setup
         ref1 = self._ref[setup][16]['peak']
         ref2 = self._ref[setup][18]['peak']
 
         # Raw + background
-        plt.plot(self._active[index].shifted['oxygen'], self._active[index].y, 'b-', label='Raw')
-        plt.plot(self._active[index].shifted['oxygen'], self.background[index], 'b:', label='Background')
+        plt.plot(self._active[index].shifted['oxygen'],
+                 self._active[index].y,
+                 'b-', label='Raw',
+                 )
+        plt.plot(self._active[index].shifted['oxygen'],
+                 self.background[index],
+                 'b:', label='Background',
+                 )
 
         # Total fit
-        plt.plot(self._active[index].shifted['oxygen'], self.background[index] + ref1*self.fit_coeffs[index][16] + ref2*self.fit_coeffs[index][18], 'y-', label='Sum of components')
-        # A bit uncertain whether the reference data is properly aligned with the measured data during
-        # the fits. But the results seem close enough.
-        #plt.plot(self._ref[setup][16]['xy'][:, 0], self.background[index] + ref1*self.fit_coeffs[index][16] + ref2*self.fit_coeffs[index][18], 'm-')
+        plt.plot(self._active[index].shifted['oxygen'],
+                 (self.background[index]
+                    + ref1*self.fit_coeffs[index][16]
+                    + ref2*self.fit_coeffs[index][18]
+                 ),
+                 'y-',
+                 label='Sum of components',
+                 )
+        # A bit uncertain whether the reference data is properly aligned with
+        # the measured data during the fits. But the results seem close enough.
+        #plt.plot(self._ref[setup][16]['xy'][:, 0],
+        #         (
+        #           self.background[index]
+        #           + ref1*self.fit_coeffs[index][16]
+        #           + ref2*self.fit_coeffs[index][18],
+        #         ),
+        #         'm-')
 
         # Individual components
-        plt.plot(self._ref[setup][16]['xy'][:, 0], ref1*self.fit_coeffs[index][16], 'r-', label='O-16 component')
-        plt.plot(self._ref[setup][18]['xy'][:, 0], ref2*self.fit_coeffs[index][18], 'g-', label='O-18 component')
-        self._active[index].AddMassLines([16, 18, 101], labels=labels)
+        plt.plot(self._ref[setup][16]['xy'][:, 0],
+                 ref1*self.fit_coeffs[index][16],
+                 'r-',
+                 label='O-16 component',
+                 )
+        plt.plot(self._ref[setup][18]['xy'][:, 0],
+                 ref2*self.fit_coeffs[index][18],
+                 'g-',
+                 label='O-18 component',
+                 )
+        self._active[index].add_mass_lines([16, 18, 101], labels=labels)
 
         # Show
         plt.title(self._active[index].sample)
@@ -448,7 +517,11 @@ def date_formatter(date):
     translate = {1: 'a', 2: 'b', 3: 'c', 4: 'd', 5: 'e', 6: 'f', 7: 'g',
         8: 'h', 9: 'i', 10: 'j', 11: 'k', 12: 'l'}
     string = f"{YY}{translate[M].upper()}{DD} {hh}:{mm}:{ss}"
-    string = r"$\bf{" + f"{YY}{translate[M].upper()}{DD}" + r"}$" + f"   {hh}:{mm}:{ss}"
+    string = (r"$\bf{"
+              + f"{YY}{translate[M].upper()}{DD}"
+              + r"}$"
+              + f"   {hh}:{mm}:{ss}"
+              )
     return string
 
 def subtract_single_background(xy, ranges=[], avg=3):
@@ -457,7 +530,7 @@ def subtract_single_background(xy, ranges=[], avg=3):
     x, y = xy[:, 0], xy[:, 1]
     background = np.copy(y)
     for limit in ranges:
-        indice = ct.get_range(x, *limit)
+        indice = get_range(x, *limit)
         # if first index is chosen
         # OR
         # if last ten indice are included
@@ -474,7 +547,8 @@ def subtract_single_background(xy, ranges=[], avg=3):
             background[indice] = x[indice]*a_coeff + b_coeff
     return background
 
-def align_spectra(iss_data, limits=[350, 520], masses=[16, 18], key='oxygen', plot=False):
+def align_spectra(iss_data, limits=[350, 520], masses=[16, 18], key='oxygen',
+                  plot=False):
     """Shift the iss data within 'limits' region to snap maximum signal
 unto nearest mass in list 'masses'."""
 
@@ -493,9 +567,9 @@ unto nearest mass in list 'masses'."""
             data.smoothed = {}
 
         # Get index of region of interest
-        index = ct.get_range(data.x, *limits)
+        index = get_range(data.x, *limits)
         # Find maximum in region
-        ys = ct.smooth(data.y, width=4)
+        ys = smooth(data.y, width=4)
         data.smoothed[key] = ys
         maximum = max(ys[index])
         if not np.isfinite(maximum):
@@ -506,7 +580,7 @@ unto nearest mass in list 'masses'."""
         x_max = data.x[i_max]
 
         # Find difference from reference
-        energies = data.ConvertEnergy(np.array(masses))
+        energies = data.convert_energy(np.array(masses))
         try:
             distance = np.abs(x_max - energies)
         except ValueError:
@@ -525,12 +599,15 @@ unto nearest mass in list 'masses'."""
             raise
 
         # Snap to nearest line
-        data.shifted[key] = data.x - (x_max - energies)[np.where(distance == min(distance))[0]]
+        data.shifted[key] = (
+            data.x
+            - (x_max-energies)[np.where(distance == min(distance))[0]]
+            )
         if plot is True:
             plt.plot(data.shifted[key], data.y)
             plt.plot(data.shifted[key], ys)
     if plot is True:
-        data.AddMassLines(masses)
+        data.add_mass_lines(masses)
 
     # Return a nd.array of modified xy data
     return np.vstack((data.shifted[key], data.smoothed[key])).T

@@ -1,27 +1,37 @@
 """Modify the references used to fit ISS data"""
 import pathlib
 import pickle
+
 import numpy as np
+import matplotlib.pyplot as plt
 from scipy.integrate import simps
-import ISS # github:Ejler/DataTreatment
-from pyOER.settings import DATA_DIR
+
+import ejler_iss as ISS
+from pyOER.settings import DATA_DIR, OMICRON_DIR
+if not DATA_DIR.exists() or not OMICRON_DIR.exists():
+    raise ImportError(
+        "DATA_DIR and OMICRON_DIR in pyOER/settings.py must point to valid" \
+        " paths for this script to be run."
+        )
+
+# Overwrite existing files
+overwrite = False
 
 # Datasets
 datapath = DATA_DIR / 'Thetaprobe'
-omicronpath = pathlib.Path('/home/jejsor/Dropbox/Characterizations/Ruthenium')
+# Moved to .settings:
+#omicronpath = pathlib.Path('/home/jejsor/Dropbox/Characterizations/Ruthenium')
 
 # Reference
-filename = 'iss_reference.pickle'
+filename = 'iss_reference'
 
-# Create folder for data
+# Create folder for organized data and metadata
+data_dest = (DATA_DIR / 'Data' / 'ISS' / 'organized_pickles')
+data_dest.mkdir(parents=True, exist_ok=True)
+
 cwd = pathlib.Path.cwd()
-destination = cwd.parent / 'tables' / 'iss_data'
-print('Creating folder: {}'.format(destination))
-try:
-    pathlib.os.mkdir(destination)
-    print('Folder created.')
-except FileExistsError:
-    print('Folder already exists.')
+meta_dest = cwd.parent / 'tables' / 'leis'
+meta_dest.mkdir(parents=True, exist_ok=True)
 
 # Selected datasets:
 ref_regions = {
@@ -41,9 +51,9 @@ datasets = {
         'ruthenium': (datapath / 'All_data_and_text_files/19J20_before_new_tests/19J20_ISS/Mono 400µm/Reshma4F/He ISS.avg', 0),
     },
     'omicron': {
-        'oxygen_16': (omicronpath / 'Melih2/20190224-232058_As prepared-Melih 2-ESpHybrid_NanoSAM_ISS--1_1-Detector_Region.vms', 5),
-        'oxygen_18': (omicronpath / 'Melih2/20190226-043610_Treated 05-Melih 2-ESpHybrid_NanoSAM_ISS--1_1-Detector_Region.vms', 1),
-        'ruthenium': (omicronpath / 'Melih2/20190225-014442_Treated 02-Melih 2-ESpHybrid_NanoSAM_ISS--1_1-Detector_Region.vms', 1),
+        'oxygen_16': (OMICRON_DIR / 'Melih2/20190224-232058_As prepared-Melih 2-ESpHybrid_NanoSAM_ISS--1_1-Detector_Region.vms', 5),
+        'oxygen_18': (OMICRON_DIR / 'Melih2/20190226-043610_Treated 05-Melih 2-ESpHybrid_NanoSAM_ISS--1_1-Detector_Region.vms', 1),
+        'ruthenium': (OMICRON_DIR / 'Melih2/20190225-014442_Treated 02-Melih 2-ESpHybrid_NanoSAM_ISS--1_1-Detector_Region.vms', 1),
     },
 }
 
@@ -86,7 +96,6 @@ for setup, dict_ in datasets.items():
             }
 
 # Plots
-import matplotlib.pyplot as plt
 plt.figure('Reference 18-O')
 O16 = ref_data['thetaprobe'][16]
 O18 = ref_data['thetaprobe'][18]
@@ -98,7 +107,7 @@ plt.plot(O16['xy'][:, 0], O16['peak'], label='O(16) peak')
 
 # Correct for O-16 in thetaprobe reference
 area = ref_data['thetaprobe'][18]['area']
-print(f'Area before: {area}')
+print(f'Area before correcting for O-16: {area}')
 peak = ref_data['thetaprobe'][18]['peak']
 peak -= factor * ref_data['thetaprobe'][16]['peak']
 ref_data['thetaprobe'][18]['area'] = simps(peak[np.isfinite(peak)])
@@ -122,6 +131,10 @@ plt.show()
 #1/0 ### EXIT without saving ###
 
 # Save data
-with open(destination / filename, 'wb') as f:
-    pickle.dump(ref_data, f, pickle.HIGHEST_PROTOCOL)
-
+filepath = data_dest / (filename + '.pickle')
+if not filepath.exists() or overwrite:
+    with open(filepath, 'wb') as f:
+        pickle.dump(ref_data, f, pickle.HIGHEST_PROTOCOL)
+        print('Wrote ref_data to file')
+else:
+    print('File already exists. Not overwriting.')

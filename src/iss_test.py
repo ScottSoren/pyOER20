@@ -1,7 +1,7 @@
 import numpy as np
 import pyOER
-import ISS # from github:Ejler/DataTreatment
-import common_toolbox as ct # from github:Ejler/DataTreatment
+# import ejler_iss # import ISS # from github:Ejler/DataTreatment
+# import common_toolbox as ct # from github:Ejler/DataTreatment
 import matplotlib.pyplot as plt
 ###
 samples = {}
@@ -135,9 +135,21 @@ for j, sample in enumerate(names):
             ratios[sample][i]['18'],
         ])
         counter += 1
-xticks = [i for (gen_name, data_object, name, date, i, r1, r2) in plot_data]
-dates = [date_formatter(date) for (gen_name, data_object, name, date, i, r1, r2) in plot_data]
-xlabels = [f'{gen_name} {name.lstrip(gen_name)}' for (gen_name, data_object, name, date, i, r1, r2) in plot_data]
+xticks = [
+    i
+    for (gen_name, data_object, name, date, i, r1, r2)
+    in plot_data
+    ]
+dates = [
+    date_formatter(date)
+    for (gen_name, data_object, name, date, i, r1, r2)
+    in plot_data
+    ]
+xlabels = [
+    f'{gen_name} {name.lstrip(gen_name)}'
+    for (gen_name, data_object, name, date, i, r1, r2)
+    in plot_data
+    ]
 
 secaxx = ax.secondary_xaxis('top')
 secaxy = ax.secondary_yaxis('right')
@@ -168,7 +180,7 @@ plt.show()
 #data.plot()
 
 """
-#ISS.align_spectra(data._active.values())
+#ISS.align_spectra(data._active.values()) # changed to "ISS -> ejler_iss" if needed
 
 ratios, coeffs = data.fit_with_reference(peaks=[[16, 18]], plot=False)
 plt.figure('Break')

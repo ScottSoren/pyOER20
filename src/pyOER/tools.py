@@ -76,3 +76,34 @@ def fit_exponential(t, y, zero_time_axis=False):
     #    pars = [tau, y0, y1]
 
     return pars
+
+def get_range(x, lim1, lim2):
+    """Return the index range of x between lim1 and lim2.
+    ---
+    Copied from: github.com/Ejler/DataTreatment/common_toolbox.py
+    """
+    index1 = np.where(x <= lim2)[0]
+    index2 = np.where(x >= lim1)[0]
+    index = np.intersect1d(index1, index2)
+    if len(index) == 0:
+        print('"get_range" didn\'t find any data within the limits!')
+    return index
+
+def smooth(data, width=1):
+    """Average `data` with `width` neighbors.
+    ---
+    Copied from: github.com/Ejler/DataTreatment/common_toolbox.py
+    """
+    if len(data) == 0:
+        print('Empty data! ', len(data))
+        return data
+    smoothed_data = np.zeros(len(data))
+    smoothed_data[width:-width] = data[2*width:]
+    for i in range(2*width):
+        smoothed_data[width:-width] += data[i:-2*width+i]
+        if i < width:
+            smoothed_data[i] = sum(data[0:i+width+1])/len(data[0:i+width+1])
+            smoothed_data[-1-i] = sum(data[-1-i-width:])/len(data[-1-i-width:])
+    smoothed_data[width:-width] = smoothed_data[width:-width]/(2*width+1)
+    return smoothed_data
+
