@@ -4,12 +4,13 @@
 Copied from github.com/Ejler/DataTreatment/ISS.py and stripped to the
 required features.
 """
+import functools
+import pathlib
 import matplotlib.pyplot as plt
 import numpy as np
-import functools
 from scipy.optimize import curve_fit
 from scipy.integrate import simps
-import common_toolbox as ct
+import pyOER.tools as ct
 
 class Experiment():
     """Load an ISS experiment exported as text or VAMAS file.
@@ -143,28 +144,41 @@ and len(blocks_4) == len(blocks_2_ISS):
                 self.setup = 'omicron'
                 self.format = 'New VAMAS'
                 ENDING = '_1-Detector_Region.vms'
-                filen = filename.rstrip(ENDING)
-                counter = 0
-                while True:
-                    try:
-                        f = open(filen + '--' + str(counter+1) + ENDING)
-                        counter += 1
-                    except:
-                        #print('{} files detected of series:'.format(counter))
-                        #print('* ' + filen + '--' + str(1) + ENDING + ' *')
-                        COUNTER = counter
-                        break
-                # Open filename with ISS data
-                self.scans = COUNTER
-                for counter in range(COUNTER):
-                    new_filename = filen + '--' + str(counter+1) + ENDING
-                    f = open(new_filename, 'r')
-                    lines = f.readlines()
-                    f.close()
-                    #print('Loading file: ' + new_filename)
+
+                # Do a search to find all files with matching name structure
+                filename = pathlib.Path(filename)
+                path = filename.parent
+                filename = filename.name
+                filen = filename.split('--')[0]
+                search_for = filen + '*.vms'
+                list_of_files = list(path.rglob(search_for))
+                # Make sure the list is properly sorted
+                try:
+                    keys = [
+                        int(str(name).split('--')[1].split('_')[0])
+                        for name
+                        in list_of_files
+                        ]
+                except IndexError:
+                    for i in list_of_files:
+                        print(i)
+                    raise
+                keys.sort()
+                list_of_files = [
+                    f'{filen}--{key}{ENDING}'
+                    for key
+                    in keys
+                    ]
+                self.scans = len(list_of_files)
+                for counter, filename in enumerate(list_of_files):
+                    # Load contents
+                    with open(path / filename, 'r') as f:
+                        lines = f.readlines()
+                        f.close()
+
+                    # Analyze contents
                     blocks_4 = [i for i, line in enumerate(lines) if (line.rstrip() == '-1') \
 and (lines[i+1].lower().rstrip() == 'kinetic energy')]
-                    #print(lines[9].rstrip())
                     if len(blocks_4) > 1:
                         print('*** Interesting! More than 1 scan has been detected in above file!')
                     # Copy data points
