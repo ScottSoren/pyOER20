@@ -9,22 +9,6 @@ from pyOER.constants import (
     FARADAYS_CONSTANT,
 )
 
-forpublication = True
-
-# plt.interactive(False)  # show the plot when I tell you to show() it!
-
-if forpublication:  # for the publication figure
-    import matplotlib as mpl
-
-    mpl.rcParams["figure.figsize"] = (3.25, 2.75)
-    # plt.rc('text', usetex=True)  # crashingly slow
-    plt.rc("font", family="sans-serif")
-    plt.rc("font", size=6)
-    plt.rc("lines", linewidth=0.5)
-    plt.rc("lines", markersize=3)
-else:
-    plt.style.use("default")
-
 
 colors = {  # from Reshma's Figure 1.
     "1": "#54bdebff",
@@ -76,7 +60,7 @@ def plot_all_activity_results(ax=None, result="rate", factor=1, takelog=False):
             potential_list.append(potential)
             to_plot = rate * 1e9 * factor
         elif result == "tof":
-            result_list.append(tof)
+            result_list.append(f)
             potential_list.append(potential)
             to_plot = f * factor
 
@@ -124,49 +108,69 @@ def get_color(sample_name):
         return "y"
 
 
-fig1, ax1 = plt.subplots()
-fig2, ax2b = plt.subplots()
-ax2 = ax2b.twinx()
+if __name__ == "__main__":
+    forpublication = True
 
-plot_all_activity_results(ax=ax1, result="rate")
-plot_all_activity_results(ax=ax2, result="tof")
+    # plt.interactive(False)  # show the plot when I tell you to show() it!
 
-ax2b.set_xlabel("E vs RHE / (V)")
-ax1.set_ylabel("rate / (nmol s$^{-1}$)")
-ax1.set_yscale("log")
+    if forpublication:  # for the publication figure
+        import matplotlib as mpl
 
-if False:  # axis to indicate geometric current density
-    ax1b = ax1.twinx()
-    ax1b.set_ylim([lim / 0.196 for lim in ax1.get_ylim()])
-    ax1b.set_yscale("log")
-    ax1b.set_ylabel("rate / (nmol s$^{-1}$cm$^{-2}_{geo}$)")
+        mpl.rcParams["figure.figsize"] = (3.25, 2.75)
+        # plt.rc('text', usetex=True)  # crashingly slow
+        plt.rc("font", family="sans-serif")
+        plt.rc("font", size=6)
+        plt.rc("lines", linewidth=0.5)
+        plt.rc("lines", markersize=3)
+    else:
+        plt.style.use("default")
 
-ax2.set_xlabel("E vs RHE / (V)")
-ax2.set_yscale("log")
+    fig1, ax1 = plt.subplots()
+    fig2, ax2b = plt.subplots()
+    ax2 = ax2b.twinx()
 
-tof_lim = ax2.get_ylim()
-norm_flux_lim = [
-    lim * STANDARD_SITE_DENSITY / STANDARD_SPECIFIC_CAPACITANCE * 4 * FARADAYS_CONSTANT
-    for lim in tof_lim
-]
-ax2b.set_ylim(norm_flux_lim)
-ax2b.set_yscale("log")
-ax2b.set_ylabel("OER current$_{cap}$ / (A F$^{-1}$)")
+    plot_all_activity_results(ax=ax1, result="rate")
+    plot_all_activity_results(ax=ax2, result="tof")
 
-if True:  # a TOF axis
-    ax2.set_ylabel("TOF / (s$^{-1}$)")
-else:  # no TOF axis
-    ax2.set_yticks([])
-    ax2.yaxis.set_tick_params(which="both", right=False)
-    ax2.set_ylabel("")
+    ax2b.set_xlabel("E vs RHE / (V)")
+    ax1.set_ylabel("rate / (nmol s$^{-1}$)")
+    ax1.set_yscale("log")
 
-#  [1/s] * [mol/cm^2] / [F/cm^2] * [C/mol] = [A/F]
+    if False:  # axis to indicate geometric current density
+        ax1b = ax1.twinx()
+        ax1b.set_ylim([lim / 0.196 for lim in ax1.get_ylim()])
+        ax1b.set_yscale("log")
+        ax1b.set_ylabel("rate / (nmol s$^{-1}$cm$^{-2}_{geo}$)")
 
+    ax2.set_xlabel("E vs RHE / (V)")
+    ax2.set_yscale("log")
 
-if forpublication:
-    fig1.subplots_adjust(left=0.15, right=0.85)
-    fig1.savefig("all_Ru_rates.png")
-    fig1.savefig("all_Ru_rates.svg")
-    fig2.subplots_adjust(left=0.15, right=0.85)
-    fig2.savefig("all_Ru_tofs.png")
-    fig2.savefig("all_Ru_tofs.svg")
+    tof_lim = ax2.get_ylim()
+    norm_flux_lim = [
+        lim
+        * STANDARD_SITE_DENSITY
+        / STANDARD_SPECIFIC_CAPACITANCE
+        * 4
+        * FARADAYS_CONSTANT
+        for lim in tof_lim
+    ]
+    ax2b.set_ylim(norm_flux_lim)
+    ax2b.set_yscale("log")
+    ax2b.set_ylabel("OER current$_{cap}$ / (A F$^{-1}$)")
+
+    if True:  # a TOF axis
+        ax2.set_ylabel("TOF / (s$^{-1}$)")
+    else:  # no TOF axis
+        ax2.set_yticks([])
+        ax2.yaxis.set_tick_params(which="both", right=False)
+        ax2.set_ylabel("")
+
+    #  [1/s] * [mol/cm^2] / [F/cm^2] * [C/mol] = [A/F]
+
+    if forpublication:
+        fig1.subplots_adjust(left=0.15, right=0.85)
+        fig1.savefig("all_Ru_rates.png")
+        fig1.savefig("all_Ru_rates.svg")
+        fig2.subplots_adjust(left=0.15, right=0.85)
+        fig2.savefig("all_Ru_tofs.png")
+        fig2.savefig("all_Ru_tofs.svg")
