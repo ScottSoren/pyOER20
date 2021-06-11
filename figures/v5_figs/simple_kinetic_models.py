@@ -6,6 +6,7 @@ from matplotlib import pyplot as plt
 from ixdat.constants import FARADAY_CONSTANT as F, STANDARD_TEMPERATURE as T0, R
 from ixdat.plotters.base_mpl_plotter import MPLPlotter
 from paper_I_v3_fig4 import plot_all_activity_results
+from state_class import State, U0
 
 
 n_points = 100
@@ -25,34 +26,9 @@ j_over_j0_late_site = 0.01 * np.exp(0.9 * F * (u - U0) / (R * T0))
 j_over_j0_2_simple = j_over_j0_early_site + j_over_j0_late_site
 
 # ---------- state definitions --------------- #
-class State:
-    def __init__(self, n_to_rds, eV_1p23_vs_rds, color):
-        """Nice little class to represent a surface state
 
-        States are described relative to the RDS state, which is the state from which
-        the rate-limiting step of OER takes place.
-        States are described with reference to a standard potential U0 = 1.23 V_RHE
-
-        Args:
-            n_to_rds (int): ox. state of RDS intermediate relative to self
-            eV_1p23_vs_rds (float): energy relative to RDS at U0 / [eV]
-            color (str): default color for plotting
-        """
-        self.n_to_rds = n_to_rds
-        self.eV_1p23_vs_rds = eV_1p23_vs_rds
-        self.color = color
-
-    @property
-    def G_1p23_vs_rds(self):
-        """Energy relative to RDS at U0 / [J/mol]"""
-        return self.eV_1p23_vs_rds * F
-
-    @property
-    def K_rds(self):
-        """equilibrium constant = theta_i / theta_j"""
-        return np.exp(self.G_1p23_vs_rds / (R * T0))
-
-
+# first number is electron transfers to RDS state
+# second number is energy relative to RDS state at U=1.23 V vs RHE
 states = (
     State(0, 0, "k"),  # the RDS state
     State(1, -0.2, "b"),  # the state one electron transfer behind the RDS state
