@@ -29,5 +29,5 @@ class State:
 
     @property
     def K_rds(self):
-        """equilibrium constant = theta_i / theta_j"""
+        """equilibrium constant = theta_RDS / theta_self"""
         return np.exp(self.G_1p23_vs_rds / (R * T0))

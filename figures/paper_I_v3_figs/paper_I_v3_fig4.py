@@ -1,15 +1,17 @@
 import re
 from pyOER.tof import all_tofs, TurnOverFrequency
 import numpy as np
+import json
 from matplotlib import pyplot as plt
 
 from pyOER.constants import (
     STANDARD_SPECIFIC_CAPACITANCE,
     STANDARD_SITE_DENSITY,
+    STANDARD_ELECTRODE_AREA,
     FARADAYS_CONSTANT,
 )
 
-forpublication = True
+forpublication = False
 
 # plt.interactive(False)  # show the plot when I tell you to show() it!
 
@@ -39,14 +41,19 @@ markers = {"16": "o", "18": "s"}
 number_finder = "([0-4])"
 
 
-def plot_all_activity_results(ax=None, result="rate", factor=1, takelog=False):
+def plot_all_activity_results(
+    ax=None,
+    result="rate",
+    factor=1,
+    takelog=False,
+    for_model=False,
+):
 
-    potential_list = []
-    result_list = []
+    to_export = {}
     for tof in all_tofs():
-        sample_name = tof.measurement.sample_name
+        sample_name = tof.sample_name
         if not (
-            tof.tof_type == "activity"
+            tof.tof_type in ("activity", "ec_activity")
             and tof.id > 239
             and (
                 "Reshma" in sample_name
@@ -56,28 +63,53 @@ def plot_all_activity_results(ax=None, result="rate", factor=1, takelog=False):
             )
         ):
             continue
+
+        if sample_name not in to_export:
+            to_export[sample_name] = {
+                "U_vs_RHE / [V]": [],
+                "O2_rate / [nmol/s/cm^2]": [],
+                "norm_O2_current / [A/F]": [],
+            }
         color = get_color(sample_name)
-        rate = tof.rate
+        rate = tof.rate  # rate in [mol/s]
         potential = tof.potential
-        f = tof.tof
+        f = tof.tof  # tof in [s^-1]
 
         if (f > 7e-5 and potential < 1.32) or potential < 1.28:
             try:
                 rate, f, potential = fix_bad_tof(tof)
             except FileNotFoundError:
                 continue
+        if for_model:
+            if (
+                (potential > 1.45 and not tof.tof_type == "ec_activity")
+                or "Rao" in tof.sample_name
+                or "Melih" in tof.sample_name
+            ):
+                continue
 
-        marker = markers.get(tof.measurement.isotope, "o")
+        if tof.tof_type == "ec_activity":
+            marker = "^"
+        else:
+            marker = markers.get(tof.measurement.isotope, "o")
         # marker = "o"
+
+        to_export[sample_name]["U_vs_RHE / [V]"].append(potential)
+        to_export[sample_name]["O2_rate / [nmol/s/cm^2]"].append(
+            rate * 1e9 / STANDARD_ELECTRODE_AREA
+        )
+        to_export[sample_name]["norm_O2_current / [A/F]"].append(
+            f
+            * 4
+            * FARADAYS_CONSTANT
+            * STANDARD_SITE_DENSITY
+            / STANDARD_SPECIFIC_CAPACITANCE
+        )
 
         to_plot = None
         if result == "rate":
-            result_list.append(rate)
-            potential_list.append(potential)
             to_plot = rate * 1e9 * factor
         elif result == "tof":
-            result_list.append(tof)
-            potential_list.append(potential)
             to_plot = f * factor
 
         if not to_plot:
@@ -87,7 +119,7 @@ def plot_all_activity_results(ax=None, result="rate", factor=1, takelog=False):
             to_plot = np.log10(to_plot)
         if ax:
             ax.plot(potential, to_plot, color=color, marker=marker, fillstyle="none")
-    return np.array(potential_list), np.array(result_list)
+    return to_export
 
 
 def fix_bad_tof(tof):
@@ -128,12 +160,17 @@ fig1, ax1 = plt.subplots()
 fig2, ax2b = plt.subplots()
 ax2 = ax2b.twinx()
 
-plot_all_activity_results(ax=ax1, result="rate")
+to_export = plot_all_activity_results(ax=ax1, result="rate")
 plot_all_activity_results(ax=ax2, result="tof")
 
 ax2b.set_xlabel("E vs RHE / (V)")
 ax1.set_ylabel("rate / (nmol s$^{-1}$)")
 ax1.set_yscale("log")
+
+
+with open("results_json.txt", "w") as f:
+    json.dump(to_export, f, indent=4)
+
 
 if False:  # axis to indicate geometric current density
     ax1b = ax1.twinx()

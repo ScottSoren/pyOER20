@@ -11,7 +11,7 @@ from state_class import State, U0
 
 n_points = 100
 
-u = np.linspace(1.23, 1.6, n_points)  # vector describing potential vs RHE in [V]
+u = np.linspace(1.23, 1.55, n_points)  # vector describing potential vs RHE in [V]
 U0 = 1.23  # sort of arbitrary reference potential vs RHE in [V]
 
 alpha_rds = 0.5  # symmetry factor for the rate-determining step
@@ -60,7 +60,7 @@ n_to_rds_vec = np.sum(
 )
 
 
-if False:  # get activity results for fitting
+if True:  # get activity results for fitting
     u_exp, tof_exp = plot_all_activity_results(ax=None, result="tof", takelog=False)
     np.save("u_exp", u_exp)
     np.save("tof_exp", tof_exp)

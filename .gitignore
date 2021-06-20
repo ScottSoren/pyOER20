@@ -9,6 +9,7 @@
 
 # exported data and figures, bigish files, will only be committed at the end.
 *.csv
+*.npy
 *.png
 *.svg
 

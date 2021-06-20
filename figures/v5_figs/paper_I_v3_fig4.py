@@ -23,73 +23,6 @@ markers = {"16": "o", "18": "s"}
 number_finder = "([0-4])"
 
 
-def plot_all_activity_results(ax=None, result="rate", factor=1, takelog=False):
-
-    potential_list = []
-    result_list = []
-    for tof in all_tofs():
-        sample_name = tof.measurement.sample_name
-        if not (
-            tof.tof_type == "activity"
-            and tof.id > 239
-            and (
-                "Reshma" in sample_name
-                or "Rao" in sample_name
-                or "Evans" in sample_name
-                or "Melih" in sample_name
-            )
-        ):
-            continue
-        color = get_color(sample_name)
-        rate = tof.rate
-        potential = tof.potential
-        f = tof.tof
-
-        if (f > 7e-5 and potential < 1.32) or potential < 1.28:
-            try:
-                rate, f, potential = fix_bad_tof(tof)
-            except FileNotFoundError:
-                continue
-
-        marker = markers.get(tof.measurement.isotope, "o")
-        # marker = "o"
-
-        to_plot = None
-        if result == "rate":
-            result_list.append(rate)
-            potential_list.append(potential)
-            to_plot = rate * 1e9 * factor
-        elif result == "tof":
-            result_list.append(f)
-            potential_list.append(potential)
-            to_plot = f * factor
-
-        if not to_plot:
-            print(f"Don't know what {result} is. Not plotting.")
-
-        if takelog:
-            to_plot = np.log10(to_plot)
-        if ax:
-            ax.plot(potential, to_plot, color=color, marker=marker, fillstyle="none")
-    return np.array(potential_list), np.array(result_list)
-
-
-def fix_bad_tof(tof):
-    i = tof.id
-    tof.experiment.plot_experiment()
-    print(f"please fix or delete '{tof}' with tspan={tof.tspan}")
-    plt.show()
-    try:
-        tof = TurnOverFrequency.open(i)
-    except FileNotFoundError:
-        raise
-    rate = tof.calc_rate()  # needs to be updated.
-    f = tof.calc_tof()
-    potential = tof.calc_potential()
-    tof.save()  # save updates.
-    return rate, f, potential
-
-
 def get_color(sample_name):
     if "Reshma" in sample_name:
         try:
@@ -106,6 +39,70 @@ def get_color(sample_name):
         return "orange"
     else:
         return "y"
+
+
+def plot_all_activity_results(
+    ax=None,
+    result="rate",
+    factor=1,
+    takelog=False,
+    for_model=True,
+):
+    print("plotting from v5_figs/paper_I_v3_fig4.py")
+    potential_list = []
+    result_list = []
+    for tof in all_tofs():
+        sample_name = tof.sample_name
+        if not (
+            tof.tof_type in ("activity", "ec_activity")
+            and tof.id > 239
+            and (
+                "Reshma" in sample_name
+                or "Rao" in sample_name
+                or "Evans" in sample_name
+                or "Melih" in sample_name
+            )
+        ):
+            continue
+        rate = tof.rate
+        potential = tof.potential
+        f = tof.tof
+
+        if for_model:
+            if (
+                (potential > 1.45 and not tof.tof_type == "ec_activity")
+                or "Rao" in tof.sample_name
+                or "Melih" in tof.sample_name
+            ):
+                continue
+
+        if tof.tof_type == "ec_activity":
+            marker = "^"
+        else:
+            marker = markers.get(tof.measurement.isotope, "o")
+        # marker = "o"
+
+        to_plot = None
+        if result == "rate":
+            result_list.append(rate)
+            potential_list.append(potential)
+            to_plot = rate * 1e9 * factor
+        elif result == "tof":
+            result_list.append(f)
+            potential_list.append(potential)
+            to_plot = f * factor
+
+        if not to_plot:
+            print(f"Don't know what {result} is. Not plotting.")
+        else:
+            if takelog:
+                to_plot = np.log10(to_plot)
+            if ax:
+                color = get_color(sample_name)
+                ax.plot(
+                    potential, to_plot, color=color, marker=marker, fillstyle="none"
+                )
+    return np.array(potential_list), np.array(result_list)
 
 
 if __name__ == "__main__":
