@@ -1,29 +1,29 @@
 """ISS handler module for pyOER.
 
-    Simple usage:
-    You have ISS of samples, "Reshma1" and "Reshma2". You can load all
-    these samples by loading "Reshma" without a postfix. The following
-    piece of code will load ISS experiments for both sample series,
-    create a plot of the isotopic oxygen ratios for every spectrum, and
-    opening a plot verifying how accurate the peak decomposition is.
+Simple usage:
+You have ISS of samples, "Reshma1" and "Reshma2". You can load all
+these samples by loading "Reshma" without a postfix. The following
+piece of code will load ISS experiments for both sample series,
+create a plot of the isotopic oxygen ratios for every spectrum, and
+opening a plot verifying how accurate the peak decomposition is.
 
-    ---- Code begin ----
-    import pyOER
+---- Code begin ----
+import pyOER
 
-    # Load samples
-    experiment_chain = pyOER.ISS('Reshma')
+# Load samples
+experiment_chain = pyOER.ISS('Reshma')
 
-    # Plot isotopic oxygen ratios
-    experiment_chain.plot_fit_ratios(True)
+# Plot isotopic oxygen ratios
+experiment_chain.plot_fit_ratios(True)
 
-    # Spectrum number 7 appears to be the only outlier, so compare
-    # spectrum 6 and spectrum 7:
-    experiment_chain.plot_fit(6)
-    experiment_chain.plot_fit(7)
+# Spectrum number 7 appears to be the only outlier, so compare
+# spectrum 6 and spectrum 7:
+experiment_chain.plot_fit(6)
+experiment_chain.plot_fit(7)
 
-    # The 5% O-18 could be explained by improper background subtraction
-    # and is therefore seemingly within the fitting error.
-    ---- Code end ----
+# The 5% O-18 could be explained by improper background subtraction
+# and is therefore seemingly within the fitting error.
+---- Code end ----
 """
 import pickle
 import pathlib
@@ -31,7 +31,8 @@ import pathlib
 import numpy as np
 
 #import common_toolbox as ct
-from .tools import smooth, get_range
+from .tools import weighted_smooth as smooth
+from .tools import get_range
 from .settings import DATA_DIR
 
 class ISS:
@@ -221,11 +222,9 @@ Set to None for certain effect."""
     FITTING METHOD:
         for each spectrum in ´selection´:
             for each peak in ´peaks´:
-                subtract background from spectrum using same region as /
-                ref;
+                subtract background from spectrum using same region as ref;
                 for each nested peak (if any):
-                    add scaled nested peaks to background subtracted /
-                    data for best fit;
+                    add scaled nested peaks to background subtracted data for best fit;
                 save fit result to ´results´ dictionary;
 
     RETURN METHOD:
@@ -261,7 +260,7 @@ Set to None for certain effect."""
                 import matplotlib.pyplot as plt
                 plt.figure(f'Fitting: {selected}')
             data_set = self._active[selected]
-            if data_set.good is False:
+            if not data_set.good:
                 continue # skip bad data set
             ref = self._ref[data_set.setup]
             for peak in peaks:
@@ -378,6 +377,7 @@ defined by the same region'
             self.fit_with_reference(peaks=[[16, 18]])
 
         # Prepare plot
+        import matplotlib
         import matplotlib.pyplot as plt
         fig = plt.figure('Fit ratios plot title')
         ax = fig.add_axes([0.05, 0.15, 0.9, 0.6])
@@ -389,7 +389,7 @@ defined by the same region'
 
         for i in self.keys:
             # Skip bad data
-            if self._active[i].good is False:
+            if not self._active[i].good:
                 counter += 1
                 continue
             # Plot good data
@@ -417,6 +417,7 @@ defined by the same region'
                    for (gen_name, data_object, name, date, i, r1, r2)
                    in plot_data]
 
+        # Some of the following secondary axis methods requires matplotlib > 3.1.x
         secaxx = ax.secondary_xaxis('top')
         secaxy = ax.secondary_yaxis('right')
 
@@ -427,8 +428,12 @@ defined by the same region'
         yticks = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
         ax.set_yticks(yticks)
         ax.set_yticklabels(yticks)
-        secaxy.set_yticks(yticks)
+        print(dates)
+        secaxy.set_ticks(yticks)
         yticks.reverse()
+        yticks = [str(i) for i in yticks]
+        #help(secaxy)
+        #print(dir(secaxy))
         secaxy.set_yticklabels(yticks)
         secaxx.set_xticks(xticks)
         secaxx.set_xticklabels(dates, rotation=90, fontsize=12)
@@ -453,29 +458,64 @@ defined by the same region'
             f'Peak Deconvolution _ {self._active[index].sample} - {index}'
             )
 
+        # Compared x arrays are shifted with respect to each other.
+        x_common = np.linspace(0, 1000, num=1001)
+        num = 4 # repetitions/width for smooth function
+
         setup = self._active[index].setup
         ref1 = self._ref[setup][16]['peak']
         ref2 = self._ref[setup][18]['peak']
 
         # Raw + background
-        plt.plot(self._active[index].shifted['oxygen'],
-                 self._active[index].y,
-                 'b-', label='Raw',
-                 )
-        plt.plot(self._active[index].shifted['oxygen'],
-                 self.background[index],
-                 'b:', label='Background',
-                 )
+        x = self._active[index].shifted['oxygen']
+        plt.plot(
+            x,
+            self._active[index].y,
+            'k-', label='Raw',
+            )
+        #raw = np.interp(x_common, x, self._active[index].y, left=0, right=0)
+        raw = np.interp(x_common, x, smooth(self._active[index].y, num), left=0, right=0)
+        plt.plot(
+            x_common,
+            raw,
+            'b-', label='Raw',
+            )
+        #background = np.interp(x_common, x, self.background[index], left=0, right=0)
+        background = np.interp(x_common, x, smooth(self.background[index], 2), left=0, right=0)
+        #plt.plot(self._active[index].shifted['oxygen'],
+        #         self.background[index],
+        #         'b:', label='Background',
+        #         )
+        plt.plot(
+            x_common,
+            background,
+            'b:', label='Background',
+            )
+
+        x_ref1 = self._ref[setup][16]['xy'][:, 0]
+        y_ref1 = ref1 * self.fit_coeffs[index][16]
+        #y_ref1 = np.interp(x_common, x_ref1, y_ref1, left=0, right=0)
+        y_ref1 = np.interp(x_common, x_ref1, smooth(y_ref1, 2), left=0, right=0)
+        x_ref2 = self._ref[setup][18]['xy'][:, 0]
+        y_ref2 = ref2 * self.fit_coeffs[index][18]
+        #y_ref2 = np.interp(x_common, x_ref2, y_ref2, left=0, right=0)
+        y_ref2 = np.interp(x_common, x_ref2, smooth(y_ref2, 2), left=0, right=0)
 
         # Total fit
-        plt.plot(self._active[index].shifted['oxygen'],
-                 (self.background[index]
-                    + ref1*self.fit_coeffs[index][16]
-                    + ref2*self.fit_coeffs[index][18]
-                 ),
-                 'y-',
-                 label='Sum of components',
-                 )
+        x = self._active[index].shifted['oxygen']
+        #plt.plot(self._active[index].shifted['oxygen'],
+        #         (self.background[index]
+        #            + ref1*self.fit_coeffs[index][16]
+        #            + ref2*self.fit_coeffs[index][18]
+        #         ),
+        #         'y-',
+        #         label='Sum of components',
+        #         )
+        plt.plot(
+            x_common,
+            background + y_ref1 + y_ref2,
+            'y-', label='Sum of components',
+            )
         # A bit uncertain whether the reference data is properly aligned with
         # the measured data during the fits. But the results seem close enough.
         #plt.plot(self._ref[setup][16]['xy'][:, 0],
@@ -487,16 +527,38 @@ defined by the same region'
         #         'm-')
 
         # Individual components
-        plt.plot(self._ref[setup][16]['xy'][:, 0],
-                 ref1*self.fit_coeffs[index][16],
-                 'r-',
-                 label='O-16 component',
-                 )
-        plt.plot(self._ref[setup][18]['xy'][:, 0],
-                 ref2*self.fit_coeffs[index][18],
-                 'g-',
-                 label='O-18 component',
-                 )
+        #plt.plot(self._ref[setup][16]['xy'][:, 0],
+        #         ref1*self.fit_coeffs[index][16],
+        #         'r-',
+        #         label='O-16 component',
+        #         )
+        #plt.plot(self._ref[setup][18]['xy'][:, 0],
+        #         ref2*self.fit_coeffs[index][18],
+        #         'g-',
+        #         label='O-18 component',
+        #         )
+        plt.plot(
+            x_common,
+            y_ref1,
+            'r-',
+            label='O-16 component',
+            )
+        plt.plot(
+            x_common,
+            y_ref2,
+            'g-',
+            label='O-18 component',
+            )
+        #plt.plot(self._ref[setup][18]['xy'][:, 0],
+        #         ref1*self.fit_coeffs[index][16] + ref2*self.fit_coeffs[index][18],
+        #         'm-',
+        #         label='O components',
+        #         )
+        #plt.plot(self._ref[setup][16]['xy'][:, 0],
+        #         ref1*self.fit_coeffs[index][16] + ref2*self.fit_coeffs[index][18],
+        #         'c-',
+        #         label='O16 components',
+        #         )
         self._active[index].add_mass_lines([16, 18, 101], labels=labels)
 
         # Show
@@ -518,9 +580,9 @@ def date_formatter(date):
         8: 'h', 9: 'i', 10: 'j', 11: 'k', 12: 'l'}
     string = f"{YY}{translate[M].upper()}{DD} {hh}:{mm}:{ss}"
     string = (r"$\bf{"
-              + f"{YY}{translate[M].upper()}{DD}"
+              + f"{str(YY).zfill(2)}{translate[M].upper()}{str(DD).zfill(2)}"
               + r"}$"
-              + f"   {hh}:{mm}:{ss}"
+              + f"   {str(hh).zfill(2)}:{str(mm).zfill(2)}:{str(ss).zfill(2)}"
               )
     return string
 
@@ -548,7 +610,7 @@ def subtract_single_background(xy, ranges=[], avg=3):
     return background
 
 def align_spectra(iss_data, limits=[350, 520], masses=[16, 18], key='oxygen',
-                  plot=False):
+                  plot=True):
     """Shift the iss data within 'limits' region to snap maximum signal
 unto nearest mass in list 'masses'."""
 
@@ -569,11 +631,12 @@ unto nearest mass in list 'masses'."""
         # Get index of region of interest
         index = get_range(data.x, *limits)
         # Find maximum in region
-        ys = smooth(data.y, width=4)
+        ys = smooth(data.y, num=4)
         data.smoothed[key] = ys
         maximum = max(ys[index])
         if not np.isfinite(maximum):
             data.good = False
+            print('Bad data encountered...') # when exactly does this happen?
             continue # "Broken" dataset
         data.good = True
         i_max = np.where(ys == maximum)[0]
