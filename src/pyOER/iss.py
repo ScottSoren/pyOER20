@@ -32,6 +32,7 @@ import numpy as np
 
 #import common_toolbox as ct
 from .tools import weighted_smooth as smooth
+#from .tools import smooth
 from .tools import get_range
 from .settings import DATA_DIR
 
@@ -177,8 +178,8 @@ Set to None for certain effect."""
         plt.show()
 
     # Maybe a @classmethod ?
-    def fit_with_reference(self, selection=None, peaks=[], plot=False,
-                           align=True):
+    def fit_with_reference(self, selection=None, peaks=[], plot_result=False,
+                           align=True, verbose=False):
         """Fit reference data to selected datasets.
 
     Input  :
@@ -190,7 +191,7 @@ Set to None for certain effect."""
             group-wise, as in O-16 or O-18 to total oxygen signal, nest
             them in a list of their own, e.g. peaks=[[16, 18], 40]. No
             sensitivity factors are applied.
-        plot (bool): whether or not to autoplot results. Default False.
+        plot_result (bool): whether or not to autoplot results. Default False.
         align (bool): has to be True (default) for now.
 
     Output :
@@ -239,27 +240,32 @@ Set to None for certain effect."""
     """
 
         from scipy.optimize import curve_fit
+        from scipy.interpolate import interp1d
 
         # Initialize constants
         if selection is None:
             selection = self.keys
         coeffs = {i: {} for i in selection}
         ratios = {i: {} for i in selection}
-        if align is True:
-            align_spectra(self._active.values(),
+        if align:
+            align_spectra(
+                [val for key, val in self._active.items() if key in selection],
                 limits=[350, 520],
                 masses=[16, 18],
                 key='oxygen',
-                plot=plot,
+                plot_result=plot_result,
+                verbose=verbose,
         )
+        if verbose:
+            print('\nAlignment done\n--------')
 
         # Main loop
         self.background = {}
         for selected in selection:
-            if plot is True:
-                import matplotlib.pyplot as plt
-                plt.figure(f'Fitting: {selected}')
             data_set = self._active[selected]
+            if plot_result:
+                import matplotlib.pyplot as plt
+                plt.figure(f'Fitting: {data_set.sample} - {selected}')
             if not data_set.good:
                 continue # skip bad data set
             ref = self._ref[data_set.setup]
@@ -281,6 +287,10 @@ defined by the same region'
                     raise TypeError(f'Item in kwarg peaks is not understood:\n\
 {peak}\nMust be an integer or list of integers.')
 
+                if verbose:
+                    print('Selected: ', selected)
+                    print('Region: ', region)
+
                 # Subtract background and make accessible afterwards
                 background = subtract_single_background(
                     np.vstack((data_set.shifted['oxygen'],
@@ -290,41 +300,89 @@ defined by the same region'
                 self.background[selected] = background
                 isolated_peak = data_set.y - background
                 isolated_peak[np.isnan(isolated_peak)] = 0.1
-                if plot is True:
-                    plt.plot(data_set.x, background, 'k:', label='Background')
-                    plt.plot(data_set.x, data_set.y, 'k-', label='Data')
+                if plot_result:
+                    plt.plot(data_set.x, background, 'k:')# label='Background'
+                    plt.plot(data_set.x, data_set.y, 'k-', label='Raw data')
                     plt.plot(data_set.shifted['oxygen'],
-                             background, 'r:',
-                             label='Background 1',
+                             background, 'b:',
+                             #label='Background',
                              )
                     plt.plot(data_set.shifted['oxygen'],
-                             data_set.y, 'r-',
-                             label='Data 1',
+                             data_set.y, 'b-',
+                             label='Aligned data',
                              )
 
-                import common_toolbox as ct
-                mask_dat = get_range(data_set.shifted['oxygen'], *region)
-                mask_ref = {}
-                mask_ref[16] = get_range(ref[16]['xy'][:, 0], *region)
-                mask_ref[18] = get_range(ref[18]['xy'][:, 0], *region)
+                # Create a common x-axis for comparisons
+                pseudo_x = np.linspace(
+                    region[0],
+                    region[1],
+                    (region[1] - region[0])*10 + 1,
+                    )
+                interp_dat = interp1d(
+                    data_set.shifted['oxygen'],
+                    isolated_peak,
+                    kind='linear',
+                    )
+                interp_back = interp1d(
+                    data_set.shifted['oxygen'],
+                    background,
+                    kind='linear',
+                    )
+                interp_ref = {}
+                interp_ref[16] = interp1d(
+                    ref[16]['xy'][:, 0],
+                    ref[16]['peak'],
+                    kind='linear',
+                    )
+                interp_ref[18] = interp1d(
+                    ref[18]['xy'][:, 0],
+                    ref[18]['peak'],
+                    kind='linear',
+                    )
+                mask = get_range(pseudo_x, *region)
+                dat_x = pseudo_x[mask]
+                dat_y = interp_dat(dat_x)
+                if plot_result:
+                    plt.plot(
+                        ref[16]['xy'][:, 0],
+                        ref[16]['peak'],
+                        'r:',
+                        label='O16 ref',
+                        )
+                    plt.plot(
+                        ref[18]['xy'][:, 0],
+                        ref[18]['peak'],
+                        'g:',
+                        label='O18 ref',
+                        )
 
                 def func(x, *args):
                     """Fitting function"""
                     signal = x*0
                     for arg, i in list(zip(args, peak)):
-                        signal += arg*ref[i]['peak'][mask_ref[i]]
+                        signal += arg*interp_ref[i](x)
                     return signal
 
                 # Fit reference to data
                 fit, _ = curve_fit(
                     func,
-                    data_set.shifted['oxygen'][mask_dat],
-                    isolated_peak[mask_dat],
+                    dat_x,
+                    dat_y,
                     p0=[2.]*N,
                     bounds=(0, 3),
                 )
+                fitted_signal = interp_back(dat_x)
                 for i in range(len(peak)):
                     coeffs[selected][peak[i]] = fit[i]
+                    fitted_signal += interp_ref[peak[i]](dat_x)*fit[i]
+                if plot_result:
+                    plt.plot(
+                        dat_x,
+                        fitted_signal,
+                        'y-',
+                        label='Best fit',
+                        )
+
 
             # Calculate output ratios
             total = 0
@@ -362,8 +420,10 @@ defined by the same region'
                         )
                 for peak_ in peak:
                     ratios[selected][f'{peak_}'] /= total
-            if plot is True:
+            if plot_result:
+                data_set.add_mass_lines(all_peaks)
                 plt.legend()
+
             # Save in object
             self.fit_ratios[selected] = ratios[selected]
             self.fit_coeffs[selected] = coeffs[selected]
@@ -432,8 +492,6 @@ defined by the same region'
         secaxy.set_ticks(yticks)
         yticks.reverse()
         yticks = [str(i) for i in yticks]
-        #help(secaxy)
-        #print(dir(secaxy))
         secaxy.set_yticklabels(yticks)
         secaxx.set_xticks(xticks)
         secaxx.set_xticklabels(dates, rotation=90, fontsize=12)
@@ -444,7 +502,7 @@ defined by the same region'
         if show_plot is True:
             plt.show()
 
-    def plot_fit(self, index=0, labels=True):
+    def plot_fit(self, index=0, labels=True, show=True):
         """Visually verify the automatic fit to reference data"""
 
         # Make sure references have been fitted
@@ -471,21 +529,15 @@ defined by the same region'
         plt.plot(
             x,
             self._active[index].y,
-            'k-', label='Raw',
+            'k-', label='Raw aligned',
             )
-        #raw = np.interp(x_common, x, self._active[index].y, left=0, right=0)
         raw = np.interp(x_common, x, smooth(self._active[index].y, num), left=0, right=0)
         plt.plot(
             x_common,
             raw,
-            'b-', label='Raw',
+            'b-', label='Raw smoothed',
             )
-        #background = np.interp(x_common, x, self.background[index], left=0, right=0)
         background = np.interp(x_common, x, smooth(self.background[index], 2), left=0, right=0)
-        #plt.plot(self._active[index].shifted['oxygen'],
-        #         self.background[index],
-        #         'b:', label='Background',
-        #         )
         plt.plot(
             x_common,
             background,
@@ -494,49 +546,18 @@ defined by the same region'
 
         x_ref1 = self._ref[setup][16]['xy'][:, 0]
         y_ref1 = ref1 * self.fit_coeffs[index][16]
-        #y_ref1 = np.interp(x_common, x_ref1, y_ref1, left=0, right=0)
         y_ref1 = np.interp(x_common, x_ref1, smooth(y_ref1, 2), left=0, right=0)
         x_ref2 = self._ref[setup][18]['xy'][:, 0]
         y_ref2 = ref2 * self.fit_coeffs[index][18]
-        #y_ref2 = np.interp(x_common, x_ref2, y_ref2, left=0, right=0)
         y_ref2 = np.interp(x_common, x_ref2, smooth(y_ref2, 2), left=0, right=0)
 
         # Total fit
         x = self._active[index].shifted['oxygen']
-        #plt.plot(self._active[index].shifted['oxygen'],
-        #         (self.background[index]
-        #            + ref1*self.fit_coeffs[index][16]
-        #            + ref2*self.fit_coeffs[index][18]
-        #         ),
-        #         'y-',
-        #         label='Sum of components',
-        #         )
         plt.plot(
             x_common,
             background + y_ref1 + y_ref2,
             'y-', label='Sum of components',
             )
-        # A bit uncertain whether the reference data is properly aligned with
-        # the measured data during the fits. But the results seem close enough.
-        #plt.plot(self._ref[setup][16]['xy'][:, 0],
-        #         (
-        #           self.background[index]
-        #           + ref1*self.fit_coeffs[index][16]
-        #           + ref2*self.fit_coeffs[index][18],
-        #         ),
-        #         'm-')
-
-        # Individual components
-        #plt.plot(self._ref[setup][16]['xy'][:, 0],
-        #         ref1*self.fit_coeffs[index][16],
-        #         'r-',
-        #         label='O-16 component',
-        #         )
-        #plt.plot(self._ref[setup][18]['xy'][:, 0],
-        #         ref2*self.fit_coeffs[index][18],
-        #         'g-',
-        #         label='O-18 component',
-        #         )
         plt.plot(
             x_common,
             y_ref1,
@@ -549,16 +570,6 @@ defined by the same region'
             'g-',
             label='O-18 component',
             )
-        #plt.plot(self._ref[setup][18]['xy'][:, 0],
-        #         ref1*self.fit_coeffs[index][16] + ref2*self.fit_coeffs[index][18],
-        #         'm-',
-        #         label='O components',
-        #         )
-        #plt.plot(self._ref[setup][16]['xy'][:, 0],
-        #         ref1*self.fit_coeffs[index][16] + ref2*self.fit_coeffs[index][18],
-        #         'c-',
-        #         label='O16 components',
-        #         )
         self._active[index].add_mass_lines([16, 18, 101], labels=labels)
 
         # Show
@@ -566,9 +577,10 @@ defined by the same region'
         plt.xlabel('Energy (eV)')
         plt.ylabel('Counts per second')
         plt.legend()
-        plt.show()
+        if show():
+            plt.show()
 
-def date_formatter(date):
+def date_formatter(date, latex=True):
     """Take datetime object and return string of YYADD"""
     YY = date.year - 2000
     M = date.month
@@ -579,14 +591,14 @@ def date_formatter(date):
     translate = {1: 'a', 2: 'b', 3: 'c', 4: 'd', 5: 'e', 6: 'f', 7: 'g',
         8: 'h', 9: 'i', 10: 'j', 11: 'k', 12: 'l'}
     string = f"{YY}{translate[M].upper()}{DD} {hh}:{mm}:{ss}"
-    string = (r"$\bf{"
+    string = ((r"$\bf{" if latex else "")
               + f"{str(YY).zfill(2)}{translate[M].upper()}{str(DD).zfill(2)}"
-              + r"}$"
+              + (r"}$" if latex else "")
               + f"   {str(hh).zfill(2)}:{str(mm).zfill(2)}:{str(ss).zfill(2)}"
               )
     return string
 
-def subtract_single_background(xy, ranges=[], avg=3):
+def subtract_single_background(xy, ranges=[], avg=3, verbose=False):
     """Subtract the background from a single spectrum"""
     import common_toolbox as ct
     x, y = xy[:, 0], xy[:, 1]
@@ -597,10 +609,15 @@ def subtract_single_background(xy, ranges=[], avg=3):
         # OR
         # if last ten indice are included
         if indice[0] == 0 or indice[-1] > len(x) - 10:
-            print('Uhh', indice[0], indice[-1], limit)
+            if verbose:
+                print('Uhh', indice[0], indice[-1], limit)
+                print(f'Searching for indice within limits: {limit}')
+                print(f'First and last index: {indice[0]} and {indice[-1]} out of total {len(x) - 1}')
+                print(f'This is x = [{x[indice[0]]} and {x[indice[-1]]}]')
             background[indice] = 0
         elif len(indice) == 0:
-            print('Did not find data within limit: {}'.format(limit))
+            if verbose:
+                print('Did not find data within limit: {}'.format(limit))
         else:
             y1 = np.average(y[indice[0]-avg:indice[0]+avg])
             y2 = np.average(y[indice[-1]-avg:indice[-1]+avg])
@@ -610,13 +627,32 @@ def subtract_single_background(xy, ranges=[], avg=3):
     return background
 
 def align_spectra(iss_data, limits=[350, 520], masses=[16, 18], key='oxygen',
-                  plot=True):
+                  plot_result=False, verbose=False, func_type='skewed'):
     """Shift the iss data within 'limits' region to snap maximum signal
-unto nearest mass in list 'masses'."""
+unto nearest mass in list 'masses'.
 
-    if plot is True:
+    function (str): One of 'parabola', 'gauss' or 'skewed' (default). Determines the
+    type of function used to align the spectra. """
+
+    from scipy.optimize import curve_fit
+    from scipy.special import erf
+    if plot_result:
         import matplotlib.pyplot as plt
-        plt.figure('aligned')
+
+    def parabola(x, a, b, c):
+        """ 2nd degree polynomial """
+        return a*x**2 + b*x + c
+
+    def gauss(x, A, x0, sigma):
+        """ Gauss function or normal distribution """
+        return A*np.exp(-(x - x0)**2 / 2 / sigma**2)
+
+    def skewed(x, A, x0, sigma, alpha):
+        """ Skewed gauss function """
+        return 2/sigma * gauss(x, A, x0, sigma) * erf(alpha*(x - x0)/sigma)
+
+    if verbose:
+        print('Entering function "align_spectra"')
     for data in iss_data:
         # Initialize attributes
         try:
@@ -636,42 +672,117 @@ unto nearest mass in list 'masses'."""
         maximum = max(ys[index])
         if not np.isfinite(maximum):
             data.good = False
-            print('Bad data encountered...') # when exactly does this happen?
+            # TODO: Add more information about data set
+            print('Bad data encountered in "align_spectra". Skipping...') # when exactly does this happen?
             continue # "Broken" dataset
         data.good = True
         i_max = np.where(ys == maximum)[0]
-        x_max = data.x[i_max]
+        x_max = data.x[i_max][0]
+
+        # Estimate fitting parameters
+        width = 20 # Estimate of peak width
+        if func_type == 'skewed':
+            p0 = [maximum, x_max + 10, width, -1]
+            function = skewed
+        elif func_type == 'parabola':
+            a = -0.5 * maximum / width**2
+            b = -2 * a * x_max
+            c = maximum + b**2/4/a
+            p0 = [a, b, c]
+            function = parabola
+        elif func_type == 'gauss':
+            p0 = [maximum, x_max, width]
+            function = gauss
+        else:
+            raise ValueError(f'func_type {func_type} not a valid option')
+        new_index = get_range(data.x, x_max - 15, x_max + 15)
+        fit, _ = curve_fit(
+            function,
+            data.x[new_index],
+            data.y[new_index],
+            p0=p0,
+            maxfev=100000,
+            )
+        if verbose:
+            print('Result of fit: ', fit)
+        if plot_result:
+            plt.figure((
+                f'Aligning {data.sample} {date_formatter(data.date, latex=False)}'
+                ' - mass {masses}'
+                ))
+            plt.plot(
+                data.x[index],
+                data.y[index],
+                'k-',
+                label='Raw data',
+                )
+            plt.plot(
+                data.x[new_index],
+                function(data.x[new_index], *p0),
+                'g-',
+                label='Estimated max',
+                )
+            plt.plot(
+                data.x[new_index],
+                function(data.x[new_index], *fit),
+                'r-',
+                label='Best fit max',
+                )
+        if function == parabola:
+            new_x_max = -fit[1]/2/fit[0]
+            if verbose:
+                print(f'Raw "maximum" x: {x_max}\nFitted x: {new_x_max}')
+        elif function == gauss:
+            new_x_max = fit[1]
+            if verbose:
+                print(f'Raw "maximum" x: {x_max}\nFitted x: {new_x_max}')
+        elif function == skewed:
+            fit_x = np.linspace(min(data.x), max(data.x), num=16000)
+            fit_y = skewed(fit_x, *fit)
+            fit_i = np.where(fit_y == max(fit_y))[0]
+            new_x_max = fit_x[fit_i][0]
+            if verbose:
+                print(f'Raw "maximum" x: {x_max}\nFitted x: {new_x_max}')
+        x_max = new_x_max
 
         # Find difference from reference
         energies = data.convert_energy(np.array(masses))
-        try:
-            distance = np.abs(x_max - energies)
-        except ValueError:
-            print('ValueError')
-            print(data.filename)
-            print(data.x)
-            print(data.y[np.isfinite(data.y)])
-            print(data.smoothed[key])
-            print(maximum)
-            print(x_max)
-            print(energies)
-            if plot is True:
-                plt.figure()
-                plt.plot(data.x, data.y)
-                plt.show()
-            raise
+        distances = x_max - energies
+        distance = distances[np.where(abs(distances) == min(abs(distances)))]
+        # If distance is too big, something is wrong with the algorithm
+        print(distance)
+        if abs(distance) > 15:
+            distance = 0
+            if verbose:
+                print('***\nDismissing alignment algorithm !\n***')
 
         # Snap to nearest line
-        data.shifted[key] = (
-            data.x
-            - (x_max-energies)[np.where(distance == min(distance))[0]]
-            )
-        if plot is True:
-            plt.plot(data.shifted[key], data.y)
-            plt.plot(data.shifted[key], ys)
-    if plot is True:
-        data.add_mass_lines(masses)
+        data.shifted[key] = data.x - distance
+        if plot_result:
+            plt.plot(
+                data.shifted[key],
+                data.y,
+                'b-',
+                label='Aligned raw data',
+                )
+            plt.plot(
+                data.shifted[key],
+                ys,
+                'c-',
+                label='Aligned and smoothed',
+                )
+            data.add_mass_lines(masses)
+            plt.legend()
 
     # Return a nd.array of modified xy data
-    return np.vstack((data.shifted[key], data.smoothed[key])).T
+    ret = []
+    for data in iss_data:
+        if data.good:
+            ret.append((np.vstack((data.shifted[key], data.smoothed[key])).T))
+        else:
+            ret.append((0, 0))
+    if len(iss_data) == 1:
+        return ret[0]
+    else:
+        return ret
 

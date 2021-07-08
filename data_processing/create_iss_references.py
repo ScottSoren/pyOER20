@@ -136,6 +136,7 @@ for setup, info in datasets.items():
             masses = masses,
             key = label,
             )
+        plt.show()
         background = iss.subtract_single_background(
             xy_aligned,
             ranges = [ref_regions[setup][label]],
@@ -158,7 +159,7 @@ for setup, info in datasets.items():
 plt.figure('Reference 18-O')
 O16 = ref_data['thetaprobe'][16]
 O18 = ref_data['thetaprobe'][18]
-factor = 0.20 # manually subtract the O16 from O18 reference
+factor = 0.245 # manually subtract the O16 from O18 reference
 plt.plot(
     O18['xy'][:, 0],
     O18['xy'][:, 1] - O16['peak']*factor,
@@ -202,7 +203,7 @@ plt.plot(
 plt.plot(
     O18['xy'][:, 0],
     O18['background'],
-    'g-',
+    'g:',
     )
 # Components
 

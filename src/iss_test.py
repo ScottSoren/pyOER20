@@ -67,7 +67,9 @@ selection = [
     #'RuO2 amorphous',
     'RuO2 rutile',
     #'Ru foam',
+    #'Ru metallic',
     #'Pt',
+    #'Ir',
 ]
 title = ' _ '.join(selection)
 
@@ -85,33 +87,26 @@ for sample_counter, sample in enumerate(names):
     datas[sample] = data
     print('*'*20)
     print(f'Available keys: {data.keys}')
-    ratios[sample], coeffs = data.fit_with_reference(peaks=[[16, 18]], plot=False)
+    ratios[sample], coeffs = data.fit_with_reference(
+        peaks=[[16, 18]],
+        plot_result=False,
+        verbose=False,
+        )
     for i in ratios[sample].keys():
         if data._active[i].good is False:
             continue
         print(data._active[i].filename)
         print(data._active[i].date)
         print(f'\nOxygen 16 content: {data.fit_ratios[i]["16"]*100} %\n')
+        if False:
+            # Visualize the resulting fits
+            data.plot_fit(i, show=False)
 
 # Remove invalid samples from list and inform user
 invalid_samples.reverse()
 for i in invalid_samples:
     sample = names.pop(i)
     print(f'Could not find data matching "{sample}"')
-
-def date_formatter(date):
-    """Take datetime object and return string of YYADD"""
-    YY = date.year - 2000
-    M = date.month
-    DD = date.day
-    hh = date.hour
-    mm = date.minute
-    ss = date.second
-    translate = {1: 'a', 2: 'b', 3: 'c', 4: 'd', 5: 'e', 6: 'f', 7: 'g',
-        8: 'h', 9: 'i', 10: 'j', 11: 'k', 12: 'l'}
-    string = f"{YY}{translate[M].upper()}{DD} {hh}:{mm}:{ss}"
-    string = r"$\bf{" + f"{YY}{translate[M].upper()}{DD}" + r"}$" + f"   {hh}:{mm}:{ss}"
-    return string
 
 # Plot all O-16 ratios
 plot_data = []
@@ -141,7 +136,7 @@ xticks = [
     in plot_data
     ]
 dates = [
-    date_formatter(date)
+    pyOER.iss.date_formatter(date)
     for (gen_name, data_object, name, date, i, r1, r2)
     in plot_data
     ]
@@ -171,42 +166,4 @@ ax.set_xticklabels(xlabels, rotation=90, fontsize=12)
 ax.set_ylabel('O-16 ratio (%)')
 plt.grid(True)
 plt.show()
-"""
- x   1) import the reference data into pyOER (easy)
- x   2) modify the fitting method to account for the new structure (semi-easy)
-     3) throw the omicron data in the mix with the rest (semi-easy)
-"""
 
-#data.plot()
-
-"""
-#ISS.align_spectra(data._active.values()) # changed to "ISS -> ejler_iss" if needed
-
-ratios, coeffs = data.fit_with_reference(peaks=[[16, 18]], plot=False)
-plt.figure('Break')
-
-ref1 = data._ref['thetaprobe'][16]['peak']
-ref2 = data._ref['thetaprobe'][18]['peak']
-
-# Raw + background
-plt.plot(data._active[0].shifted['oxygen'], data._active[0].y, 'k-')
-plt.plot(data._active[0].shifted['oxygen'], data.background[0], 'k:')
-
-# Fit
-plt.plot(data._active[0].shifted['oxygen'], data.background[0] + ref1*coeffs[0][16] + ref2*coeffs[0][18], 'y-')
-plt.plot(data._ref['thetaprobe'][16]['xy'][:, 0], data.background[0] + ref1*coeffs[0][16] + ref2*coeffs[0][18], 'b-')
-
-#plt.plot(data._ref['thetaprobe'][16]['xy'][:, 0], data._ref['thetaprobe'][16]['xy'][:, 1], 'r-')
-#plt.plot(data._active[0].shifted['oxygen'], data.background[0] + ref1*coeffs[0][16], 'r:')
-plt.plot(data._ref['thetaprobe'][16]['xy'][:, 0], ref1, 'r-')
-#plt.plot(data._ref['thetaprobe'][18]['xy'][:, 0], data._ref['thetaprobe'][18]['xy'][:, 1], 'g-')
-plt.plot(data._ref['thetaprobe'][18]['xy'][:, 0], ref2, 'g-')
-
-#data.plot(show=False)
-
-data._active[0].AddMassLines([16, 18, 101])
-data.show()
-
-#for i in data.keys:
-#    print(i, ratios[i]['16'])
-"""
