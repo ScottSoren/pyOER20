@@ -6,8 +6,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import simps
 
-#import ejler_iss as ISS
-from ejler_iss import Experiment
 from pyOER import iss
 from pyOER.settings import DATA_DIR, OMICRON_DIR
 if not DATA_DIR.exists() or not OMICRON_DIR.exists():
@@ -113,9 +111,9 @@ for setup, info in datasets.items():
     for key, (path, default_scan) in info.items():
         # Load data with parameters depending on the parent setup
         if setup == 'omicron':
-            data = Experiment(path, default_scan=default_scan, theta=146.7, E0=1000)
+            data = iss.Data(path, default_scan=default_scan, theta=146.7, E0=1000)
         elif setup == 'thetaprobe':
-            data = Experiment(path, default_scan=default_scan, theta=135, E0=980)
+            data = iss.Data(path, default_scan=default_scan, theta=135, E0=980)
 
         # Define parameters based on region of interest (key)
         if key.startswith('oxygen'):

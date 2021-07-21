@@ -29,8 +29,8 @@ import pickle
 import pathlib
 
 import numpy as np
+import matplotlib.pyplot as plt
 
-#import common_toolbox as ct
 from .tools import weighted_smooth as smooth
 #from .tools import smooth
 from .tools import get_range
@@ -38,7 +38,7 @@ from .settings import DATA_DIR
 
 class ISS:
     def __init__(self, sample=None, fit=None):
-        """ """
+        """Main interface for the ISS data """
         self.json_path = (pathlib.Path(__file__).absolute().parent.parent.parent
                      / 'tables' / 'leis')
         self.data_path = DATA_DIR / 'Data' / 'ISS' / 'organized_pickles'
@@ -247,7 +247,7 @@ Set to None for certain effect."""
             selection = self.keys
         coeffs = {i: {} for i in selection}
         ratios = {i: {} for i in selection}
-        if align:
+        if align: # TODO Consider checking if done already
             align_spectra(
                 [val for key, val in self._active.items() if key in selection],
                 limits=[350, 520],
@@ -577,7 +577,7 @@ defined by the same region'
         plt.xlabel('Energy (eV)')
         plt.ylabel('Counts per second')
         plt.legend()
-        if show():
+        if show:
             plt.show()
 
 def date_formatter(date, latex=True):
@@ -674,7 +674,7 @@ unto nearest mass in list 'masses'.
             data.good = False
             # TODO: Add more information about data set
             print('Bad data encountered in "align_spectra". Skipping...') # when exactly does this happen?
-            continue # "Broken" dataset
+            continue
         data.good = True
         i_max = np.where(ys == maximum)[0]
         x_max = data.x[i_max][0]
@@ -748,9 +748,10 @@ unto nearest mass in list 'masses'.
         # Find difference from reference
         energies = data.convert_energy(np.array(masses))
         distances = x_max - energies
-        distance = distances[np.where(abs(distances) == min(abs(distances)))]
+        distance = distances[np.where(abs(distances) == min(abs(distances)))[0][0]]
         # If distance is too big, something is wrong with the algorithm
-        print(distance)
+        if verbose:
+            print(f'Distance between fitted maximum and expected: {distance} eV')
         if abs(distance) > 15:
             distance = 0
             if verbose:
@@ -785,4 +786,432 @@ unto nearest mass in list 'masses'.
         return ret[0]
     else:
         return ret
+
+class Data():
+    """Load an ISS experiment exported as text or VAMAS file.
+
+Class loader copied from github.com/Ejler/DataTreatment/ISS.py
+Renamed Experiment() -> Data()
+
+Author: Jakob Ejler Sorensen
+Version: 5.2
+Date: 2021 July 21
+    """
+
+    def __init__(self, filename, mass=4, theta=146.7, E0=1000, default_scan=0):
+        """Initialize the class"""
+        # Constants
+        self.settings = dict()
+        self.settings['mass'] = mass
+        self.settings['theta'] = theta
+        self.settings['E0'] = E0
+        self.default_scan = default_scan
+
+        # Initialize variables
+        self.energy = dict()
+        self.cps = dict()
+        self.dwell = dict()
+        self.mode = dict()
+        self.mode_value = dict()
+        self.note = dict()
+        self.date = ''
+        filename = str(filename)
+        self.filename = filename
+
+        # Convenience function variables
+        self.peak_positions = None
+        self.peak_heights_raw = None
+        self.peak_heights_bg = None
+        self._background = None
+        self.background_settings = {
+            'type': None,
+            'ranges': None,
+            'on': False,
+            }
+
+        #----------------------------------------------------------------------
+        # Read data from textfile:
+        if filename.endswith('.txt'):
+            # Open filename with ISS data
+            f = open(filename, 'r')
+            lines = f.readlines()
+            f.close()
+            self.format = 'Text file'
+
+            start_points = [i for i, line in enumerate(lines) if line == 'Energy\tCounts\r\n']
+            self.scans = len(start_points)
+            if self.scans == 0:
+                raise ImportError('File apparently empty!')
+
+            if lines[0].lower().startswith('note'):
+                self.note = lines[0].split('=')[1].lstrip(' ')
+            # Copy data points
+            counter = 0
+            for start in start_points:
+                line = lines[start-4].split('\t')
+                for i, word in enumerate(line):
+                    if word.lower() == 'dwell':
+                        self.dwell[counter] = float(lines[start-3].split('\t')[i])
+                if not start == start_points[-1]:
+                    interval = range(start+1, start_points[counter+1]-4)
+                else:
+                    interval = range(start+1, len(lines))
+                self.energy[counter] = np.zeros(len(interval))
+                self.cps[counter] = np.zeros(len(interval))
+                counter_inner = 0
+                for index in interval:
+                    line = lines[index].rstrip().split('\t')
+                    self.energy[counter][counter_inner] = float(line[0])
+                    self.cps[counter][counter_inner] = float(line[1])
+                    counter_inner += 1
+                self.cps[counter] = self.cps[counter]/self.dwell[counter]
+                counter += 1
+        #----------------------------------------------------------------------
+        # Read data from old VAMAS block file
+        elif filename.endswith('.vms'):
+            # Open filename with ISS data
+            f = open(filename, 'r')
+            lines = f.readlines()
+            f.close()
+            # Old format:
+            if lines[6].lower().startswith('experiment type'):
+                self.setup = 'omicron'
+                self.format = 'Old VAMAS'
+                #print('Loading file: ' + filename)
+                blocks_4 = [i for i, line in enumerate(lines) if (line.strip() == '-1') \
+and (lines[i+1].lower().strip() == 'kinetic energy')]
+                blocks_2_ISS = [i for i, line in enumerate(lines) if (line.strip() == 'ISS') \
+and (lines[i+1].strip() == '')]
+                print(lines[9].rstrip())
+                self.scans = len(blocks_4)
+                if len(blocks_4) == int(lines[9].rstrip()) \
+and len(blocks_4) == len(blocks_2_ISS):
+                    self.scans = len(blocks_4)
+                else:
+                    msg = 'Error: Identified {} "Block 4", {} "Block 2", but "Block 1" says: {}'
+                    msg = msg.format(len(blocks_4), len(blocks_2_ISS), int(lines[9].rstrip()))
+                    raise ImportError(msg)
+
+                # Copy data points
+                self.note = dict()
+                for counter, block in enumerate(blocks_4):
+                    if not len(lines[blocks_2_ISS[counter] - 1]) == 5:
+                        self.note[counter] = lines[blocks_2_ISS[counter] - 1].rstrip()
+                    else:
+                        self.note[counter] = ''
+                    self.mode[counter] = lines[block-11].rstrip()
+                    self.mode_value[counter] = float(lines[block-10].rstrip())
+                    self.dwell[counter] = float(lines[block+9].rstrip())
+                    data_points = int(lines[block+16])
+                    self.cps[counter] = np.zeros(data_points)
+                    E_step = float(lines[block+4].rstrip())
+                    E_start = float(lines[block+3].rstrip())
+                    self.energy[counter] = np.arange(data_points)*E_step + E_start
+                    for counter_inner in range(data_points):
+                        self.cps[counter][counter_inner] = float(lines[block+19+counter_inner]) \
+/self.dwell[counter]
+                self.note[counter] = ''
+                print(self.energy.keys())
+                print('Comments: {}'.format(self.note))
+                print('Dwell time: {}'.format(self.dwell))
+                print('Modes: {}'.format(self.mode))
+                print('Mode values: {}'.format(self.mode_value))
+            #----------------------------------------------------------------------
+            # New format
+            if lines[6].lower().startswith('created with'):
+                self.setup = 'omicron'
+                self.format = 'New VAMAS'
+                ENDING = '_1-Detector_Region.vms'
+
+                # Do a search to find all files with matching name structure
+                filename = pathlib.Path(filename)
+                path = filename.parent
+                filename = filename.name
+                filen = filename.split('--')[0]
+                search_for = filen + '*.vms'
+                list_of_files = list(path.rglob(search_for))
+                # Make sure the list is properly sorted
+                try:
+                    keys = [
+                        int(str(name).split('--')[1].split('_')[0])
+                        for name
+                        in list_of_files
+                        ]
+                except IndexError:
+                    for i in list_of_files:
+                        print(i)
+                    raise
+                keys.sort()
+                list_of_files = [
+                    f'{filen}--{key}{ENDING}'
+                    for key
+                    in keys
+                    ]
+                self.scans = len(list_of_files)
+                for counter, filename in enumerate(list_of_files):
+                    # Load contents
+                    with open(path / filename, 'r') as f:
+                        lines = f.readlines()
+                        f.close()
+
+                    # Analyze contents
+                    blocks_4 = [i for i, line in enumerate(lines) if (line.rstrip() == '-1') \
+and (lines[i+1].lower().rstrip() == 'kinetic energy')]
+                    if len(blocks_4) > 1:
+                        print('*** Interesting! More than 1 scan has been detected in above file!')
+                    # Copy data points
+                    i = blocks_4[0]
+                    ###
+                    if counter == 0:
+                        _counter = 0
+                        while True:
+                            if lines[_counter].startswith('CREATION COMMENT START'):
+                                comment_start = _counter
+                                break
+                            else:
+                                _counter += 1
+                                if _counter > len(lines):
+                                    break
+                        _counter = 0
+                        while True:
+                            if lines[_counter].startswith('CREATION COMMENT END'):
+                                comment_end = _counter
+                                break
+                            else:
+                                _counter += 1
+                                if _counter > len(lines):
+                                    break
+                    self.note = lines[comment_start+1:comment_end]
+                    ###
+                    self.mode[counter] = lines[i-11].rstrip()
+                    self.mode_value[counter] = float(lines[i-10].rstrip())
+                    self.dwell[counter] = float(lines[i+9].rstrip())
+                    data_points = int(lines[i+16])
+                    self.cps[counter] = np.zeros(data_points)
+                    E_step = float(lines[i+4].rstrip())
+                    E_start = float(lines[i+3].rstrip())
+                    self.energy[counter] = np.arange(data_points)*E_step + E_start
+                    for counter_inner in range(data_points):
+                        self.cps[counter][counter_inner] = float(lines[i+19+counter_inner]) \
+/self.dwell[counter]
+        #----------------------------------------------------------------------
+        # Import Thetaprobe .avg data
+        elif filename.endswith('.avg'):
+            self.setup = 'thetaprobe'
+            with open(filename, 'r', encoding='latin-1') as f:
+                lines = f.readlines()
+
+            # Check for ISS
+            info = {line.split(':')[0].strip(): line.split('=')[1].strip() for line in lines if line.startswith('DS_')}
+            if info['DS_ANPROPID_LENS_MODE_NAME'] != "'ISS'":
+                print('{} does not appear to be an ISS experiment!'.format(self.filename))
+                print('Expected \'ISS\', but encountered: {}'.format(info['DS_ANPROPID_LENS_MODE_NAME']))
+                raise ImportError('File not an ISS experiment!')
+            if info['DS_EXT_SUPROPID_CREATED'] == info['DS_EXT_SUPROPID_SAVED']:
+                #print('Created and saved dates are identical - checking for empty dataset...')
+                check_empty = True
+            else:
+                check_empty = False
+
+            # Metadata
+            self.note[0] = info['DS_EXT_SUPROPID_SUBJECT']
+            self.date = info['DS_EXT_SUPROPID_CREATED']
+            self.dwell[0] = float(info['DS_ACPROPID_ACQ_TIME'])
+            self.mode[0] = int(info['DS_ANPROPID_MODE'])
+            self.mode_value[0] = float(info['DS_ANPROPID_PASS'])
+            if info['DS_GEPROPID_VALUE_LABEL'] == "'Counts'":
+                normalize = True # normalize to "counts per second"
+            else:
+                normalize = False
+
+            # Data
+            #data_info = {}
+            line_number = [i for i, line in enumerate(lines) if line.startswith('$DATAAXES')]
+            if len(line_number) > 1:
+                print('Reading file: {}'.format(self.filename))
+                raise ImportError('Import of multiple dataaxes not implemented yet!')
+            else:
+                line_number = line_number[0]
+            keys = [key.strip() for key in lines[line_number-1].split('=')[1].split(',')]
+            values = [key.strip() for key in lines[line_number+1].split('=')[1].split(',')]
+            data_info = {key: value for key, value in list(zip(keys, values))}
+
+            start, end = float(data_info['start']), float(data_info['end'])
+
+            #space_info = {}
+            line_number = [i for i, line in enumerate(lines) if line.startswith('$SPACEAXES')]
+            if len(line_number) > 1:
+                print('Reading file: {}'.format(self.filename))
+                raise ImportError('Import of multiple dataaxes not implemented yet!')
+            else:
+                line_number = line_number[0]
+            keys = [key.strip() for key in lines[line_number-1].split('=')[1].split(',')]
+            values = [key.strip() for key in lines[line_number+1].split('=')[1].split(',')]
+            space_info = {key: value for key, value in list(zip(keys, values))}
+
+            num = int(space_info['numPoints'])
+            if space_info['linear'] != 'LINEAR':
+                print('Reading file: {}'.format(self.filename))
+                raise ImportError('Check .avg file if energy axis is linear!')
+
+            # Generate xy-data
+            self.energy[0] = np.linspace(start, end, num)
+            self.cps[0] = self.energy[0]*np.nan
+
+            line_number = [i for i, line in enumerate(lines) if line.startswith('$DATA=')]
+            if len(line_number) > 1:
+                msg = 'Reading file: {}'.format(self.filename)
+                raise ImportError('Import of multiple dataaxes not implemented yet!')
+            else:
+                line_number = line_number[0]
+
+            for j in range(num):
+                if j%4 == 0: # values are grouped in chunks of 4
+                    line_number += 1
+                    line = lines[line_number].split('=')[1].split(',')
+                try:
+                    self.cps[0][j] = float(line[j%4])
+                except ValueError:
+                    pass # #empty# values
+            if check_empty:
+                if not np.any(np.isfinite(self.cps[0])):
+                    raise ImportError('Dataset from {} is empty!'.format(self.filename))
+                else:
+                    print('Dataset appeared to be empty from the saved timestamps, but is not empty.')
+            if normalize:
+                self.cps[0] /= self.dwell[0]
+        else:
+            raise IOError('File: "{}" not found or fileending not accepted.'.format(self.filename))
+
+        # Print loaded settings
+        print('Successfully loaded file: {}'.format(filename))
+        string = 'Used settings:\nProbing mass: {} amu\nScatter angle: {}\nPrimary energy: {} eV'
+        #print(string.format(*[self.settings[key] for key in ['mass', 'theta', 'E0']]))
+
+    @property
+    def x(self):
+        return self.energy[self.default_scan]
+
+    @x.setter
+    def x(self, var):
+        if not var in self.energy.keys():
+            print('"{}" not an available key! {}'.format(var, self.energy.keys()))
+        self.default_scan = var
+
+    @property
+    def y(self):
+        return self.cps[self.default_scan]
+
+    @y.setter
+    def y(self, var):
+        if not var in self.energy.keys():
+            print('"{}" not an available key! {}'.format(var, self.energy.keys()))
+        self.default_scan = var
+
+    @property
+    def xy(self):
+        return np.vstack((self.x, self.y)).T
+
+    def get_xy(self, index):
+        return np.vstack((self.energy[index], self.cps[index])).T
+
+    @property
+    def background(self):
+        if self._background is not None:
+            return self._background[self.default_scan]
+        else:
+            return None
+
+
+    def convert_energy(self, mass):
+        """Converts a measured energy to mass of surface atom
+corresponding the settings stored in the experiment.
+        """
+        angle = self.settings['theta'] * np.pi/180
+        return self.settings['E0'] * ((self.settings['mass']*np.cos(angle) + \
+np.sqrt(mass**2 - self.settings['mass']**2*np.sin(angle)**2))/(mass + self.settings['mass']))**2
+
+
+    def plot_all_scans(self, exclude=[None], color=None):
+        """Plot all elements in file in single figure."""
+        selection = [i for i in self.energy.keys() if not i in exclude]
+        if not color:
+            for i in selection:
+                plt.plot(self.energy[i], self.cps[i])
+        else:
+            for i in selection:
+                plt.plot(self.energy[i], self.cps[i], color=color)
+        plt.xlabel('Kinetic energy (eV)')
+        plt.ylabel('Counts per second')
+
+
+    def normalize(self, interval='Max', exclude=[None], unit='Mass', delta_e=10):
+        """Normalize to highest value in interval=[value1, value2]"""
+        self.delta_e = delta_e
+        if isinstance(interval, int):
+            self.normalization_criteria = interval
+        elif isinstance(interval, str):
+            if interval == 'Total':
+                self.normalization_criteria = 'all'
+            elif interval.lower().startswith('max'):
+                self.normalization_criteria = 'max'
+            elif interval == 'Au':
+                self.normalization_criteria = 196.
+        if not isinstance(interval, list):
+            if self.normalization_criteria == 'all':
+                selection = [i for i in range(self.scans) if not i in exclude]
+                for __counter in selection:
+                    total = simps(self.cps[__counter], self.energy[__counter])
+                    self.cps[__counter] /= total
+            elif self.normalization_criteria == 'max':
+                selection = [i for i in range(self.scans) if not i in exclude]
+                for __counter in selection:
+                    ydata = ct.smooth(self.cps[__counter], width=2)
+                    norm_value = max(ydata)
+                    self.cps[__counter] /= norm_value
+            else:
+                interval = [0, 0]
+                if unit.lower() == 'mass':
+                    interval[0] = self.convert_energy(self.normalization_criteria) - self.delta_e
+                    interval[1] = self.convert_energy(self.normalization_criteria) + self.delta_e
+                elif unit.lower() == 'energy':
+                    interval[0] = self.normalization_criteria - self.delta_e
+                    interval[1] = self.normalization_criteria + self.delta_e
+                selection = [i for i in range(self.scans) if (not i in exclude) and \
+                             (not interval[0] > max(self.energy[i])) and (not interval[1] < min(self.energy[i]))]
+                for __counter in selection:
+                    range_1 = np.where(self.energy[__counter] < interval[1])[0]
+                    range_2 = np.where(self.energy[__counter] > interval[0])[0]
+                    energy_range = np.intersect1d(range_1, range_2)
+                    value = max(self.cps[__counter][energy_range])
+                    self.cps[__counter] = self.cps[__counter]/value
+
+
+    def add_mass_lines(self, masses, ax=None, offset=0, color='k', labels=True, linestyle='dotted', **kwargs):
+        """Add vertical lines for mass references."""
+        energies = self.convert_energy(np.array(masses))
+        if ax is None:
+            ax = plt.gca()
+        [x1, x2, y1, y2] = ax.axis()
+        for energy, mass in zip(energies, masses):
+            ax.axvline(x=energy-offset, ymin=0, ymax=1, linestyle=linestyle, color=color, **kwargs)
+            if labels:
+                ax.text(float(energy)/x2, 0.95, 'm-{}'.format(mass), transform=ax.transAxes)
+
+
+    def add_regions(self):
+        """Add regions indicating the whereabouts of 3d, 4d, 5d metals and the
+lanthanides and actinides."""
+        ax = plt.gca()
+        d3 = [45, 65]
+        d4 = [89, 112]
+        d5 = [178, 201]
+        lant = [139, 175]
+        act = [227, 260]
+        for i in [d3, d4, d5]:
+            ax.axvspan(xmin=self.convert_energy(i[0]), xmax=self.convert_energy(i[1]),
+                       color='k', alpha=0.2)
+        for i in [lant, act]:
+            ax.axvspan(xmin=self.convert_energy(i[0]), xmax=self.convert_energy(i[1]),
+                       color='y', alpha=0.2)
 

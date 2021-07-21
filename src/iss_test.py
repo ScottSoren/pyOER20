@@ -1,9 +1,6 @@
 import numpy as np
-import pyOER
-# import ejler_iss # import ISS # from github:Ejler/DataTreatment
-# import common_toolbox as ct # from github:Ejler/DataTreatment
 import matplotlib.pyplot as plt
-###
+
 samples = {}
 # RuO2
 samples['RuO2 amorphous'] = [
@@ -60,8 +57,6 @@ samples['Ir'] = [
     'Decade1C',# RT 18
 ]
 
-#samples = ['Reshma', 'Stoff', 'Easter', 'Bernie', 'Melih'] # for testing
-
 # Choose selected groups here ### SELECTION ###
 selection = [
     #'RuO2 amorphous',
@@ -78,6 +73,8 @@ invalid_samples = []
 datas = {}
 ratios = {}
 names = [sample_ for selected in selection for sample_ in samples[selected]]
+
+# Calculate ratios
 for sample_counter, sample in enumerate(names):
     data = pyOER.ISS(sample)
     if len(data.keys) == 0:
