@@ -8,10 +8,10 @@ from pyOER.constants import (
     STANDARD_SPECIFIC_CAPACITANCE,
     STANDARD_SITE_DENSITY,
     STANDARD_ELECTRODE_AREA,
-    FARADAYS_CONSTANT,
+    FARADAY_CONSTANT,
 )
 
-forpublication = False
+forpublication = True
 
 # plt.interactive(False)  # show the plot when I tell you to show() it!
 
@@ -101,14 +101,14 @@ def plot_all_activity_results(
         to_export[sample_name]["norm_O2_current / [A/F]"].append(
             f
             * 4
-            * FARADAYS_CONSTANT
+            * FARADAY_CONSTANT
             * STANDARD_SITE_DENSITY
             / STANDARD_SPECIFIC_CAPACITANCE
         )
 
         to_plot = None
         if result == "rate":
-            to_plot = rate * 1e9 * factor
+            to_plot = rate * 1e9 * factor / STANDARD_ELECTRODE_AREA
         elif result == "tof":
             to_plot = f * factor
 
@@ -163,30 +163,28 @@ ax2 = ax2b.twinx()
 to_export = plot_all_activity_results(ax=ax1, result="rate")
 plot_all_activity_results(ax=ax2, result="tof")
 
-ax2b.set_xlabel("E vs RHE / (V)")
-ax1.set_ylabel("rate / (nmol s$^{-1}$)")
-ax1.set_yscale("log")
-
-
 with open("results_json.txt", "w") as f:
     json.dump(to_export, f, indent=4)
 
+ax1.set_ylabel("rate / (nmol s$^{-1}$cm$^{-2}_{geo}$)")
+ax1.set_xlabel("E vs RHE / (V)")
+ax1.set_yscale("log")
+ax1b = ax1.twinx()
+ax1b.set_yscale("log")
+ax1b.set_ylim([l * 4 * FARADAY_CONSTANT * 1e-6 for l in ax1.get_ylim()])
+ax1b.set_ylabel("$j_{O2}$ / (mA cm$^{-2}_{geo}$)")
 
-if False:  # axis to indicate geometric current density
-    ax1b = ax1.twinx()
-    ax1b.set_ylim([lim / 0.196 for lim in ax1.get_ylim()])
-    ax1b.set_yscale("log")
-    ax1b.set_ylabel("rate / (nmol s$^{-1}$cm$^{-2}_{geo}$)")
 
 ax2.set_xlabel("E vs RHE / (V)")
 ax2.set_yscale("log")
 
 tof_lim = ax2.get_ylim()
 norm_flux_lim = [
-    lim * STANDARD_SITE_DENSITY / STANDARD_SPECIFIC_CAPACITANCE * 4 * FARADAYS_CONSTANT
+    lim * STANDARD_SITE_DENSITY / STANDARD_SPECIFIC_CAPACITANCE * 4 * FARADAY_CONSTANT
     for lim in tof_lim
 ]
 ax2b.set_ylim(norm_flux_lim)
+ax2b.set_xlabel("E vs RHE / (V)")
 ax2b.set_yscale("log")
 ax2b.set_ylabel("OER current$_{cap}$ / (A F$^{-1}$)")
 
@@ -200,8 +198,8 @@ else:  # no TOF axis
 #  [1/s] * [mol/cm^2] / [F/cm^2] * [C/mol] = [A/F]
 
 
-if forpublication:
-    fig1.subplots_adjust(left=0.15, right=0.85)
+if forpublication or True:
+    # fig1.subplots_adjust(left=0.15, right=0.85)
     fig1.savefig("all_Ru_rates.png")
     fig1.savefig("all_Ru_rates.svg")
     fig2.subplots_adjust(left=0.15, right=0.85)

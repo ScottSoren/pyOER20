@@ -56,7 +56,9 @@ EXPERIMENT_ID_FILE = EXPERIMENT_DIR / "LAST_EXPERIMENT_ID.pyOER20"
 TOF_DIR = PROJECT_DIR / "tables/tofs"
 TOF_ID_FILE = TOF_DIR / "LAST_TOF_ID.pyOER20"
 
-FARADAYS_CONSTANT = 96485  # [C/mol]
+FARADAY_CONSTANT = 96485  # [C/mol]
+GAS_CONSTANT = 8.31446  # [J/(mol*K)]
+STANDARD_TEMPERATURE = 298.15  # [K]
 
 STANDARD_SITE_DENSITY = 5 * 166e-12  # 5 sites per nm^2 in [mol/cm^2]
 # five sites is based on Ru(110) cus site density.
@@ -64,3 +66,5 @@ STANDARD_SITE_DENSITY = 5 * 166e-12  # 5 sites per nm^2 in [mol/cm^2]
 STANDARD_SPECIFIC_CAPACITANCE = 200e-6  # specific capacitance in [Far]
 
 STANDARD_ELECTRODE_AREA = 0.196  # electrode area in [cm^2]
+
+STANDARD_SYMMETRY_FACTOR = 0.5  # default exponential weight in Tafel eq., unitless.

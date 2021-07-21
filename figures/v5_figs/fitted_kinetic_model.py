@@ -4,10 +4,28 @@ import numpy as np
 from matplotlib import pyplot as plt
 from scipy.optimize import minimize
 
-from ixdat.constants import FARADAY_CONSTANT as F, STANDARD_TEMPERATURE as T0, R
-from ixdat.plotters.base_mpl_plotter import MPLPlotter
+from pyOER.constants import (
+    FARADAY_CONSTANT as F,
+    STANDARD_TEMPERATURE as T0,
+    GAS_CONSTANT as R,
+)
 from paper_I_v3_fig4 import plot_all_activity_results
 from state_class import State
+
+forpublication = False
+# plt.interactive(False)  # show the plot when I tell you to show() it!
+
+if forpublication:  # for the publication figure
+    import matplotlib as mpl
+
+    mpl.rcParams["figure.figsize"] = (3.25, 2.75)
+    # plt.rc('text', usetex=True)  # crashingly slow
+    plt.rc("font", family="sans-serif")
+    plt.rc("font", size=6)
+    plt.rc("lines", linewidth=0.5)
+    plt.rc("lines", markersize=3)
+else:
+    plt.style.use("default")
 
 n_points = 100
 
@@ -65,7 +83,11 @@ def square_error(params):
     return error.dot(error)
 
 
-result = minimize(square_error, np.array([-0.2, -0.5, 3e-3]))
+result = minimize(
+    square_error,
+    np.array([-0.1, -0.3, 2e-3]),
+    bounds=[(None, None), (None, None), (1e-10, None)],
+)
 
 G1, G2, tof0 = result.x
 
@@ -73,9 +95,31 @@ u = np.linspace(1.23, 1.55, 100)
 j_over_j0 = get_j_over_j0(G1, G2, u)
 
 
-ax1, ax2, ax3 = MPLPlotter().new_two_panel_axes(n_bottom=2, emphasis="top")
+if False:  # use an ixdat plotter to make the axes
+    from ixdat.plotters.base_mpl_plotter import MPLPlotter
 
-ax1.plot(u, np.log10(j_over_j0), "k")
+    ax1, ax2, ax3 = MPLPlotter().new_two_panel_axes(n_bottom=2, emphasis="top")
+else:
+    from matplotlib import gridspec
+
+    gs = gridspec.GridSpec(8, 1)
+    # gs.update(hspace=0.025)
+    ax1 = plt.subplot(gs[0:4, 0])
+    ax2 = plt.subplot(gs[4:6, 0])
+    ax3 = ax2.twinx()
+    ax4 = plt.subplot(gs[6:8, 0])
+
+    ax1.xaxis.set_label_position("top")
+    ax1.tick_params(axis="x", top=True, bottom=True, labeltop=True, labelbottom=False)
+    ax2.tick_params(axis="x", top=False, bottom=True, labeltop=False, labelbottom=False)
+    ax4.tick_params(axis="x", top=False, bottom=True, labeltop=False, labelbottom=True)
+    ax3.spines["right"].set_color("r")
+    ax3.tick_params(axis="y", color="r")
+    ax3.tick_params(axis="y", labelcolor="r")
+    ax3.yaxis.label.set_color("r")
+
+    fig = ax1.get_figure()
+
 
 if True:  # plot the experimental results with the colors:
     plot_all_activity_results(ax=ax1, result="tof", factor=1 / tof0, takelog=True)
@@ -89,10 +133,10 @@ elif True:  # plot all the experimental results black and white:
         fillstyle="none",
     )
 
+ax1.plot(u, np.log10(j_over_j0), "k")
+
 ax1.set_xlabel("U$_{RHE}$ / [V]")
-ax1.set_ylabel("log(j / j$_{0, i}$)")
-plt.savefig("model.png")
-plt.savefig("model.svg")
+ax1.set_ylabel("log(j / j$_{RDS}^0$)")
 
 
 if True:  # explanatory fig
@@ -116,30 +160,26 @@ if True:  # explanatory fig
         ax2.plot(u, thetas[j], state.color)
     ax3.plot(u, n_to_rds_vec, "r--")
 
-    ax2.set_xlabel("U$_{RHE}$ / [V]")
+    # ax2.set_xlabel("U$_{RHE}$ / [V]")
     ax2.set_ylabel("coverage")
     ax3.set_ylabel("<n> before RDS")
-
-ax1.get_figure().set_figheight(ax1.get_figure().get_figwidth() * 1.25)
-plt.savefig("fitted_model_combined.png")
-plt.savefig("fitted_model_combined.svg")
 
 
 if True:
     # delta G plot
-    fig, ax = plt.subplots()
-
     u_vec = np.array([1.23, 1.55])
     for state in states:
         n = state.n_to_rds
         G0 = state.eV_1p23_vs_rds
         G_vec = G0 + (u_vec - U0) * n
-        ax.plot(u_vec, G_vec, state.color)
+        ax4.plot(u_vec, G_vec, state.color)
 
-    ax.set_xlabel("U vs RHE / [V]")
-    ax.set_ylabel("$\Delta_fG_0 - \Delta_fG_0(S_{RDS})$ / [eV]")
-    ax.set_title("$\Delta_f$G_0 relative to active state")
+    ax4.set_ylim(top=0.1)
 
-    fig = ax.get_figure()
-    fig.savefig("dG_vs_U.png")
-    fig.savefig("dG_vs_U.svg")
+    ax4.set_xlabel("U vs RHE / [V]")
+    ax4.set_ylabel("$\Delta_fG_0 - \Delta_fG_0(S_{RDS})$ / [eV]")
+
+
+fig.set_figheight(fig.get_figwidth() * 1.5)
+fig.savefig("complete model.png")
+fig.savefig("complete model.svg")

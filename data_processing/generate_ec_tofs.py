@@ -9,7 +9,7 @@ from pyOER import (
     STANDARD_ELECTRODE_AREA,
     STANDARD_SPECIFIC_CAPACITANCE,
     STANDARD_SITE_DENSITY,
-    FARADAYS_CONSTANT,
+    FARADAY_CONSTANT,
 )
 
 for sample in ["Reshma1", "Reshma2", "Reshma3", "Reshma4"]:
@@ -23,10 +23,10 @@ for sample in ["Reshma1", "Reshma2", "Reshma3", "Reshma4"]:
         j = df["current density (uA/cm2)"][i]
         j_norm = df["Current density (A/F)"][i]
 
-        rate = j * 1e-6 * STANDARD_ELECTRODE_AREA / (4 * FARADAYS_CONSTANT)
+        rate = j * 1e-6 * STANDARD_ELECTRODE_AREA / (4 * FARADAY_CONSTANT)
         tof = (
             j_norm
-            / (4 * FARADAYS_CONSTANT)
+            / (4 * FARADAY_CONSTANT)
             * STANDARD_SPECIFIC_CAPACITANCE
             / STANDARD_SITE_DENSITY
         )

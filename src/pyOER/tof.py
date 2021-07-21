@@ -11,7 +11,7 @@ from .calc import (
     calc_current,
 )
 from .tools import singleton_decorator, CounterWithFile
-from .constants import TOF_DIR, TOF_ID_FILE, FARADAYS_CONSTANT
+from .constants import TOF_DIR, TOF_ID_FILE, FARADAY_CONSTANT
 from .experiment import open_experiment
 
 
@@ -365,5 +365,5 @@ class TurnOverFrequency:
 
     def calc_faradaic_efficiency(self, n_el=4, mol=None):
         rate = self.calc_rate(mol=mol) if mol else self.rate
-        FE = rate * n_el * FARADAYS_CONSTANT / self.current
+        FE = rate * n_el * FARADAY_CONSTANT / self.current
         return FE
