@@ -1,4 +1,5 @@
 {
+    "file": "Sofie4B.json",
     "data": {
         "0": {
             "raw_data_path": "/home/jejsor/Dropbox/DTU-MIT RuO2/Thetaprobe/All_data_and_text_files/20A12_Sofie_and_Jazz_and_friends/20A12_first_ISS/Mono 400\u00b5m/Sofie4B/He ISS.avg",
@@ -12,7 +13,14 @@
         }
     },
     "custom": {
-        "results": {},
+        "results": {
+            "0": {
+                "O16": 37.134382238990554,
+                "O18": 62.86561776100945,
+                "c_16": 0.2579196987699461,
+                "c_18": 0.31326853554968825
+            }
+        },
         "measurements": {}
     }
 }

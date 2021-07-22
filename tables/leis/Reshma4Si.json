@@ -1,4 +1,5 @@
 {
+    "file": "Reshma4Si.json",
     "data": {
         "0": {
             "raw_data_path": "/home/jejsor/Dropbox/DTU-MIT RuO2/Thetaprobe/All_data_and_text_files/20A12_Sofie_and_Jazz_and_friends/20A12_first_ISS/Mono 400\u00b5m/Reshma4Si/He ISS.avg",
@@ -12,7 +13,14 @@
         }
     },
     "custom": {
-        "results": {},
+        "results": {
+            "0": {
+                "O16": 99.91215830927051,
+                "O18": 0.08784169072947703,
+                "c_16": 0.3751212932229587,
+                "c_18": 0.00023661885164547776
+            }
+        },
         "measurements": {}
     }
 }

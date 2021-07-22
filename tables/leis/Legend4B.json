@@ -1,4 +1,5 @@
 {
+    "file": "Legend4B.json",
     "data": {
         "0": {
             "raw_data_path": "/home/jejsor/Dropbox/DTU-MIT RuO2/Thetaprobe/All_data_and_text_files/19L21_Legend_fresh/19L21_ISS_and_XPS/Mono 400\u00b5m/Legend4B/He ISS.avg",
@@ -22,7 +23,20 @@
         }
     },
     "custom": {
-        "results": {},
+        "results": {
+            "0": {
+                "O16": 28.235533339567752,
+                "O18": 71.76446666043225,
+                "c_16": 0.18495214961518824,
+                "c_18": 0.3372625576787741
+            },
+            "1": {
+                "O16": 27.87685768664624,
+                "O18": 72.12314231335377,
+                "c_16": 0.22432328468663298,
+                "c_18": 0.41639015969703963
+            }
+        },
         "measurements": {}
     }
 }

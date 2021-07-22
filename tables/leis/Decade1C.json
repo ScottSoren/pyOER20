@@ -1,4 +1,5 @@
 {
+    "file": "Decade1C.json",
     "data": {
         "0": {
             "raw_data_path": "/home/jejsor/Dropbox/DTU-MIT RuO2/Thetaprobe/All_data_and_text_files/20A07_Decade_and_Legend_before_testing/20A07_first_ISS/Mono 400\u00b5m/Decade1C/He ISS.avg",
@@ -12,7 +13,14 @@
         }
     },
     "custom": {
-        "results": {},
+        "results": {
+            "0": {
+                "O16": 7.652573035685674,
+                "O18": 92.34742696431432,
+                "c_16": 0.07154902076415849,
+                "c_18": 0.6194643106938662
+            }
+        },
         "measurements": {}
     }
 }

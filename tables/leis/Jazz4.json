@@ -1,4 +1,5 @@
 {
+    "file": "Jazz4.json",
     "data": {
         "0": {
             "raw_data_path": "/home/jejsor/Dropbox/DTU-MIT RuO2/Thetaprobe/All_data_and_text_files/19D23_labeled_RuO2_and_Ir/19D23_XPS_and_ISS/Mono 400\u00b5m/Jazz4/He ISS.avg",
@@ -12,7 +13,14 @@
         }
     },
     "custom": {
-        "results": {},
+        "results": {
+            "0": {
+                "O16": 94.63703850270674,
+                "O18": 5.362961497293264,
+                "c_16": 0.13139854520657493,
+                "c_18": 0.005342313555490107
+            }
+        },
         "measurements": {}
     }
 }

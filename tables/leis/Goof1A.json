@@ -1,4 +1,5 @@
 {
+    "file": "Goof1A.json",
     "data": {
         "0": {
             "raw_data_path": "/home/jejsor/Dropbox/DTU-MIT RuO2/Thetaprobe/All_data_and_text_files/19D29a_tested_IrO2/19D29a_ISS/Mono 400\u00b5m/Goof1A/He ISS.avg",
@@ -12,7 +13,14 @@
         }
     },
     "custom": {
-        "results": {},
+        "results": {
+            "0": {
+                "O16": 23.459357348515272,
+                "O18": 76.54064265148473,
+                "c_16": 0.4321512196279026,
+                "c_18": 1.011595797370095
+            }
+        },
         "measurements": {}
     }
 }

@@ -1,4 +1,5 @@
 {
+    "file": "Bernie2.json",
     "data": {
         "0": {
             "raw_data_path": "/home/jejsor/Dropbox/DTU-MIT RuO2/Thetaprobe/All_data_and_text_files/19D19_labeled_RuO2/19D19_ISS_cont/Mono 400\u00b5m/Bernie2/He ISS.avg",
@@ -12,7 +13,14 @@
         }
     },
     "custom": {
-        "results": {},
+        "results": {
+            "0": {
+                "O16": 80.31642430048275,
+                "O18": 19.683575699517256,
+                "c_16": 0.34598473765459214,
+                "c_18": 0.060834767211393775
+            }
+        },
         "measurements": {}
     }
 }

@@ -1,4 +1,5 @@
 {
+    "file": "Reshma1F.json",
     "data": {
         "0": {
             "raw_data_path": "/home/jejsor/Dropbox/Characterizations/Ruthenium/Reshma1F/20180918-143230_Isotope 01-Reshma 1F-ESpHybrid_NanoSAM_ISS--10_1-Detector_Region.vms",
@@ -14,7 +15,14 @@
         }
     },
     "custom": {
-        "results": {},
+        "results": {
+            "0": {
+                "O16": 100.0,
+                "O18": 6.74865149092188e-19,
+                "c_16": 0.03944732397178308,
+                "c_18": 1.545562538799932e-22
+            }
+        },
         "measurements": {}
     }
 }

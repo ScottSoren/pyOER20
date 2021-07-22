@@ -1,4 +1,5 @@
 {
+    "file": "Soff4D.json",
     "data": {
         "0": {
             "raw_data_path": "/home/jejsor/Dropbox/DTU-MIT RuO2/Thetaprobe/All_data_and_text_files/19J22_after_new_tests/19J22_first_ISS/Iteration #008 - before crash/Mono 400\u00b5m/Soff4D/He ISS.avg",
@@ -22,7 +23,20 @@
         }
     },
     "custom": {
-        "results": {},
+        "results": {
+            "0": {
+                "O16": 80.02722036099249,
+                "O18": 19.9727796390075,
+                "c_16": 0.6054402015287523,
+                "c_18": 0.10840949283818786
+            },
+            "1": {
+                "O16": 74.04178031930194,
+                "O18": 25.958219680698065,
+                "c_16": 1.4353636127810268,
+                "c_18": 0.36103995222468593
+            }
+        },
         "measurements": {}
     }
 }

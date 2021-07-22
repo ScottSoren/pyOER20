@@ -1,4 +1,5 @@
 {
+    "file": "Maundy4Si.json",
     "data": {
         "0": {
             "raw_data_path": "/home/jejsor/Dropbox/DTU-MIT RuO2/Thetaprobe/All_data_and_text_files/19D19_labeled_RuO2/19D19_ISS_cont/Mono 400\u00b5m/Maundy4Si/He ISS.avg",
@@ -12,7 +13,14 @@
         }
     },
     "custom": {
-        "results": {},
+        "results": {
+            "0": {
+                "O16": 72.44713179769852,
+                "O18": 27.55286820230147,
+                "c_16": 0.3622004811474099,
+                "c_18": 0.09883025620498118
+            }
+        },
         "measurements": {}
     }
 }

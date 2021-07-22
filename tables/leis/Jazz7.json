@@ -1,4 +1,5 @@
 {
+    "file": "Jazz7.json",
     "data": {
         "0": {
             "raw_data_path": "/home/jejsor/Dropbox/DTU-MIT RuO2/Thetaprobe/All_data_and_text_files/20A12_Sofie_and_Jazz_and_friends/20A12_first_ISS/Mono 400\u00b5m/Jazz7/He ISS.avg",
@@ -12,7 +13,14 @@
         }
     },
     "custom": {
-        "results": {},
+        "results": {
+            "0": {
+                "O16": 82.36544395559656,
+                "O18": 17.634556044403435,
+                "c_16": 0.06998475516494475,
+                "c_18": 0.010750241346949388
+            }
+        },
         "measurements": {}
     }
 }

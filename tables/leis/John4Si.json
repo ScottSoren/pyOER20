@@ -1,4 +1,5 @@
 {
+    "file": "John4Si.json",
     "data": {
         "0": {
             "raw_data_path": "/home/jejsor/Dropbox/DTU-MIT RuO2/Thetaprobe/All_data_and_text_files/19L17_John4_and_Taiwan1G/XPS_and_ISS/Mono 400\u00b5m/John4Si/He ISS.avg",
@@ -22,7 +23,20 @@
         }
     },
     "custom": {
-        "results": {},
+        "results": {
+            "1": {
+                "O16": 21.269849902997404,
+                "O18": 78.73015009700259,
+                "c_16": 0.12803872692673088,
+                "c_18": 0.34002690421840803
+            },
+            "0": {
+                "O16": 17.394120268362613,
+                "O18": 82.6058797316374,
+                "c_16": 0.30792505239876894,
+                "c_18": 1.0491770833217051
+            }
+        },
         "measurements": {}
     }
 }

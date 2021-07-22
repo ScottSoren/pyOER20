@@ -1,4 +1,5 @@
 {
+    "file": "Nancy5.json",
     "data": {
         "0": {
             "raw_data_path": "/home/jejsor/Dropbox/Characterizations/Ruthenium/Nancies/20190219-014547_Post measurement-Nancy 5-ESpHybrid_NanoSAM_ISS--1_1-Detector_Region.vms",
@@ -26,7 +27,20 @@
         }
     },
     "custom": {
-        "results": {},
+        "results": {
+            "1": {
+                "O16": 100.0,
+                "O18": 2.8824833218798405e-22,
+                "c_16": 0.016604406252925703,
+                "c_18": 2.7787033740731225e-26
+            },
+            "0": {
+                "O16": 36.73154864541175,
+                "O18": 63.268451354588265,
+                "c_16": 2.3283064369975484e-10,
+                "c_18": 2.328306436203229e-10
+            }
+        },
         "measurements": {}
     }
 }

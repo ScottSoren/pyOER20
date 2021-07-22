@@ -1,4 +1,5 @@
 {
+    "file": "Zhao1Si.json",
     "data": {
         "0": {
             "raw_data_path": "/home/jejsor/Dropbox/DTU-MIT RuO2/Thetaprobe/All_data_and_text_files/19L03_Taiwan_before_testing/XPS_then_ISS/EX05 Gun - 1kV 1uA/Zhao1Si/He ISS.avg",
@@ -32,7 +33,26 @@
         }
     },
     "custom": {
-        "results": {},
+        "results": {
+            "1": {
+                "O16": 6.742779498178431,
+                "O18": 93.25722050182156,
+                "c_16": 0.07623934609672009,
+                "c_18": 0.7565157119226497
+            },
+            "0": {
+                "O16": null,
+                "O18": null,
+                "c_16": null,
+                "c_18": null
+            },
+            "2": {
+                "O16": 4.78971906954993,
+                "O18": 95.21028093045007,
+                "c_16": 0.03437687862665202,
+                "c_18": 0.4902702330327122
+            }
+        },
         "measurements": {}
     }
 }
