@@ -143,6 +143,7 @@ for file_ in all_files:
     else:
         # Create entry
         dict_contents = {
+            'file': str(json_name.name),
             'data': {
                 '0': json_dict
                 },
@@ -251,6 +252,7 @@ for file_ in all_files:
     else:
         # Create first entry
         dict_contents = {
+            'file': str(json_name.name),
             'data': {
                 '0': json_dict
                 },
@@ -263,8 +265,6 @@ for file_ in all_files:
             print(f'Creating file: {json_name}')
             json.dump(dict_contents, f, indent=4)
 
-data.add_mass_lines([16, 18, 101, 192, 195, 197], offset=10)
-
 print(f'Total number of data sets found: {len(names)}')
-
+data.add_mass_lines([16, 18, 101, 192, 195, 197], offset=10)
 plt.show()

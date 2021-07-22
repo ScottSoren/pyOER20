@@ -25,8 +25,10 @@ experiment_chain.plot_fit(7)
 # and is therefore seemingly within the fitting error.
 ---- Code end ----
 """
+import json
 import pickle
 import pathlib
+import datetime
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -36,17 +38,39 @@ from .tools import weighted_smooth as smooth
 from .tools import get_range
 from .settings import DATA_DIR
 
+class ISSIterator:
+    """Iterator class for ISS"""
+    def __init__(self, iss_handler):
+        # Reference to main class
+        self._handle = iss_handler
+        self._index = 0
+        # Loop through sets sorted by (earliest) date
+        self._items = self._handle.relative_to(datetime.datetime(9999, 1, 1))['before']
+
+    def __next__(self):
+        """Return next dataset."""
+        if self._index < len(self._handle):
+            data = self._handle._active[self._items[self._index][0]]
+            self._handle.active = self._items[self._index][0]
+            self._index += 1
+            return data
+        raise StopIteration
+
 class ISS:
-    def __init__(self, sample=None, fit=None):
+    """ISS handler"""
+    def __init__(self, sample=None, fit=None, verbose=False):
         """Main interface for the ISS data """
+        self.verbose = verbose
         self.json_path = (pathlib.Path(__file__).absolute().parent.parent.parent
                      / 'tables' / 'leis')
         self.data_path = DATA_DIR / 'Data' / 'ISS' / 'organized_pickles'
-        self.files = self.get_list_of_all_pickles()
+        #self.files = self.get_list_of_all_pickles()
         self._active = None
         self._relative = None
         self._set_active = None
         self.plot_list = []
+        self.sample = sample
+        self._meta = None
         if sample is not None:
             self.get_sample(sample)
         # All reference data
@@ -55,6 +79,14 @@ class ISS:
         self.fit_coeffs = {}
         if fit is not None:
             self.fit_with_reference(peaks=fit, plot=False)
+
+    def __iter__(self):
+        """Loop through the datasets sorted from earliest to last."""
+        return ISSIterator(self)
+
+    def __len__(self):
+        """Return the number of datasets currently loaded for sample."""
+        return len(self.keys)
 
     @property
     def keys(self):
@@ -77,6 +109,96 @@ class ISS:
                 print(f'\tRecorded: {self._active[key].date}')
                 print(f'\tPath: {self._active[key].filename}')
 
+    def get_metadata(self, sample=None):
+        """Fetch the JSON metadata corresponding to ´sample´.
+If ´None´ (default), fetch JSON corresponding to current sample.
+"""
+        if sample is None:
+            if self.sample is None:
+                raise ValueError('You have to choose a sample')
+            sample = self.sample
+        # TODO: will give an error if not matching an existing file
+        with open(self.json_path / (str(sample) + '.json'), 'r') as f:
+            metadata = json.load(f)
+        # Convert keys from string to integer
+        for section in ['data', 'results', 'measurements']:
+            swap = []
+            if section == 'data':
+                dictionary = metadata[section]
+            else:
+                dictionary = metadata['custom'][section]
+            for key, value in dictionary.items():
+                try:
+                    int(key)
+                    swap.append(key)
+                except ValueError:
+                    pass
+            for key in swap:
+                dictionary[int(key)] = dictionary[key]
+                del dictionary[key]
+        # Return
+        if sample == self.sample:
+            self._meta = metadata
+        return metadata
+
+    def save_json(self, metadata=None):
+        """Save a metadata dictionary as JSON."""
+        if metadata is None:
+            if self._meta is None:
+                raise ValueError('You have to choose a sample')
+            metadata = self._meta
+        if not isinstance(metadata, dict):
+            # Not checking the contents/structure
+            raise TypeError('´metadata´ in ´self.save_json´ must be of type dict')
+        with open(self.json_path / metadata['file'], 'w') as f:
+            json.dump(metadata, f, indent=4)
+
+    def meta(self, key):
+        """Serve the contents from metadata dict"""
+        if key is None:
+            # TODO: print available keys
+            pass
+        if key == 'file':
+            return self._meta['file']
+        if key == 'data':
+            return self._meta['data'][self.active]
+        if key in self._meta['data'][self.active].keys():
+            return self._meta['data'][self.active][key]
+        if key == 'custom':
+            return self._meta['custom']
+        if key == 'results':
+            return self._meta['custom']['results'][self.active]
+        if key in self._meta['custom']['results'][self.active].keys():
+            return self._meta['custom']['results'][self.active][key]
+        if key == 'measurements':
+            return self._meta['custom']['measurements']
+        # TODO: measurements
+
+
+    def update_meta(self, key, value):
+        """Update a field in the metadata dict"""
+        if key is None:
+            # TODO: print available keys
+            pass
+        if (
+                key == 'file'
+                or key == 'data'
+                or key in self._meta['data'][self.active].keys()
+                ):
+            raise KeyError(
+                f'The data for {key} is generated from raw data and shouldn\'t be'
+                'changed. Use the "custom" data fields instead!'
+                )
+        if key == 'custom':
+            self._meta['custom'] = value
+        if key == 'results':
+            self._meta['custom']['results'][self.active] = value
+        if key in self._meta['custom']['results'][self.active].keys():
+            self._meta['custom']['results'][self.active][key] = value
+        if key == 'measurements':
+            self._meta['custom']['measurements'] = value
+        # TODO: measurements
+
     @property
     def active(self):
         """Return active selection in a pretty way"""
@@ -94,17 +216,9 @@ Set to None for certain effect."""
         ###
         self._set_active = value
 
-    def get_list_of_all_pickles(self):
-        """Return a list of all iss pickles in data folder"""
-        list_ = [filename for filename in pathlib.os.listdir(self.data_path)
-                 if filename.endswith('.pickle')]
-        list_.sort()
-        return list_
-
-    def relative_to(self, timestamp, print_info=True):
+    def relative_to(self, timestamp):
         """Take active list and return sorted relative to timestamp
 'timestamp' must be either datetime object or string of type 20A31"""
-        import datetime
         a_to_1 = {'a': 1, 'b': 2, 'c': 3, 'd': 4, 'e': 5, 'f': 6,
                   'g': 7, 'h': 8, 'i': 9, 'j': 10, 'k': 11, 'l': 12}
         if isinstance(timestamp, str):
@@ -119,31 +233,49 @@ Set to None for certain effect."""
             print('Timestamp type not understood')
             return
         list_ = [(key, self._active[key].date) for key in self.keys]
-        print(list_)
+        if self.verbose:
+            print('Unsorted list of (key, datetime)')
+            print(list_)
         list_.sort(key=lambda x: x[1])
-        print(list_)
+        if self.verbose:
+            print('Sorted list of (key, datetime)')
+            print(list_)
+        match = False
         for i, (key, date) in enumerate(list_):
             if timestamp < date:
+                match = True
                 break
+        if not match:
+            i += 1
         return {
             'match': timestamp,
             'before': list_[:i],
             'after': list_[i:],
         }
 
-    def get_sample(self, name):
+    def get_sample(self, sample):
         """Get all ISS data involving sample_name"""
-        subset = [filename for filename in self.files if name in filename]
-        self._active = self.load_set(subset)
+        self.sample = sample
+        try:
+            self.get_metadata()
+        except ValueError:
+            return
+        keys = [key for key, data in self._meta['data'].items()]
+        filenames = [data['pickle_name'] for key, data in self._meta['data'].items()]
+        self._active = self.load_set(filenames, keys)
 
-    def load_set(self, filenames):
+    def load_set(self, filenames, keys=None):
         """Take list of filenames and load it into sorted dictionary"""
         iss_dict = dict()
-        for i, filename in enumerate(filenames):
+        if keys is None:
+            iterator = enumerate(filenames)
+        else:
+            iterator = list(zip(keys, filenames))
+        for i, filename in iterator:
             with open(self.data_path / filename, 'rb') as f:
                 iss_dict[i] = pickle.load(f)
-            print(i, filename)
-        print('load_set ', iss_dict)
+            if self.verbose:
+                print(i, filename)
         return iss_dict
 
     def plot(self, selection=[], mass_lines=[], show=True):
@@ -165,7 +297,9 @@ Set to None for certain effect."""
         for key in selection:
             data = self._active[key]
             plt.plot(data.x, data.y, label=f'{key} - {data.sample}')
-            print(key, data.date, data.filename)
+            if self.verbose:
+                #TODO format
+                print(key, data.date, data.filename)
         plt.legend()
         plt.xlabel('Energy (eV)')
         plt.ylabel('Counts per second')
@@ -179,7 +313,7 @@ Set to None for certain effect."""
 
     # Maybe a @classmethod ?
     def fit_with_reference(self, selection=None, peaks=[], plot_result=False,
-                           align=True, verbose=False):
+                           align=True, verbose=self.verbose):
         """Fit reference data to selected datasets.
 
     Input  :
@@ -256,7 +390,7 @@ Set to None for certain effect."""
                 plot_result=plot_result,
                 verbose=verbose,
         )
-        if verbose:
+        if self.verbose:
             print('\nAlignment done\n--------')
 
         # Main loop
@@ -287,7 +421,7 @@ defined by the same region'
                     raise TypeError(f'Item in kwarg peaks is not understood:\n\
 {peak}\nMust be an integer or list of integers.')
 
-                if verbose:
+                if self.verbose:
                     print('Selected: ', selected)
                     print('Region: ', region)
 
@@ -433,7 +567,8 @@ defined by the same region'
         """Make a plot of O16/18 ratios for instance"""
         # Make sure references have been fitted
         if len(self.fit_ratios.keys()) == 0:
-            print('Calling method "fit_with_reference(peaks=[[16, 18]])')
+            if self.verbose:
+                print('Calling method "fit_with_reference(peaks=[[16, 18]])')
             self.fit_with_reference(peaks=[[16, 18]])
 
         # Prepare plot
@@ -488,7 +623,6 @@ defined by the same region'
         yticks = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
         ax.set_yticks(yticks)
         ax.set_yticklabels(yticks)
-        print(dates)
         secaxy.set_ticks(yticks)
         yticks.reverse()
         yticks = [str(i) for i in yticks]
@@ -507,7 +641,8 @@ defined by the same region'
 
         # Make sure references have been fitted
         if len(self.fit_ratios.keys()) == 0:
-            print('Calling method "fit_with_reference(peaks=[[16, 18]])')
+            if self.verbose:
+                print('Calling method "fit_with_reference(peaks=[[16, 18]])')
             self.fit_with_reference(peaks=[[16, 18]])
 
         # Initialize figure
