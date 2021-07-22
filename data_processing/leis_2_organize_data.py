@@ -8,6 +8,7 @@ import pickle
 import re
 import json
 
+import numpy as np
 import matplotlib.pyplot as plt
 
 from pyOER import iss
@@ -60,6 +61,9 @@ for file_ in all_files:
     try:
         # Load data
         data = iss.Data(file_, theta=135, E0=980)
+        if len(data.y[np.isfinite(data.y)]) == 0:
+            print(f'Skipping empty file: {file_}..')
+            continue
     except ImportError as msg:
         print('*** ', msg, ' ***')
         continue

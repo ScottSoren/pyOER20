@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import pyOER
 
 samples = {}
 # RuO2
@@ -76,7 +77,11 @@ names = [sample_ for selected in selection for sample_ in samples[selected]]
 
 # Calculate ratios
 for sample_counter, sample in enumerate(names):
-    data = pyOER.ISS(sample)
+    try:
+        data = pyOER.ISS(sample)
+    except FileNotFoundError:
+        print(f'Sample {sample} not found...')
+        continue
     if len(data.keys) == 0:
         print(f'Could not find data matching "{sample}"')
         invalid_samples.append(sample_counter)
@@ -87,7 +92,6 @@ for sample_counter, sample in enumerate(names):
     ratios[sample], coeffs = data.fit_with_reference(
         peaks=[[16, 18]],
         plot_result=False,
-        verbose=False,
         )
     for i in ratios[sample].keys():
         if data._active[i].good is False:

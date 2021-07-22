@@ -31,6 +31,8 @@ import pathlib
 import datetime
 
 import numpy as np
+from scipy.optimize import curve_fit
+from scipy.interpolate import interp1d
 import matplotlib.pyplot as plt
 
 from .tools import weighted_smooth as smooth
@@ -50,8 +52,8 @@ class ISSIterator:
     def __next__(self):
         """Return next dataset."""
         if self._index < len(self._handle):
-            data = self._handle._active[self._items[self._index][0]]
             self._handle.active = self._items[self._index][0]
+            data = self._handle._active[self._items[self._index][0]]
             self._index += 1
             return data
         raise StopIteration
@@ -265,7 +267,7 @@ Set to None for certain effect."""
         self._active = self.load_set(filenames, keys)
 
     def load_set(self, filenames, keys=None):
-        """Take list of filenames and load it into sorted dictionary"""
+        """Take list of filenames and load it into dictionary"""
         iss_dict = dict()
         if keys is None:
             iterator = enumerate(filenames)
@@ -283,7 +285,6 @@ Set to None for certain effect."""
         'selection' must be a list of keys matching 'iss_dict' returned by
         self.load_set.
         """
-        import matplotlib.pyplot as plt
         if len(selection) == 0:
             selection = self.keys
         plt.figure('iss autoplot')
@@ -308,7 +309,6 @@ Set to None for certain effect."""
 
     def show(self):
         """Show figures"""
-        import matplotlib.pyplot as plt
         plt.show()
 
     # Maybe a @classmethod ?
@@ -373,12 +373,10 @@ Set to None for certain effect."""
                 'peak2' = peak2 / (peak1 + peak2)
     """
 
-        from scipy.optimize import curve_fit
-        from scipy.interpolate import interp1d
-
         # Initialize constants
         if selection is None:
-            selection = self.keys
+            selection = self.keys #TODO: this is meaningless unless datasets only
+                                  # contains 1 measurement.
         coeffs = {i: {} for i in selection}
         ratios = {i: {} for i in selection}
         if align: # TODO Consider checking if done already
@@ -398,9 +396,9 @@ Set to None for certain effect."""
         for selected in selection:
             data_set = self._active[selected]
             if plot_result:
-                import matplotlib.pyplot as plt
                 plt.figure(f'Fitting: {data_set.sample} - {selected}')
             if not data_set.good:
+                print(f'Skipping bad data.. {data_set.sample}')
                 continue # skip bad data set
             ref = self._ref[data_set.setup]
             for peak in peaks:
@@ -922,7 +920,21 @@ unto nearest mass in list 'masses'.
     else:
         return ret
 
-class Data():
+class DataIterator:
+    """Iterate through datasets in Data class.
+    """
+    def __init__(self, data):
+        self._data = data
+        self._index = 0
+
+    def __next__(self):
+        if self._index < self._data.scans:
+            self._data.default_scan = self._index
+            self._index += 1
+            return self._index - 1
+        raise StopIteration
+
+class Data:
     """Load an ISS experiment exported as text or VAMAS file.
 
 Class loader copied from github.com/Ejler/DataTreatment/ISS.py
@@ -1162,6 +1174,7 @@ and (lines[i+1].lower().rstrip() == 'kinetic energy')]
             # Data
             #data_info = {}
             line_number = [i for i, line in enumerate(lines) if line.startswith('$DATAAXES')]
+            self.scans = 1
             if len(line_number) > 1:
                 print('Reading file: {}'.format(self.filename))
                 raise ImportError('Import of multiple dataaxes not implemented yet!')
@@ -1222,6 +1235,9 @@ and (lines[i+1].lower().rstrip() == 'kinetic energy')]
         print('Successfully loaded file: {}'.format(filename))
         string = 'Used settings:\nProbing mass: {} amu\nScatter angle: {}\nPrimary energy: {} eV'
         #print(string.format(*[self.settings[key] for key in ['mass', 'theta', 'E0']]))
+
+    def __iter__(self):
+        return DataIterator(self)
 
     @property
     def x(self):
