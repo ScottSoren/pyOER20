@@ -15,41 +15,153 @@ if forpublication:  # for the publication figure
 else:
     plt.style.use("default")
 
-exp_dict = dict(
-    exp_Reshma1_16O=Experiment.open(47),
-    # exp_Reshma4_16O=Experiment.open(49),  # or 49 or 50 or 73
-    exp_Reshma1_18O=Experiment.open(55),  # or 54?
-    # exp_Reshma4_18O=Experiment.open(59),  # or 63 or 59 or 75, 76, 77
-)
-exp_dict["exp_Reshma1_16O"].tspan_plot = [1700, 5400]
-exp_dict["exp_Reshma1_18O"].tspan_plot = [1100, 4800]
+
+if True:  # fig 2a, Reshma1 in 16-O electrolyte
+    exp = Experiment.open(47)
+
+    if True:  # Faradaic efficiency plot
+        axes = exp.plot_faradaic_efficiency()
+        fig = axes[0].get_figure()
+        fig.subplots_adjust(right=0.85)
+        if not forpublication:
+            axes[1].set_title(str(exp))
+
+    if True:  # activity plot (fig 2a)
+        # exp.correct_current()
+        exp.measurement.dataset.reset()  # so that background is not subtracted
+        exp.measurement.cut_dataset(tspan=[1700, 5400], t_zero="start")
+        axes = exp.measurement.plot_experiment(
+            mols=list(exp.mdict.values()), unit="pmol/s/cm^2", removebackground=False
+        )
+        axes[0].set_ylabel("O$_2$ / (pmol s$^{-1}$cm$^{-2}_{geo})$")
+        axes[1].set_ylabel("E vs RHE / (V)")
+        axes[2].set_ylabel("J / (mA cm$^{-2}_{geo}$)")
+        axes[0].set_xlabel("time / (s)")
+        axes[1].set_xlabel("time / (s)")
+        axes[0].set_yscale("log")
+        axes[0].set_ylim([5e-1, 3e3])
+        if forpublication:
+            axes[0].get_figure().savefig(f"paper_I_v3_fig2a.png")
+            axes[0].get_figure().savefig(f"paper_I_v3_fig2a.svg")
+        else:
+            axes[1].set_title(str(exp))
 
 
-for name, exp in exp_dict.items():
+if True:  # fig 2b, Reshma1 in 18-O electrolyte  (wierd FE)
+    exp = Experiment.open(55)
 
-    if False:  # Faradaic efficiency plot (fig 3c)
+    if True:  # Faradaic efficiency plot
         axes = exp.plot_faradaic_efficiency()
         fig = axes[0].get_figure()
         fig.subplots_adjust(right=0.85)
         if forpublication:
-            fig.savefig(f"{name}_FE.png")
-            fig.savefig(f"{name}_FE.svg")
-        else:
-            axes[1].set_title(name)
+            axes[1].set_title(str(exp))
 
-    if True:  # activity plot (fig 3a and 3b)
-        exp.correct_current()
+    if True:  # activity plot (fig 2a)
+        # exp.correct_current()
+        exp.measurement.dataset.reset()  # so that background is not subtracted
+        exp.measurement.cut_dataset(tspan=exp.tspan_plot, t_zero="start")
+        axes = exp.measurement.plot_experiment(
+            mols=list(exp.mdict.values()), unit="pmol/s/cm^2", removebackground=False
+        )
+        axes[0].set_ylabel("O$_2$ / (pmol s$^{-1}$cm$^{-2}_{geo})$")
+        axes[1].set_ylabel("E vs RHE / (V)")
+        axes[2].set_ylabel("J / (mA cm$^{-2}_{geo}$)")
+        axes[0].set_xlabel("time / (s)")
+        axes[1].set_xlabel("time / (s)")
+        axes[0].set_yscale("log")
+        axes[0].set_ylim([5e-1, 3e3])
+        if forpublication:
+            axes[0].get_figure().savefig(f"paper_I_v3_fig2b.png")
+            axes[0].get_figure().savefig(f"paper_I_v3_fig2b.svg")
+        else:
+            axes[1].set_title(str(exp))
+
+if True:  # fig 2c, Reshma1 in 18-O electrolyte  (sensible FE)
+    exp = Experiment.open(54)
+    exp.correct_current()
+
+    if True:  # Faradaic efficiency plot
+        axes = exp.plot_faradaic_efficiency()
+        fig = axes[0].get_figure()
+        fig.subplots_adjust(right=0.85)
+        axes[1].set_ylim([0, 0.32])
+        axes[0].set_ylabel("Faradaic efficiency / (%)")
+        axes[0].set_xlabel("E vs RHE / (V)")
+        axes[1].set_ylabel("Current density / (mA cm$^{-2}_{geo}$)")
+        if forpublication:
+            fig.savefig(f"paper_I_v3_fig2c.png")
+            fig.savefig(f"paper_I_v3_fig2c.svg")
+        else:
+            axes[1].set_title(str(exp))
+
+    if True:  # activity plot (fig 2a)
         exp.measurement.dataset.reset()
         exp.measurement.cut_dataset(tspan=exp.tspan_plot, t_zero="start")
         axes = exp.measurement.plot_experiment(
             mols=list(exp.mdict.values()), unit="pmol/s/cm^2", removebackground=False
         )
-        axes[0].set_ylabel("O$_2$ / [pmol s$^{-1}$cm$^{-2}]$")
-        axes[1].set_ylabel("U vs RHE / [V]")
-        axes[0].set_yscale("log")
-        axes[0].set_ylim([5e-1, 3e3])
+        if not forpublication:
+            axes[1].set_title(str(exp))
+
+if True:  # fig 2d, with the
+    exp = Experiment.open(71)
+    exp.measurement.plot_experiment(
+        mols=[exp.mdict["O2_M36"], exp.mdict["O2_M34"]],
+        unit="pmol/s/cm^2",
+        removebackground=True,
+        tspan=[0, 5000],
+        logplot=False,
+    )  # garbage plot
+    exp.measurement.dataset.reset()
+    axes = exp.measurement.plot_experiment(
+        mols=[exp.mdict["O2_M34"], exp.mdict["O2_M36"]],
+        unit="pmol/s/cm^2",
+        removebackground=False,
+        tspan=[0, 5000],
+        logplot=False,
+    )  # garbage plot
+    axes[0].set_ylabel("O$_2$ / (pmol s$^{-1}$cm$^{-2}_{geo})$")
+    axes[1].set_ylabel("E vs RHE / (V)")
+    axes[2].set_ylabel("J / (mA cm$^{-2}_{geo}$)")
+    axes[0].set_xlabel("time / (s)")
+    axes[1].set_xlabel("time / (s)")
+    axes[0].set_yscale("log")
+    axes[0].set_ylim([5, 3e3])
+    if forpublication:
+        axes[0].get_figure().savefig(f"paper_I_v3_fig2d.png")
+        axes[0].get_figure().savefig(f"paper_I_v3_fig2d.svg")
+    else:
+        axes[1].set_title(str(exp))
+
+    if True:  # inset
+        tspan_inset = [3500, 5000]
+        x, y = exp.measurement.dataset.get_flux(
+            exp.mdict["O2_M36"],
+            tspan=tspan_inset,
+            removebackground=False,
+            unit="pmol/s/cm^2",
+        )
+        t, V = exp.measurement.dataset.get_potential(tspan_inset)
+
+        from EC_MS import smooth
+
+        n_points = 15
+        y_smooth = smooth(y, n_points=n_points)  # 10-point moving average
+
+        fig, ax = plt.subplots()
+        ax2 = ax.twinx()
+        ax.plot(x, y, "g", alpha=0.2)
+        ax.plot(x[n_points:-n_points], y_smooth[n_points:-n_points], "g")
+        ax.set_ylim([3.3, 5.8])
+        ax2.plot(t, V, "k")
+        ax2.set_ylim(1.19, 1.65)
+        ax.set_yticks([])
+        ax2.set_xticks([])
+        ax2.set_yticks([])
+
         if forpublication:
-            axes[0].get_figure().savefig(f"{name}_act.png")
-            axes[0].get_figure().savefig(f"{name}_act.svg")
-        else:
-            axes[1].set_title(name)
+            fig.set_figwidth(1)
+            fig.set_figheight(1)
+            fig.savefig(f"paper_I_v3_fig2d_inset.png")
+            fig.savefig(f"paper_I_v3_fig2d_inset.svg")

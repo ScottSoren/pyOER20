@@ -11,7 +11,7 @@ from .calc import (
     calc_current,
 )
 from .tools import singleton_decorator, CounterWithFile
-from .constants import TOF_DIR, TOF_ID_FILE, FARADAYS_CONSTANT
+from .constants import TOF_DIR, TOF_ID_FILE, FARADAY_CONSTANT
 from .experiment import open_experiment
 
 
@@ -141,6 +141,7 @@ class TurnOverFrequency:
         potential=None,
         e_id=None,
         experiment=None,
+        sample_name=None,
         tspan=None,
         r_id=None,
         rate_calc_kwargs=None,
@@ -157,6 +158,7 @@ class TurnOverFrequency:
             e_id (int): The id of the associated experiment
             experiment (Experiment): optionally, the Experiment itself can be given to
                 save time.
+            sample_name (str): Sample name. Only needed if no experiment is given.
             tspan (timespan): The time interval over which to integrate/average
             r_id (int): The id of the associated roughness measurement
             rate_calc_kwargs (dict): Extra kwargs for the relevant rate calc. function.
@@ -172,6 +174,7 @@ class TurnOverFrequency:
         self._tof = tof
         self._potential = potential
         self._current = current
+        self._sample_name = sample_name
         self.description = description
         self.rate_calc_kwargs = rate_calc_kwargs or {}
         self.id = t_id or TOFCounter().id
@@ -193,6 +196,7 @@ class TurnOverFrequency:
             description=self.description,
             t_id=self.id,
             amount=self._amount,
+            sample_name=self._sample_name,
         )
 
     def save(self):
@@ -224,20 +228,30 @@ class TurnOverFrequency:
         return cls.load(path_to_file, **kwargs)
 
     def __repr__(self):
+        if not self.experiment:
+            return f"t{self.id} is {self.tof_type} without experiment in pyOER"
         return f"t{self.id} is {self.tof_type} on {self.sample_name} on {self.date}"
 
+    # -------- table-joining properties ------------ #
     @property
     def experiment(self):
         if not self._experiment:
+            if not self.e_id:
+                print(f"TOF with id={self.id} has no attached experiment.")
+                return None
             self._experiment = open_experiment(self.e_id)
         return self._experiment
 
     @property
     def measurement(self):
+        if not self.experiment:
+            return None
         return self.experiment.measurement
 
     @property
     def date(self):
+        if not self.measurement:
+            return None
         return self.measurement.date
 
     @property
@@ -246,6 +260,10 @@ class TurnOverFrequency:
 
     @property
     def sample_name(self):
+        if self._sample_name:
+            return self._sample_name
+        if not self.measurement:
+            return None
         return self.measurement.sample_name
 
     @property
@@ -270,6 +288,8 @@ class TurnOverFrequency:
 
     def calc_rate(self, **kwargs):
         """Calculate and return the relevant rate in [mol/s]"""
+        if not self.experiment:
+            return
         rate_calc_kwargs = self.rate_calc_kwargs
         rate_calc_kwargs.update(kwargs)
         rate = self.rate_calculating_function(
@@ -280,6 +300,8 @@ class TurnOverFrequency:
 
     def calc_amount(self, **kwargs):
         """Calculate and return the relevant amout in [mol]"""
+        if not self.experiment:
+            return
         amount = self.calc_rate(**kwargs) * self.t_interval  # noqa
         self._amount = amount
         return amount
@@ -292,16 +314,27 @@ class TurnOverFrequency:
         return self._rate
 
     def calc_tof(self):
+        if not self.experiment:
+            return
         self._tof = self.rate / self.experiment.n_sites
         return self._tof
 
     @property
     def tof(self):
+        """The estimated turn-over frequency in [s^-1]
+
+        TOF is estimated (via self.rate / self.experiment.n_sites) as:
+        tof = partial_capacitance_normalized_current / (4 * FARADAYS_CONSTANT)   \
+            * STANDARD_SPECIFIC_CAPACITANCE / STANDARD_SITE_DENSITY
+        giving units [A/F] / [C/mol] * [F/cm^2] / [mol/cm^2] =  [A/C] = [s^-1]
+        """
         if not self._tof:
             self.calc_tof()
         return self._tof
 
     def calc_potential(self):
+        if not self.experiment:
+            return
         self._potential = calc_potential(self.experiment, self.tspan)
         return self._potential
 
@@ -332,5 +365,5 @@ class TurnOverFrequency:
 
     def calc_faradaic_efficiency(self, n_el=4, mol=None):
         rate = self.calc_rate(mol=mol) if mol else self.rate
-        FE = rate * n_el * FARADAYS_CONSTANT / self.current
+        FE = rate * n_el * FARADAY_CONSTANT / self.current
         return FE

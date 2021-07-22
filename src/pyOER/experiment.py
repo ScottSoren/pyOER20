@@ -24,7 +24,7 @@ from .constants import (
     EXPERIMENT_ID_FILE,
     STANDARD_ALPHA,
     STANDARD_EXPERIMENT_TAGS,
-    FARADAYS_CONSTANT,
+    FARADAY_CONSTANT,
 )
 from .tools import singleton_decorator, CounterWithFile
 from .measurement import Measurement
@@ -352,7 +352,7 @@ class Experiment:
                             mass, tspan=self.tspan_F, unit="A"
                         )
                         I = calc_current(self, tspan=self.tspan_F)
-                        F_M = np.mean(y) / (I / (4 * FARADAYS_CONSTANT))
+                        F_M = np.mean(y) / (I / (4 * FARADAY_CONSTANT))
                         F += F_M
                     except KeyError:
                         continue

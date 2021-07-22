@@ -2,7 +2,7 @@ from pyOER import StandardExperiment
 import numpy as np
 from matplotlib import pyplot as plt
 
-forpublication = False
+forpublication = True
 if forpublication:  # for the publication figure
     import matplotlib as mpl
 
@@ -30,6 +30,15 @@ for e_id in [33, 5, 39, 41]:
     if e_id in [39, 41]:
         axes[-1].set_ylim([0, 2.5])
 
+    axes[0].set_ylabel(
+        "$^{16}$O$^{18}$O and $^{18}$O$_2$ / \n" "(pmol s$^{-1}$cm$^{-2}_{geo})$"
+    )
+    axes[1].set_ylabel("E vs RHE / (V)")
+    axes[2].set_ylabel("J / (mA cm$^{-2}_{geo}$)")
+    axes[3].set_ylabel("$^{16}$O$_2$ / \n" "(pmol s$^{-1}$cm$^{-2}_{geo})$")
+    axes[4].set_ylabel(
+        f"{e.sample.element} dissolution / \n" "(pmol s$^{-1}$cm$^{-2}_{geo})$"
+    )
     fig = axes[0].get_figure()
     if forpublication:
         fig.set_figwidth(3.25)
