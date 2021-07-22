@@ -313,7 +313,7 @@ Set to None for certain effect."""
 
     # Maybe a @classmethod ?
     def fit_with_reference(self, selection=None, peaks=[], plot_result=False,
-                           align=True, verbose=self.verbose):
+                           align=True):
         """Fit reference data to selected datasets.
 
     Input  :
@@ -388,7 +388,7 @@ Set to None for certain effect."""
                 masses=[16, 18],
                 key='oxygen',
                 plot_result=plot_result,
-                verbose=verbose,
+                verbose=self.verbose,
         )
         if self.verbose:
             print('\nAlignment done\n--------')
