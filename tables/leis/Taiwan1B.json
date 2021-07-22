@@ -22,16 +22,6 @@
             "num_of_datasets": 1
         },
         "2": {
-            "raw_data_path": "/home/jejsor/Dropbox/DTU-MIT RuO2/Thetaprobe/All_data_and_text_files/19L08_Taiwan_after_first_testing/XPS_and_ISS/Mono 400\u00b5m/Taiwan1B_2/He ISS.avg",
-            "pickle_name": "Taiwan1B__2019-12-09 06:53:08__thetaprobe__2.pickle",
-            "recorded_on": "thetaprobe",
-            "datetime": "2019-12-09 06:53:08",
-            "timestamp": 1575870788.0,
-            "comment": "2",
-            "note": "'19L08_Taiwan_after_first_testing'",
-            "num_of_datasets": 1
-        },
-        "3": {
             "raw_data_path": "/home/jejsor/Dropbox/DTU-MIT RuO2/Thetaprobe/All_data_and_text_files/19L08_Taiwan_after_first_testing/XPS_and_ISS/Mono 400\u00b5m ISS/Taiwan1B/He ISS.avg",
             "pickle_name": "Taiwan1B__2019-12-09 07:02:10__thetaprobe__.pickle",
             "recorded_on": "thetaprobe",
@@ -41,7 +31,7 @@
             "note": "'19L08_Taiwan_after_first_testing'",
             "num_of_datasets": 1
         },
-        "4": {
+        "3": {
             "raw_data_path": "/home/jejsor/Dropbox/DTU-MIT RuO2/Thetaprobe/All_data_and_text_files/19L08_Taiwan_after_first_testing/XPS_and_ISS/Mono 400\u00b5m ISS/Taiwan1B_3/He ISS.avg",
             "pickle_name": "Taiwan1B__2019-12-09 07:02:11__thetaprobe__3.pickle",
             "recorded_on": "thetaprobe",
@@ -51,7 +41,7 @@
             "note": "'19L08_Taiwan_after_first_testing'",
             "num_of_datasets": 1
         },
-        "5": {
+        "4": {
             "raw_data_path": "/home/jejsor/Dropbox/DTU-MIT RuO2/Thetaprobe/All_data_and_text_files/19L08_Taiwan_after_first_testing/XPS_and_ISS/Mono 400\u00b5m ISS/Taiwan1B_2/He ISS.avg",
             "pickle_name": "Taiwan1B__2019-12-09 07:02:10__thetaprobe__2.pickle",
             "recorded_on": "thetaprobe",
@@ -61,7 +51,7 @@
             "note": "'19L08_Taiwan_after_first_testing'",
             "num_of_datasets": 1
         },
-        "6": {
+        "5": {
             "raw_data_path": "/home/jejsor/Dropbox/DTU-MIT RuO2/Thetaprobe/All_data_and_text_files/19L08_Taiwan_after_first_testing/first_ISS/Mono 400\u00b5m/Taiwan1B/He ISS.avg",
             "pickle_name": "Taiwan1B__2019-12-09 05:28:15__thetaprobe__.pickle",
             "recorded_on": "thetaprobe",
@@ -71,7 +61,7 @@
             "note": "'19L08_Taiwan_after_first_testing'",
             "num_of_datasets": 1
         },
-        "7": {
+        "6": {
             "raw_data_path": "/home/jejsor/Dropbox/DTU-MIT RuO2/Thetaprobe/All_data_and_text_files/19L08_Taiwan_after_first_testing/first_ISS/Mono 400\u00b5m/Taiwan1B_3/He ISS.avg",
             "pickle_name": "Taiwan1B__2019-12-09 05:28:16__thetaprobe__3.pickle",
             "recorded_on": "thetaprobe",
@@ -81,7 +71,7 @@
             "note": "'19L08_Taiwan_after_first_testing'",
             "num_of_datasets": 1
         },
-        "8": {
+        "7": {
             "raw_data_path": "/home/jejsor/Dropbox/DTU-MIT RuO2/Thetaprobe/All_data_and_text_files/19L08_Taiwan_after_first_testing/first_ISS/Mono 400\u00b5m/Taiwan1B_2/He ISS.avg",
             "pickle_name": "Taiwan1B__2019-12-09 05:28:15__thetaprobe__2.pickle",
             "recorded_on": "thetaprobe",
@@ -91,7 +81,7 @@
             "note": "'19L08_Taiwan_after_first_testing'",
             "num_of_datasets": 1
         },
-        "9": {
+        "8": {
             "raw_data_path": "/home/jejsor/Dropbox/DTU-MIT RuO2/Thetaprobe/All_data_and_text_files/19L08_Taiwan_after_first_testing/ISS_10_scans/Mono 400\u00b5m ISS/Taiwan1B/He ISS.avg",
             "pickle_name": "Taiwan1B__2019-12-09 10:09:10__thetaprobe__.pickle",
             "recorded_on": "thetaprobe",
@@ -105,64 +95,130 @@
     "custom": {
         "results": {
             "0": {
-                "O16": 13.031946798841023,
-                "O18": 86.96805320115898,
-                "c_16": 0.0777026846625161,
-                "c_18": 0.37203324819066924
+                "O16": {
+                    "0": 13.031946798841023
+                },
+                "O18": {
+                    "0": 86.96805320115898
+                },
+                "c_16": {
+                    "0": 0.0777026846625161
+                },
+                "c_18": {
+                    "0": 0.37203324819066924
+                }
             },
             "1": {
-                "O16": 13.232774459335053,
-                "O18": 86.76722554066494,
-                "c_16": 0.17737973750022737,
-                "c_18": 0.8344572418035336
-            },
-            "6": {
-                "O16": 28.76740111052242,
-                "O18": 71.23259888947759,
-                "c_16": 0.09589460953179912,
-                "c_18": 0.17036000171388466
-            },
-            "8": {
-                "O16": 37.352020977392016,
-                "O18": 62.64797902260798,
-                "c_16": 0.16704966568446603,
-                "c_18": 0.2010174925449176
-            },
-            "7": {
-                "O16": 26.427704521051933,
-                "O18": 73.57229547894806,
-                "c_16": 0.08138210048649555,
-                "c_18": 0.16254702999987977
-            },
-            "2": {
-                "O16": null,
-                "O18": null,
-                "c_16": null,
-                "c_18": null
-            },
-            "3": {
-                "O16": 51.74371924359635,
-                "O18": 48.25628075640363,
-                "c_16": 0.18291596605335023,
-                "c_18": 0.12238920104547396
+                "O16": {
+                    "0": 13.232774459335053
+                },
+                "O18": {
+                    "0": 86.76722554066494
+                },
+                "c_16": {
+                    "0": 0.17737973750022737
+                },
+                "c_18": {
+                    "0": 0.8344572418035336
+                }
             },
             "5": {
-                "O16": 46.952808533554204,
-                "O18": 53.04719146644579,
-                "c_16": 0.20870640673898888,
-                "c_18": 0.1691733234344937
+                "O16": {
+                    "0": 28.76740111052242
+                },
+                "O18": {
+                    "0": 71.23259888947759
+                },
+                "c_16": {
+                    "0": 0.09589460953179912
+                },
+                "c_18": {
+                    "0": 0.17036000171388466
+                }
+            },
+            "7": {
+                "O16": {
+                    "0": 37.352020977392016
+                },
+                "O18": {
+                    "0": 62.64797902260798
+                },
+                "c_16": {
+                    "0": 0.16704966568446603
+                },
+                "c_18": {
+                    "0": 0.2010174925449176
+                }
+            },
+            "6": {
+                "O16": {
+                    "0": 26.427704521051933
+                },
+                "O18": {
+                    "0": 73.57229547894806
+                },
+                "c_16": {
+                    "0": 0.08138210048649555
+                },
+                "c_18": {
+                    "0": 0.16254702999987977
+                }
+            },
+            "2": {
+                "O16": {
+                    "0": 51.74371924359635
+                },
+                "O18": {
+                    "0": 48.25628075640363
+                },
+                "c_16": {
+                    "0": 0.18291596605335023
+                },
+                "c_18": {
+                    "0": 0.12238920104547396
+                }
             },
             "4": {
-                "O16": 24.888169253592054,
-                "O18": 75.11183074640795,
-                "c_16": 0.07328468385251964,
-                "c_18": 0.1586806220787814
+                "O16": {
+                    "0": 46.952808533554204
+                },
+                "O18": {
+                    "0": 53.04719146644579
+                },
+                "c_16": {
+                    "0": 0.20870640673898888
+                },
+                "c_18": {
+                    "0": 0.1691733234344937
+                }
             },
-            "9": {
-                "O16": 52.80592280634019,
-                "O18": 47.19407719365981,
-                "c_16": 0.542181565111435,
-                "c_18": 0.3476521253837514
+            "3": {
+                "O16": {
+                    "0": 24.888169253592054
+                },
+                "O18": {
+                    "0": 75.11183074640795
+                },
+                "c_16": {
+                    "0": 0.07328468385251964
+                },
+                "c_18": {
+                    "0": 0.1586806220787814
+                }
+            },
+            "8": {
+                "O16": {
+                    "0": 52.80592280634019
+                },
+                "O18": {
+                    "0": 47.19407719365981
+                },
+                "c_16": {
+                    "0": 0.542181565111435
+                },
+                "c_18": {
+                    "0": 0.3476521253837514
+                }
             }
         },
         "measurements": {}
