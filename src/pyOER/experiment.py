@@ -624,7 +624,7 @@ class StandardExperiment(Experiment):
                     icpms_point.sampling_time for icpms_point in self.icpms_points
                 ]
                 for t in sampling_times:
-                    ax0.plot([t, t], ylim0, "b--")
+                    ax0.plot([t, t], [0, ylim0[-1] * 5], "b--")
                     axes[0].plot([t, t], ylim1, "b--")
                     axes[1].plot([t, t], ylim2, "b--")
 
