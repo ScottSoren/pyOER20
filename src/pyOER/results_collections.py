@@ -3,26 +3,68 @@
 import json
 import numpy as np
 from .experiment import all_standard_experiments
+from .tof import TurnOverFrequency
 
 
-def nested_update_with_layers(new_dict, old_dict, layers, **kwargs):
+def nested_update(dict_1, dict_2):
+    """Update dict_1 with dict_2, but update rather than replace values which are dicts.
 
+    This is a nice tool to use later as we turn the datapoints into statistics
+    """
+    for key, value in dict_2.items():
+        if key in dict_1 and isinstance(dict_2[key], dict):
+            nested_update(dict_1[key], dict_2[key])
+        else:
+            dict_1[key] = value
+
+
+def nested_update_with_layers(dict_1, dict_2, layers, **kwargs):
+    """Update dict_1 with dict_2, filtering away some layers.
+
+    Example:
+        >>> nested_update_with_layers(
+        ...     dict_1 = {},
+        ...     dict_2 = {"a": {"ii": {"1": 121, "2": 122},
+        ...                     "iii": {"3": 133, "4": 134}}},
+        ...     layers = ("abc", "roman", "arabic"),
+        ...     roman="ii"
+        ... )
+        OUT: {"a": {"1": 121, "2": 122}}
+
+    Args:
+        dict_1 (dict): The dictionary to update. Can be an empty dictionary.
+        dict_2 (dict): The dictionary to update it with. This will in general be a
+            homogeneous multi-layered string-keyed dictionary.
+        layers (iter of str): The names of the layers of dict_2. Needs to have the
+            same length as the number of times you would index dict_2.
+        kwargs: The filters to apply to dict_2 while updating dict_1. Each key-word
+            has to be the name of a layer. Those layers will not be recreated from
+            dict_1 to dict_2. Instead, the key-word argument will be used as an index,
+            selecting only one branch of the lower layers of dict_2 to update into
+            dict_1.
+    """
     for layer_name in kwargs:
         if layer_name not in layers:
             key = kwargs.pop(layer_name)
-            print(f"Can't filter based in {layer_name}={key} "
-                  f"because {key} is not in layers={layers}. This will be ignored.")
+            print(
+                f"Can't filter based in {layer_name}={key} "
+                f"because {key} is not in layers={layers}. This will be ignored."
+            )
     if layers[0] in kwargs:
         new_kwargs = kwargs.copy()
         key = new_kwargs.pop(layers[0])
-        nested_update_with_layers(new_dict, old_dict[key], layers[1:], **new_kwargs)
-    for key, value in new_dict:
-        if key in old_dict and isinstance(old_dict, dict):
-            nested_update_with_layers(
-                new_dict[key], old_dict[key], layers[1:], **kwargs
-            )
-        else:
-            new_dict[key] = value
+        nested_update_with_layers(dict_1, dict_2[key], layers[1:], **new_kwargs)
+    else:
+        for key, value in dict_2:
+            if isinstance(dict_2, dict):
+                if key not in dict_1:
+                    dict_1[key] = {}
+                nested_update_with_layers(
+                    dict_1[key], dict_2[key], layers[1:], **kwargs
+                )
+            else:
+                dict_1[key] = value
+    return dict_1
 
 
 def get_sample_type(sample, sample_mapping):
@@ -51,13 +93,12 @@ def get_current_point(tof, current_point_mapping):
 
 
 class StabilityResultsCollection:
-
     def __init__(
-            self,
-            tof_collection,
-            layers=("sample_type", "current_point", "result_time", "result_type"),
-            sample_mapping=None,
-            current_point_mapping=None
+        self,
+        tof_collection=None,
+        layers=("sample_type", "current_point", "result_time", "result_type"),
+        sample_mapping=None,
+        current_point_mapping=None,
     ):
         # okay, hold your horses, four-layer nested dictionary here.
         # Layers are (in the order that you'd index the dictionary):
@@ -118,9 +159,12 @@ class StabilityResultsCollection:
 
     def __getitem__(self, key):
         return StabilityResultsCollection(
-            tof_collection=self.tof_collection[key],
-            layers=self.layers[1:]
+            tof_collection=self.tof_collection[key], layers=self.layers[1:]
         )
+
+    def items(self):
+        for key in self.tof_collection:
+            yield key, self[key]
 
     def get_sub_collection(self, **kwargs):
         new_tof_collection = {}
@@ -143,11 +187,82 @@ class StabilityResultsCollection:
 
     def save(self, path_to_file):
         with open(path_to_file, "w") as f:
-            json.dump(self.as_dict(), f)
+            json.dump(self.as_dict(), f, indent=4)
 
     @classmethod
-    def read(cls, path_to_file):
+    def open(cls, path_to_file):
         with open(path_to_file, "r") as f:
             self_as_dict = json.load(f)
         return cls(**self_as_dict)
 
+    def get_stats(self, sample_type, current_point, tof_time):
+        """Return {type: [mean, standard deviation]} for types of stability numbers.
+
+        The types of stability numbers are "S_number" for OER / metal dissolution and
+        "S_number_lattice for OER / lattice oxygen evolution
+
+        Args:
+            sample_type (str): The type of sample, e.g. "RT-RuO2", "IrOx/Ir", etc.
+            current_point (str): The current in [mA/cm^2], e.g. "0.5", "0.15", etc.
+            tof_time (str): The part of the measurement. "start" or "steady".
+        """
+        stats = {sample_type: {current_point: {"S_number": {}, "S_number_lattice": {}}}}
+        diss = np.array(
+            [
+                TurnOverFrequency.open(t_id).rate
+                for t_id in self.tof_collection[sample_type][current_point][tof_time][
+                    "dissolution"
+                ]
+            ]
+        )
+        exc = np.array(
+            [
+                TurnOverFrequency.open(t_id).rate
+                for t_id in self.tof_collection[sample_type][current_point][tof_time][
+                    "exchange"
+                ]
+            ]
+        )
+        act = np.array(
+            [
+                TurnOverFrequency.open(t_id).rate
+                for t_id in self.tof_collection[sample_type][current_point][tof_time][
+                    "activity"
+                ]
+            ]
+        )
+
+        # get rid of all nan's and inf's!
+        diss = diss[~np.isnan(diss)]
+        diss = diss[~np.isinf(diss)]
+        exc = exc[~np.isnan(exc)]
+        exc = exc[~np.isinf(exc)]
+        act = act[~np.isnan(act)]
+        act = act[~np.isinf(act)]
+
+        S_number = np.mean(act) / np.mean(diss)
+        S_number_lattice = np.mean(act) / np.mean(exc)
+        if len(diss) > 1:
+            sigma_S = S_number * np.sqrt(
+                (np.std(act) / np.mean(act)) ** 2 + (np.std(diss) / np.mean(diss)) ** 2
+            )  # propagate uncertainty in activity and uncertainty in dissolution.
+            stats["S_number"] = [S_number, sigma_S]
+            # [average, uncertainty]
+        else:
+            stats["S_number"] = [S_number, None]
+            # no uncertainty since there's only one.
+        if len(exc) > 1:
+            sigma_S_lattice = S_number_lattice * np.sqrt(
+                (np.std(act) / np.mean(act)) ** 2 + (np.std(exc) / np.mean(exc)) ** 2
+            )  # propagate uncertainty in activity and uncertainty in exchange.
+            stats["S_number_lattice"] = [
+                S_number_lattice,  # average
+                sigma_S_lattice,  # uncertainty (standard deviation)
+            ]
+        else:
+            stats["S_number_lattice"] = [
+                S_number_lattice,  # average (since there's only one
+                None,  # can't quantify uncertainty if there's only one
+            ]
+
+        return stats

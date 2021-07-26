@@ -24,7 +24,13 @@ axes_b = e1.measurement.plot_experiment(
     tspan="all",
     masses=[
         # "M4", "M18",
-        "M28", "M32", "M34", "M36", "M44", "M46", "M48"
+        "M28",
+        "M32",
+        "M34",
+        "M36",
+        "M44",
+        "M46",
+        "M48",
     ],
     unit="A",
 )

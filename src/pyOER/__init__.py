@@ -23,4 +23,5 @@ from .icpms import *
 from .experiment import *
 from .sample import *
 from .tof import *
+from .results_collections import *
 from .modelling import *
