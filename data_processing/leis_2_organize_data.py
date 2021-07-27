@@ -47,6 +47,8 @@ file_format_string = '{}__{}__{}__{}'
 # Create folder for organized data and metadata (json)
 data_dest = (DATA_DIR / 'Data' / 'ISS' / 'organized_pickles')
 data_dest.mkdir(parents=True, exist_ok=True)
+extras_path = DATA_DIR / 'Data' / 'ISS' / 'pickled_pickles'
+extras_path.mkdir(parents=True, exist_ok=True)
 
 cwd = pathlib.Path.cwd()
 json_dest = cwd.parent / 'tables' / 'leis'

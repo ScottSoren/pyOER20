@@ -1,6 +1,6 @@
 """ISS handler module for pyOER.
 
-Simple usage:
+Simple usage [deprecated]:
 You have ISS of samples, "Reshma1" and "Reshma2". You can load all
 these samples by loading "Reshma" without a postfix. The following
 piece of code will load ISS experiments for both sample series,
@@ -37,25 +37,38 @@ import matplotlib.pyplot as plt
 
 from .tools import weighted_smooth as smooth
 #from .tools import smooth
-from .tools import get_range
+from .tools import get_range, dict_from_json
 from .settings import DATA_DIR
+
+from collections.abc import Mapping
+
+
+def deep_update(d1, d2):
+    """https://stackoverflow.com/questions/3232943/update-value-of-a-nested-dictionary-of-varying-depth"""
+    if all((isinstance(d, Mapping) for d in (d1, d2))):
+        for k, v in d2.items():
+            d1[k] = deep_update(d1.get(k), v)
+        return d1
+    return d2
 
 class ISSIterator:
     """Iterator class for ISS"""
     def __init__(self, iss_handler):
         # Reference to main class
         self._handle = iss_handler
+        self._initial_index = self._handle.active
         self._index = 0
         # Loop through sets sorted by (earliest) date
-        self._items = self._handle.relative_to(datetime.datetime(9999, 1, 1))['before']
+        self._items = self._handle.keys
 
     def __next__(self):
         """Return next dataset."""
         if self._index < len(self._handle):
-            self._handle.active = self._items[self._index][0]
-            data = self._handle._active[self._items[self._index][0]]
+            self._handle.active = self._items[self._index]
             self._index += 1
-            return data
+            return self._handle.data
+        # Restore active dataset
+        self._handle.active = self._initial_index
         raise StopIteration
 
 class ISS:
@@ -66,10 +79,11 @@ class ISS:
         self.json_path = (pathlib.Path(__file__).absolute().parent.parent.parent
                      / 'tables' / 'leis')
         self.data_path = DATA_DIR / 'Data' / 'ISS' / 'organized_pickles'
-        #self.files = self.get_list_of_all_pickles()
+        self.extras_path = DATA_DIR / 'Data' / 'ISS' / 'pickled_pickles'
         self._active = None
         self._relative = None
         self._set_active = None
+        self._old_active = None
         self.plot_list = []
         self.sample = sample
         self._meta = None
@@ -77,10 +91,17 @@ class ISS:
             self.get_sample(sample)
         # All reference data
         self._ref = pickle.load(open(self.data_path / 'iss_reference.pickle', 'rb'))
+        self._init_extras() # _background, _shifted
         self.fit_ratios = {}
         self.fit_coeffs = {}
         if fit is not None:
             self.fit_with_reference(peaks=fit, plot=False)
+
+    def all_leis(self):
+        """Return a list of all leis samples."""
+        all_samples = [sample.stem for sample in self.json_path.rglob('*.json')]
+        all_samples.sort()
+        return all_samples
 
     def __iter__(self):
         """Loop through the datasets sorted from earliest to last."""
@@ -91,11 +112,31 @@ class ISS:
         return len(self.keys)
 
     @property
+    def data(self):
+        """Return the active dataset."""
+        return self._active[self.active]
+
+    @property
+    def fit_coeff(self):
+        """Return the fit coefficients for active dataset.
+
+    Returns a dict with the available keys."""
+        return self.fit_coeffs[self.active]
+
+    @property
+    def fit_ratio(self):
+        """Return the fitted (isotope) ratios for active dataset.
+
+    Returns a dict with the available keys."""
+        return self.fit_ratios[self.active]
+
+    @property
     def keys(self):
         if self._active is None:
             print('Use get_sample(name) to select datasets')
             return
-        return [key for key in self._active.keys()]
+        selection = self.relative_to(datetime.datetime(9999, 1, 1))['before']
+        return [key for (key, date) in selection]
 
     @property
     def labels(self, print_=True):
@@ -121,26 +162,10 @@ If ´None´ (default), fetch JSON corresponding to current sample.
             sample = self.sample
         # TODO: will give an error if not matching an existing file
         with open(self.json_path / (str(sample) + '.json'), 'r') as f:
-            metadata = json.load(f)
-        # Convert keys from string to integer
-        for section in ['data', 'results', 'measurements']:
-            swap = []
-            if section == 'data':
-                dictionary = metadata[section]
-            else:
-                dictionary = metadata['custom'][section]
-            for key, value in dictionary.items():
-                try:
-                    int(key)
-                    swap.append(key)
-                except ValueError:
-                    pass
-            for key in swap:
-                dictionary[int(key)] = dictionary[key]
-                del dictionary[key]
-        # Return
+            metadata = dict_from_json(json.load(f))
         if sample == self.sample:
             self._meta = metadata
+
         return metadata
 
     def save_json(self, metadata=None):
@@ -155,33 +180,65 @@ If ´None´ (default), fetch JSON corresponding to current sample.
         with open(self.json_path / metadata['file'], 'w') as f:
             json.dump(metadata, f, indent=4)
 
-    def meta(self, key):
+    def show_meta_keys(self):
+        """Print and return the available metadata keys."""
+        meta_keys = []
+
+        print('Available metadata keys:\n')
+        print(' file')
+        meta_keys.append('file')
+        print(' data')
+        meta_keys.append('data')
+        for i in self._meta['data'][self.active].keys():
+            print(f'  - {i}')
+            meta_keys.append(i)
+        print(' custom')
+        meta_keys.append('custom')
+        print('  - results')
+        meta_keys.append('results')
+        for i in self._meta['custom']['results'][self.active].keys():
+            print(f'     - {i}')
+            meta_keys.append(i)
+        print('  - measurements')
+        meta_keys.append('measurements')
+        for i in self._meta['custom']['measurements'].keys():
+            print(f'     - {i}')
+            meta_keys.append(i)
+        print()
+        return meta_keys
+
+    def meta(self, key=None):
         """Serve the contents from metadata dict"""
         if key is None:
-            # TODO: print available keys
-            pass
+            return self.show_meta_keys()
+
         if key == 'file':
             return self._meta['file']
+
         if key == 'data':
             return self._meta['data'][self.active]
+
         if key in self._meta['data'][self.active].keys():
             return self._meta['data'][self.active][key]
+
         if key == 'custom':
             return self._meta['custom']
+
         if key == 'results':
             return self._meta['custom']['results'][self.active]
+
         if key in self._meta['custom']['results'][self.active].keys():
-            return self._meta['custom']['results'][self.active][key]
+            return self._meta['custom']['results'][self.active][key][self.data.default_scan]
+
         if key == 'measurements':
             return self._meta['custom']['measurements']
-        # TODO: measurements
 
+        if key in self._meta['custom']['measurements'].keys():
+            return self._meta['custom']['measurements'][key]
 
     def update_meta(self, key, value):
-        """Update a field in the metadata dict"""
-        if key is None:
-            # TODO: print available keys
-            pass
+        """Update a field in the metadata dict."""
+        # TODO: make more robust
         if (
                 key == 'file'
                 or key == 'data'
@@ -191,21 +248,44 @@ If ´None´ (default), fetch JSON corresponding to current sample.
                 f'The data for {key} is generated from raw data and shouldn\'t be'
                 'changed. Use the "custom" data fields instead!'
                 )
+        if key is None:
+            key = 'None'
+
         if key == 'custom':
-            self._meta['custom'] = value
-        if key == 'results':
-            self._meta['custom']['results'][self.active] = value
-        if key in self._meta['custom']['results'][self.active].keys():
-            self._meta['custom']['results'][self.active][key] = value
-        if key == 'measurements':
-            self._meta['custom']['measurements'] = value
-        # TODO: measurements
+            if not isinstance(value, dict):
+                raise TypeError('´value´ must be of type ´dict´ when used here')
+            dictionary = self._meta['custom']
+            dictionary = deep_update(dictionary, value)
+
+        elif key == 'results':
+            if not isinstance(value, dict):
+                raise TypeError('´value´ must be of type ´dict´ when used here')
+            dictionary = self._meta['custom']['results']
+            dictionary = deep_update(dictionary, value)
+
+        elif key == 'measurements':
+            if not isinstance(value, dict):
+                raise TypeError('´value´ must be of type ´dict´ when used here')
+            dictionary = self._meta['custom']['measurements']
+            dictionary = deep_update(dictionary, value)
+
+        elif key.startswith('m') and key[1:].isnumeric():
+            self._meta['custom']['measurements'][key] = value
+
+        elif key in self._meta['custom']['results'][self.active].keys():
+            self._meta['custom']['results'][self.active][key][self.data.default_scan] = value
+
+        else:
+            self.show_meta_keys()
+            raise KeyError(
+                f'Key "{key}" does not match the structure of the metadata'
+                )
 
     @property
     def active(self):
         """Return active selection in a pretty way"""
         if self._set_active is None:
-            pass # do something on all data
+            raise ValueError('Use ´get_sample´ to select a dataset')
         else: # return selected dataset
             return self._set_active
 
@@ -213,7 +293,7 @@ If ´None´ (default), fetch JSON corresponding to current sample.
     def active(self, value):
         """Set active selection to a key or list of keys.
 Set to None for certain effect."""
-        ###
+        ### TODO
         # do some check of value here
         ###
         self._set_active = value
@@ -234,7 +314,7 @@ Set to None for certain effect."""
         else:
             print('Timestamp type not understood')
             return
-        list_ = [(key, self._active[key].date) for key in self.keys]
+        list_ = [(key, self._active[key].date) for key in self._active.keys()]
         if self.verbose:
             print('Unsorted list of (key, datetime)')
             print(list_)
@@ -262,11 +342,14 @@ Set to None for certain effect."""
             self.get_metadata()
         except ValueError:
             return
-        keys = [key for key, data in self._meta['data'].items()]
-        filenames = [data['pickle_name'] for key, data in self._meta['data'].items()]
-        self._active = self.load_set(filenames, keys)
+        keys = [key for key in self._meta['data']]
+        filenames = [self._meta['data'][key]['pickle_name'] for key in keys]
+        self._active = self._load_set(filenames, keys)
+        self._init_extras()
+        self._load_extras()
+        self.active = 0
 
-    def load_set(self, filenames, keys=None):
+    def _load_set(self, filenames, keys=None):
         """Take list of filenames and load it into dictionary"""
         iss_dict = dict()
         if keys is None:
@@ -280,17 +363,189 @@ Set to None for certain effect."""
                 print(i, filename)
         return iss_dict
 
+    def _load_extras(self):
+        """Load the extra information which is calculated from the raw data."""
+        path_to_file = self.extras_path / (self.sample + '.pickle')
+        try:
+            with open(path_to_file, 'rb') as f:
+                data = pickle.load(f)
+        except IOError:
+            print('File not found error:', path_to_file)
+            data = None
+            self._init_extras()
+            return
+
+        # Background data
+        for i, region in enumerate(data['background']):
+            self._background[region] = {}
+            for key in data['background'][region]:
+                self._background[region][key] = data['background'][region][key]
+
+        # Alignment data
+        for j, region in enumerate(data['shifted']):
+            self._shifted[region] = {}
+            for key in data['shifted'][region]:
+                self._shifted[region][key] = data['shifted'][region][key]
+
+        # Update region if unambiguous
+        if i == 0 and j == 0:
+            self._region = region
+
+    @property
+    def region(self):
+        return self._region
+
+    @region.setter
+    def region(self, value):
+        if value in self._shifted or value in self._background:
+            self._region = value
+        else:
+            raise ValueError(f'Region ´{value}´ does not exist.')
+
+    def aligned(self, key=None):
+        """Alias for ´shifted´."""
+        return self.shifted(key)
+
+    def shifted(self, key=None):
+        """Return the shifted spectrum of the active dataset according to region."""
+        if not self.region in self._shifted:
+            print('\nAvailable regions for shifted (aligned) data:')
+            for region in self._shifted:
+                print(f' - {region}')
+            print('Use ´self.region´ to select/activate a region.')
+            return
+
+        selector = (self.active, self.data.default_scan)
+        if key in self._shifted[self.region][selector]:
+            return self._shifted[self.region][selector][key]
+        print('\nAvailable keys for shifted (aligned) data:')
+        for key in self._shifted[self.region][selector]:
+            print(f' - {key}')
+
+    def background(self, key=None):
+        """Return the background spectrum of the active dataset according to region."""
+        if not self.region in self._background:
+            print('\nAvailable regions for background subtracted data:')
+            for region in self._background:
+                print(f' - {region}')
+            print('Use ´self.region´ to select/activate a region.')
+            return
+
+        selector = (self.active, self.data.default_scan)
+        if key in self._background[self.region][selector]:
+            return self._background[self.region][selector][key]
+        print('\nAvailable keys for background subtracted data:')
+        for key in self._background[self.region][selector]:
+            print(f' - {key}')
+
+    def save_extras(self):
+        """Save the current version of extra data to file."""
+        data = {
+            'background': self._background,
+            'shifted': self._shifted,
+            }
+        destination = self.extras_path / (self.sample + '.pickle')
+        old_data = None
+        if destination.exists():
+            with open(destination, 'rb') as f:
+                old_data = pickle.load(f)
+        change = False
+        if self.verbose:
+            print('\n', change)
+        try:
+            regions = np.unique(list(zip(
+                data['background'].keys(),
+                old_data['background'].keys(),
+                )))
+            for region in regions:
+                index = []
+                for i in (
+                    list(data['background'][region].keys())
+                    +
+                    list(old_data['background'][region].keys())
+                    ):
+                    if not i in index:
+                        index.append(i)
+                for i, j in index:
+                    if self.verbose:
+                        print('\n', region, i, j)
+                    check_1 = np.all(
+                        data['background'][region][i, j]['x']
+                        ==
+                        old_data['background'][region][i, j]['x']
+                        )
+                    change = change or not check_1
+                    if self.verbose:
+                        print(f'\n  1 {check_1}')
+                        print('  back x: ', change)
+
+                    new = data['background'][region][i, j]['y']
+                    old = old_data['background'][region][i, j]['y']
+                    check_2 = np.all(new[np.isfinite(new)] == old[np.isfinite(old)])
+                    change = change or not check_2
+                    if self.verbose:
+                        print(f'\n  2 {check_2}')
+                        print('  back y: ', change)
+
+                    check_3 = (
+                        data['background'][region][i, j]['limits']
+                        ==
+                        old_data['background'][region][i, j]['limits']
+                        )
+                    change = change or not check_3
+                    if self.verbose:
+                        print(f'\n  3 {check_3}')
+                        print('  back limits: ', change)
+
+                    new = data['shifted'][region][i, j]['xy']
+                    old = old_data['shifted'][region][i, j]['xy']
+                    check_4 = np.all(new[np.isfinite(new)] == old[np.isfinite(old)])
+                    change = change or not check_4
+                    if self.verbose:
+                        print(f'\n  4 {check_4}')
+                        print('  shift xy: ', change)
+
+                    check_5 = [
+                        data['shifted'][region][i, j][key]
+                        ==
+                        old_data['shifted'][region][i, j][key]
+                        for key in ['region', 'masses', 'limits', 'good']
+                        ]
+                    change = change or not all(check_5)
+                    if self.verbose:
+                        print(f'\n  5 {check_5}')
+                        print('  shift keys: ', change)
+                        print()
+
+        except (KeyError, TypeError):
+            change = True
+        if change:
+            print(f'\n{destination.stem}: ', end='')
+            print('OVERWRITING: Extra data has changed from file.\n')
+            with open(destination, 'wb') as f:
+                pickle.dump(data, f, pickle.HIGHEST_PROTOCOL)
+        else:
+            if self.verbose:
+                print(f'\n{destination.stem}: ', end='')
+                print('Extra data equivalent to file - not overwriting...\n')
+
+    def _init_extras(self):
+        self._region = None
+        self._background = {}
+        self._shifted = {}
+
     def plot(self, selection=[], mass_lines=[], show=True):
         """Plot selected spectra.
         'selection' must be a list of keys matching 'iss_dict' returned by
         self.load_set.
         """
         if len(selection) == 0:
+            # Plot all (sorted)
             selection = self.keys
         plt.figure('iss autoplot')
         self.labels
         if len(mass_lines) > 0:
-            self._active[0].add_mass_lines(
+            self.data.add_mass_lines(
                 mass_lines,
                 color='gray',
                 labels=False,
@@ -311,14 +566,20 @@ Set to None for certain effect."""
         """Show figures"""
         plt.show()
 
+    def backup_active(self):
+        self._old_active = self.active
+
+    def restore_active(self):
+        self.active = self._old_active
+
     # Maybe a @classmethod ?
     def fit_with_reference(self, selection=None, peaks=[], plot_result=False,
-                           align=True):
+                           region_names=['oxygen'], align=True, recalculate=False):
         """Fit reference data to selected datasets.
 
     Input  :
-        selection (list): where each element is an integer representing
-            a key in self._active. Each of these ISS objects will be fit
+        selection (list): where each element is an integer representing a
+            key/index in self.keys. Each of these ISS objects will be fit
             to the  reference data. Defaults to all datasets.
         peaks (list): where each element is an integer representing the
             mass of the elements to fit. If elements should be compared
@@ -373,35 +634,19 @@ Set to None for certain effect."""
                 'peak2' = peak2 / (peak1 + peak2)
     """
 
-        # Initialize constants
-        if selection is None:
-            selection = self.keys #TODO: this is meaningless unless datasets only
-                                  # contains 1 measurement.
-        coeffs = {i: {} for i in selection}
-        ratios = {i: {} for i in selection}
-        if align: # TODO Consider checking if done already
-            align_spectra(
-                [val for key, val in self._active.items() if key in selection],
-                limits=[350, 520],
-                masses=[16, 18],
-                key='oxygen',
-                plot_result=plot_result,
-                verbose=self.verbose,
-        )
-        if self.verbose:
-            print('\nAlignment done\n--------')
-
         # Main loop
-        self.background = {}
-        for selected in selection:
-            data_set = self._active[selected]
+        coeffs = {}
+        ratios = {}
+        for data in self:
+            if selection:
+                if self.active not in selection:
+                    continue
             if plot_result:
-                plt.figure(f'Fitting: {data_set.sample} - {selected}')
-            if not data_set.good:
-                print(f'Skipping bad data.. {data_set.sample}')
-                continue # skip bad data set
-            ref = self._ref[data_set.setup]
-            for peak in peaks:
+                plt.figure(f'Fitting: {data.sample} - {self.active}')
+
+            # Define region limits by comparing with reference file
+            ref = self._ref[data.setup]
+            for peak, region_name in list(zip(peaks, region_names)):
                 # Peak is single
                 if isinstance(peak, int):
                     region = ref[peak]['region']
@@ -412,153 +657,247 @@ Set to None for certain effect."""
                     N = len(peak)
                     for _ in peak:
                         if ref[_]['region'] != region:
-                            raise ValueError(f'Grouped peaks "{peak}" are not\
-defined by the same region'
-                            )
+                            raise ValueError((
+                                f'Grouped peaks "{peak}" are not defined by the '
+                                'same region'
+                                ))
                 else:
-                    raise TypeError(f'Item in kwarg peaks is not understood:\n\
-{peak}\nMust be an integer or list of integers.')
+                    raise TypeError((
+                        f'Item in kwarg peaks is not understood: {peak}\n'
+                        'Must be an integer or list of integers.'
+                        ))
 
                 if self.verbose:
-                    print('Selected: ', selected)
+                    print('Selected: ', self.active)
+                    print('Region name: ', region_name)
                     print('Region: ', region)
 
-                # Subtract background and make accessible afterwards
-                background = subtract_single_background(
-                    np.vstack((data_set.shifted['oxygen'],
-                    data_set.smoothed['oxygen'])).T,
-                    ranges=[region],
-                    )
-                self.background[selected] = background
-                isolated_peak = data_set.y - background
-                isolated_peak[np.isnan(isolated_peak)] = 0.1
-                if plot_result:
-                    plt.plot(data_set.x, background, 'k:')# label='Background'
-                    plt.plot(data_set.x, data_set.y, 'k-', label='Raw data')
-                    plt.plot(data_set.shifted['oxygen'],
-                             background, 'b:',
-                             #label='Background',
-                             )
-                    plt.plot(data_set.shifted['oxygen'],
-                             data_set.y, 'b-',
-                             label='Aligned data',
-                             )
-
-                # Create a common x-axis for comparisons
-                pseudo_x = np.linspace(
-                    region[0],
-                    region[1],
-                    (region[1] - region[0])*10 + 1,
-                    )
-                interp_dat = interp1d(
-                    data_set.shifted['oxygen'],
-                    isolated_peak,
-                    kind='linear',
-                    )
-                interp_back = interp1d(
-                    data_set.shifted['oxygen'],
-                    background,
-                    kind='linear',
-                    )
-                interp_ref = {}
-                interp_ref[16] = interp1d(
-                    ref[16]['xy'][:, 0],
-                    ref[16]['peak'],
-                    kind='linear',
-                    )
-                interp_ref[18] = interp1d(
-                    ref[18]['xy'][:, 0],
-                    ref[18]['peak'],
-                    kind='linear',
-                    )
-                mask = get_range(pseudo_x, *region)
-                dat_x = pseudo_x[mask]
-                dat_y = interp_dat(dat_x)
-                if plot_result:
-                    plt.plot(
-                        ref[16]['xy'][:, 0],
-                        ref[16]['peak'],
-                        'r:',
-                        label='O16 ref',
-                        )
-                    plt.plot(
-                        ref[18]['xy'][:, 0],
-                        ref[18]['peak'],
-                        'g:',
-                        label='O18 ref',
-                        )
-
-                def func(x, *args):
-                    """Fitting function"""
-                    signal = x*0
-                    for arg, i in list(zip(args, peak)):
-                        signal += arg*interp_ref[i](x)
-                    return signal
-
-                # Fit reference to data
-                fit, _ = curve_fit(
-                    func,
-                    dat_x,
-                    dat_y,
-                    p0=[2.]*N,
-                    bounds=(0, 3),
-                )
-                fitted_signal = interp_back(dat_x)
-                for i in range(len(peak)):
-                    coeffs[selected][peak[i]] = fit[i]
-                    fitted_signal += interp_ref[peak[i]](dat_x)*fit[i]
-                if plot_result:
-                    plt.plot(
-                        dat_x,
-                        fitted_signal,
-                        'y-',
-                        label='Best fit',
-                        )
-
-
-            # Calculate output ratios
-            total = 0
-            all_peaks = []
-            for peak in peaks:
-                if isinstance(peak, list):
-                    for peak_ in peak:
-                        all_peaks.append(peak_)
+                if not region_name in self._shifted:
+                    self._shifted[region_name] = {}
+                    if region_name != 'oxygen':
+                        raise NotImplementedError
+                if not self.active in self._shifted[region_name] or recalculate:
+                    try:
+                        aligned_data = align_spectra(
+                            [self.data],
+                            limits=[350, 520],
+                            masses=[16, 18],
+                            key=region_name,
+                            plot_result=plot_result,
+                            verbose=self.verbose,
+                            )
+                    except ValueError:
+                        aligned_data = {'good': False}
+                    for scan, value in aligned_data.items():
+                        self._shifted[region_name][(self.active, scan)] = value
                 else:
-                    all_peaks.append(peak)
-            for peak1 in all_peaks:
-                for peak2 in all_peaks:
-                    if peak1 == peak2:
-                        continue
-                    a1 = ref[peak1]['area']
-                    a2 = ref[peak2]['area']
-                    c1 = coeffs[selected][peak1]
-                    c2 = coeffs[selected][peak2]
-                    ratios[selected][f'{peak1}/{peak2}'] = (
-                        coeffs[selected][peak1]
-                        * ref[peak1]['area']
-                        / coeffs[selected][peak2]
-                        / ref[peak2]['area']
-                        )
-            # Group ratios
-            for peak in peaks:
-                if not isinstance(peak, list):
-                    continue
-                total = 0
-                for peak_ in peak:
-                    coefficient = coeffs[selected][peak_]
-                    total += ref[peak_]['area']*coefficient
-                    ratios[selected][f'{peak_}'] = (
-                        ref[peak_]['area'] * coefficient
-                        )
-                for peak_ in peak:
-                    ratios[selected][f'{peak_}'] /= total
-            if plot_result:
-                data_set.add_mass_lines(all_peaks)
-                plt.legend()
+                    print('Not running ´align_spectra´...')
+                self.region = region_name
 
-            # Save in object
-            self.fit_ratios[selected] = ratios[selected]
-            self.fit_coeffs[selected] = coeffs[selected]
+                # Subtract background and make accessible afterwards
+                if self.active == 0:
+                    if self.verbose:
+                        print(self.data.sample)
+                if not region_name in self._background:
+                    self._background[region_name] = {}
+                for scan in data:
+                    if not self.shifted('good'):
+                        if self.verbose:
+                            print(f'Skipping bad data.. {data.sample} ({self.active}, {scan})')
+                        results = {
+                            self.active: {
+                                'O16': {scan: None},
+                                'O18': {scan: None},
+                                'c_16': {scan: 0},
+                                'c_18': {scan: 0},
+                                }
+                            }
+                        self.update_meta('results', results)
+                        self._background[region_name][(self.active, scan)] = {
+                            'x': [],
+                            'y': [],
+                            'limits': [region],
+                            }
+                        continue # skip bad data set
+                    coeffs[(self.active, scan)] = {}
+                    ratios[(self.active, scan)] = {}
+                    if self.verbose:
+                        print('Good: ', (self.active, scan), self.shifted('good'))
+                    if not (self.active, scan) in self._background[region_name] or recalculate:
+                        if self.shifted('good'):
+                            background = subtract_single_background(
+                                self.shifted('xy'),
+                                ranges=[region],
+                                )
+                            self._background[region_name][(self.active, scan)] = {
+                                'x': self.shifted('x'),
+                                'y': background,
+                                'limits': [region],
+                                }
+                    else:
+                        if self.verbose:
+                            print('Background subtraction already performed. Skipping...')
+
+                    isolated_peak = data.y - self.background('y')
+                    isolated_peak[np.isnan(isolated_peak)] = 0.1
+                    if plot_result:
+                        plt.plot(
+                            data.x,
+                            self.background('y'),
+                            'k:',
+                            #label='Background',
+                            )
+                        plt.plot(
+                            data.x,
+                            data.y,
+                            'k-',
+                            label='Raw data',
+                            )
+                        plt.plot(
+                            self.background('x'),
+                            self.background('y'),
+                            'b:',
+                            #label='Background',
+                            )
+                        plt.plot(
+                            self.shifted('x'),
+                            data.y,
+                            'b-',
+                            label='Aligned data',
+                            )
+
+                    # Create a common x-axis for comparisons
+                    pseudo_x = np.linspace(
+                        region[0],
+                        region[1],
+                        (region[1] - region[0])*10 + 1,
+                        )
+                    interp_dat = interp1d(
+                        self.shifted('x'),
+                        isolated_peak,
+                        kind='linear',
+                        )
+                    interp_back = interp1d(
+                        self.background('x'),
+                        self.background('y'),
+                        kind='linear',
+                        )
+                    interp_ref = {}
+                    interp_ref[16] = interp1d(
+                        ref[16]['x'],
+                        ref[16]['peak'],
+                        kind='linear',
+                        )
+                    interp_ref[18] = interp1d(
+                        ref[18]['x'],
+                        ref[18]['peak'],
+                        kind='linear',
+                        )
+                    mask = get_range(pseudo_x, *region)
+                    dat_x = pseudo_x[mask]
+                    dat_y = interp_dat(dat_x)
+                    if plot_result:
+                        plt.plot(
+                            ref[16]['x'],
+                            ref[16]['peak'],
+                            'r:',
+                            label='O16 ref',
+                            )
+                        plt.plot(
+                            ref[18]['x'],
+                            ref[18]['peak'],
+                            'g:',
+                            label='O18 ref',
+                            )
+
+                    def func(x, *args):
+                        """Fitting function"""
+                        signal = x*0
+                        for arg, i in list(zip(args, peak)):
+                            signal += arg*interp_ref[i](x)
+                        return signal
+
+                    # Fit reference to data
+                    fit, _ = curve_fit(
+                        func,
+                        dat_x,
+                        dat_y,
+                        p0=[2.]*N,
+                        bounds=(0, 3),
+                    )
+                    fitted_signal = interp_back(dat_x)
+                    for i in range(len(peak)):
+                        coeffs[(self.active, scan)][peak[i]] = fit[i]
+                        fitted_signal += interp_ref[peak[i]](dat_x)*fit[i]
+
+                    if plot_result:
+                        plt.plot(
+                            dat_x,
+                            fitted_signal,
+                            'y-',
+                            label='Best fit',
+                            )
+                    # Calculate output ratios
+                    total = 0
+                    all_peaks = []
+                    for peak in peaks:
+                        if isinstance(peak, list):
+                            for peak_ in peak:
+                                all_peaks.append(peak_)
+                        else:
+                            all_peaks.append(peak)
+
+                    """
+                    for peak1 in all_peaks:
+                        for peak2 in all_peaks:
+                            if peak1 == peak2:
+                                continue
+                            if self.shifted('good'):
+                                ratios[(self.active, scan)][f'{peak1}/{peak2}'] = (
+                                    coeffs[(self.active, scan)][peak1]
+                                    / coeffs[(self.active, scan)][peak2]
+                                    * ref[peak1]['area']
+                                    / ref[peak2]['area']
+                                    )
+                            else:
+                                ratios[(self.active, scan)][f'{peak1}/{peak2}'] = None
+                    """
+
+                    # Group ratios
+                    for peak in peaks:
+                        if not isinstance(peak, list):
+                            continue
+                        total = 0
+                        for peak_ in peak:
+                            if self.shifted('good'):
+                                ratios[(self.active, scan)][f'{peak_}'] = (
+                                    ref[peak_]['area'] * coeffs[(self.active, scan)][peak_]
+                                    )
+                                total += ratios[(self.active, scan)][f'{peak_}']
+                            else:
+                                ratios[(self.active, scan)][f'{peak_}'] = None
+
+                        if self.shifted('good'):
+                            for peak_ in peak:
+                                ratios[(self.active, scan)][f'{peak_}'] /= total
+
+                    if plot_result:
+                        data.add_mass_lines(all_peaks)
+                        plt.legend()
+                    # Save in object
+                    self.fit_ratios[(self.active, scan)] = ratios[(self.active, scan)]
+                    self.fit_coeffs[(self.active, scan)] = coeffs[(self.active, scan)]
+                    if self.shifted('good'):
+                        results = {
+                            self.active: {
+                                'O16': {scan: ratios[(self.active, scan)]['16']*100},
+                                'O18': {scan: ratios[(self.active, scan)]['18']*100},
+                                'c_16': {scan: coeffs[(self.active, scan)][16]},
+                                'c_18': {scan: coeffs[(self.active, scan)][18]},
+                                }
+                            }
+                        self.update_meta('results', results)
+
         return ratios, coeffs
 
     def plot_fit_ratios(self, show_plot=False):
@@ -570,8 +909,6 @@ defined by the same region'
             self.fit_with_reference(peaks=[[16, 18]])
 
         # Prepare plot
-        import matplotlib
-        import matplotlib.pyplot as plt
         fig = plt.figure('Fit ratios plot title')
         ax = fig.add_axes([0.05, 0.15, 0.9, 0.6])
         colors = ['k', 'r', 'g', 'b', 'm']*10
@@ -580,9 +917,10 @@ defined by the same region'
         plot_data = []
         counter = 0
 
-        for i in self.keys:
+        for _ in self:
+            i = self.active
             # Skip bad data
-            if not self._active[i].good:
+            if not self.shifted('good'):
                 counter += 1
                 continue
             # Plot good data
@@ -590,10 +928,10 @@ defined by the same region'
                      'o', color=colors[0],
                      )
             plot_data.append([
-                self._active[i].sample,
-                self,
-                self._active[i].sample,
-                self._active[i].date,
+                self.data.sample,
+                self.active,
+                self.data.sample,
+                self.data.date,
                 counter,
                 self.fit_ratios[i]['16'],
                 self.fit_ratios[i]['18'],
@@ -601,14 +939,21 @@ defined by the same region'
             counter += 1
 
         # Plot formatting
-        xticks = [i for (gen_name, data_object, name, date, i, r1, r2)
-                  in plot_data]
-        dates = [date_formatter(date)
-                 for (gen_name, data_object, name, date, i, r1, r2)
-                 in plot_data]
-        xlabels = [f'{gen_name} {name.lstrip(gen_name)} - {i}'
-                   for (gen_name, data_object, name, date, i, r1, r2)
-                   in plot_data]
+        xticks = [
+            i
+            for (gen_name, data_object, name, date, i, r1, r2)
+            in plot_data
+            ]
+        dates = [
+            date_formatter(date)
+             for (gen_name, data_object, name, date, i, r1, r2)
+             in plot_data
+             ]
+        xlabels = [
+            f'{gen_name} {name.lstrip(gen_name)} - {active}'
+            for (gen_name, active, name, date, i, r1, r2)
+            in plot_data
+            ]
 
         # Some of the following secondary axis methods requires matplotlib > 3.1.x
         secaxx = ax.secondary_xaxis('top')
@@ -637,6 +982,10 @@ defined by the same region'
     def plot_fit(self, index=0, labels=True, show=True):
         """Visually verify the automatic fit to reference data"""
 
+        # Temporarily change the active dataset
+        self.backup_active()
+        self.active = index
+
         # Make sure references have been fitted
         if len(self.fit_ratios.keys()) == 0:
             if self.verbose:
@@ -644,48 +993,61 @@ defined by the same region'
             self.fit_with_reference(peaks=[[16, 18]])
 
         # Initialize figure
-        import matplotlib.pyplot as plt
         plt.figure(
-            f'Peak Deconvolution _ {self._active[index].sample} - {index}'
+            f'Peak Deconvolution _ {self.data.sample} - {index}'
             )
 
         # Compared x arrays are shifted with respect to each other.
         x_common = np.linspace(0, 1000, num=1001)
-        num = 4 # repetitions/width for smooth function
+        #num = 4 # repetitions/width for smooth function
 
-        setup = self._active[index].setup
-        ref1 = self._ref[setup][16]['peak']
-        ref2 = self._ref[setup][18]['peak']
+        setup = self.data.setup
+        ref1 = self._ref[setup][16]
+        ref2 = self._ref[setup][18]
 
         # Raw + background
-        x = self._active[index].shifted['oxygen']
         plt.plot(
-            x,
-            self._active[index].y,
+            self.data.x,
+            self.data.y,
+            'm-', label='Raw unaligned',
+            )
+        plt.plot(
+            self.data.shifted['oxygen'],
+            self.data.y,
             'k-', label='Raw aligned',
             )
-        raw = np.interp(x_common, x, smooth(self._active[index].y, num), left=0, right=0)
         plt.plot(
             x_common,
-            raw,
-            'b-', label='Raw smoothed',
+            get_common_y(
+                x_common,
+                x,
+                self.data.y,
+                ),
+            'b-', label='Aligned+smoothed',
             )
-        background = np.interp(x_common, x, smooth(self.background[index], 2), left=0, right=0)
+        background = get_common_y(
+            x_common,
+            self.data.shifted['oxygen'],
+            self._background[index],
+            )
         plt.plot(
             x_common,
             background,
             'b:', label='Background',
             )
 
-        x_ref1 = self._ref[setup][16]['xy'][:, 0]
-        y_ref1 = ref1 * self.fit_coeffs[index][16]
-        y_ref1 = np.interp(x_common, x_ref1, smooth(y_ref1, 2), left=0, right=0)
-        x_ref2 = self._ref[setup][18]['xy'][:, 0]
-        y_ref2 = ref2 * self.fit_coeffs[index][18]
-        y_ref2 = np.interp(x_common, x_ref2, smooth(y_ref2, 2), left=0, right=0)
+        y_ref1 = get_common_y(
+            x_common,
+            ref1['xy'][:, 0],
+            ref1['peak'] * self.fit_coeffs[index][16],
+            )
+        y_ref2 = get_common_y(
+            x_common,
+            ref2['xy'][:, 0],
+            ref2['peak'] * self.fit_coeffs[index][18],
+            )
 
         # Total fit
-        x = self._active[index].shifted['oxygen']
         plt.plot(
             x_common,
             background + y_ref1 + y_ref2,
@@ -703,15 +1065,22 @@ defined by the same region'
             'g-',
             label='O-18 component',
             )
-        self._active[index].add_mass_lines([16, 18, 101], labels=labels)
+        self.data.add_mass_lines([16, 18, 101], labels=labels)
 
         # Show
-        plt.title(self._active[index].sample)
+        plt.title(self.data.sample)
         plt.xlabel('Energy (eV)')
         plt.ylabel('Counts per second')
         plt.legend()
         if show:
             plt.show()
+
+        # Change back the active dataset
+        self.restore_active()
+
+def get_common_y(x_common, x, y, num=4):
+    y_common = np.interp(x_common, x, smooth(y, num), left=0, right=0)
+    return y_common
 
 def date_formatter(date, latex=True):
     """Take datetime object and return string of YYADD"""
@@ -733,8 +1102,8 @@ def date_formatter(date, latex=True):
 
 def subtract_single_background(xy, ranges=[], avg=3, verbose=False):
     """Subtract the background from a single spectrum"""
-    import common_toolbox as ct
-    x, y = xy[:, 0], xy[:, 1]
+    x = xy[:, 0]
+    y = xy[:, 1]
     background = np.copy(y)
     for limit in ranges:
         indice = get_range(x, *limit)
@@ -786,145 +1155,187 @@ unto nearest mass in list 'masses'.
 
     if verbose:
         print('Entering function "align_spectra"')
+    if plot_result:
+        old_ax = plt.gca()
+
+    return_data = []
     for data in iss_data:
         # Initialize attributes
-        try:
-            data.shifted
-        except AttributeError:
-            data.shifted = {}
-        try:
-            data.smoothed
-        except AttributeError:
-            data.smoothed = {}
+        shifted = {}
+        smoothed = {}
 
-        # Get index of region of interest
-        index = get_range(data.x, *limits)
-        # Find maximum in region
-        ys = smooth(data.y, num=4)
-        data.smoothed[key] = ys
-        maximum = max(ys[index])
-        if not np.isfinite(maximum):
-            data.good = False
-            # TODO: Add more information about data set
-            print('Bad data encountered in "align_spectra". Skipping...') # when exactly does this happen?
-            continue
-        data.good = True
-        i_max = np.where(ys == maximum)[0]
-        x_max = data.x[i_max][0]
+        info = {}
+        for scan in data:
+            # Get index of region of interest
+            index = get_range(data.x, *limits)
+            # Find maximum in region
+            ys = smooth(data.y, num=4)
+            smoothed[key] = ys
+            maximum = max(ys[index])
+            if not np.isfinite(maximum):
+                good = False
+                # TODO: Add more information about data set
+                print('´align_spectra´: no data found within set limits. Skipping...')
+                info.update({
+                    scan: {
+                        'x': None,
+                        'y': None,
+                        'xy': None,
+                        'region': key,
+                        'masses': masses,
+                        'limits': limits,
+                        'good': good,
+                        }
+                    })
+                continue
+            good = True
+            i_max = np.where(ys == maximum)[0]
+            x_max = data.x[i_max][0]
 
-        # Estimate fitting parameters
-        width = 20 # Estimate of peak width
-        if func_type == 'skewed':
-            p0 = [maximum, x_max + 10, width, -1]
-            function = skewed
-        elif func_type == 'parabola':
-            a = -0.5 * maximum / width**2
-            b = -2 * a * x_max
-            c = maximum + b**2/4/a
-            p0 = [a, b, c]
-            function = parabola
-        elif func_type == 'gauss':
-            p0 = [maximum, x_max, width]
-            function = gauss
-        else:
-            raise ValueError(f'func_type {func_type} not a valid option')
-        new_index = get_range(data.x, x_max - 15, x_max + 15)
-        fit, _ = curve_fit(
-            function,
-            data.x[new_index],
-            data.y[new_index],
-            p0=p0,
-            maxfev=100000,
-            )
-        if verbose:
-            print('Result of fit: ', fit)
-        if plot_result:
-            plt.figure((
-                f'Aligning {data.sample} {date_formatter(data.date, latex=False)}'
-                ' - mass {masses}'
-                ))
-            plt.plot(
-                data.x[index],
-                data.y[index],
-                'k-',
-                label='Raw data',
-                )
-            plt.plot(
+            # Estimate fitting parameters
+            width = 20 # Estimate of peak width
+            if func_type == 'skewed':
+                p0 = [maximum, x_max + 10, width, -1]
+                function = skewed
+            elif func_type == 'parabola':
+                a = -0.5 * maximum / width**2
+                b = -2 * a * x_max
+                c = maximum + b**2/4/a
+                p0 = [a, b, c]
+                function = parabola
+            elif func_type == 'gauss':
+                p0 = [maximum, x_max, width]
+                function = gauss
+            else:
+                raise ValueError(f'func_type {func_type} not a valid option')
+            new_index = get_range(data.x, x_max - 15, x_max + 15)
+            fit, _ = curve_fit(
+                function,
                 data.x[new_index],
-                function(data.x[new_index], *p0),
-                'g-',
-                label='Estimated max',
+                data.y[new_index],
+                p0=p0,
+                maxfev=100000,
                 )
-            plt.plot(
-                data.x[new_index],
-                function(data.x[new_index], *fit),
-                'r-',
-                label='Best fit max',
-                )
-        if function == parabola:
-            new_x_max = -fit[1]/2/fit[0]
             if verbose:
-                print(f'Raw "maximum" x: {x_max}\nFitted x: {new_x_max}')
-        elif function == gauss:
-            new_x_max = fit[1]
-            if verbose:
-                print(f'Raw "maximum" x: {x_max}\nFitted x: {new_x_max}')
-        elif function == skewed:
-            fit_x = np.linspace(min(data.x), max(data.x), num=16000)
-            fit_y = skewed(fit_x, *fit)
-            fit_i = np.where(fit_y == max(fit_y))[0]
-            new_x_max = fit_x[fit_i][0]
-            if verbose:
-                print(f'Raw "maximum" x: {x_max}\nFitted x: {new_x_max}')
-        x_max = new_x_max
+                print('Result of fit: ', fit)
+            if plot_result:
+                plt.figure((
+                    f'Aligning {data.sample} {date_formatter(data.date, latex=False)}'
+                    ' - mass {masses}'
+                    ))
+                plt.plot(
+                    data.x[index],
+                    data.y[index],
+                    'k-',
+                    label='Raw data',
+                    )
+                plt.plot(
+                    data.x[new_index],
+                    function(data.x[new_index], *p0),
+                    'g-',
+                    label='Estimated max',
+                    )
+                plt.plot(
+                    data.x[new_index],
+                    function(data.x[new_index], *fit),
+                    'r-',
+                    label='Best fit max',
+                    )
+            if function == parabola:
+                new_x_max = -fit[1]/2/fit[0]
+                if verbose:
+                    print(f'Raw "maximum" x: {x_max}\nFitted x: {new_x_max}')
+            elif function == gauss:
+                new_x_max = fit[1]
+                if verbose:
+                    print(f'Raw "maximum" x: {x_max}\nFitted x: {new_x_max}')
+            elif function == skewed:
+                fit_x = np.linspace(min(data.x), max(data.x), num=16000)
+                fit_y = skewed(fit_x, *fit)
+                fit_i = np.where(fit_y == max(fit_y))[0]
+                new_x_max = fit_x[fit_i][0]
+                if verbose:
+                    print(f'Raw "maximum" x: {x_max}\nFitted x: {new_x_max}')
+            x_max = new_x_max
 
-        # Find difference from reference
-        energies = data.convert_energy(np.array(masses))
-        distances = x_max - energies
-        distance = distances[np.where(abs(distances) == min(abs(distances)))[0][0]]
-        # If distance is too big, something is wrong with the algorithm
-        if verbose:
-            print(f'Distance between fitted maximum and expected: {distance} eV')
-        if abs(distance) > 15:
-            distance = 0
+            # Find difference from reference
+            energies = data.convert_energy(np.array(masses))
+            distances = x_max - energies
+            distance = distances[np.where(abs(distances) == min(abs(distances)))[0][0]]
+            # If distance is too big, something is wrong with the algorithm
             if verbose:
-                print('***\nDismissing alignment algorithm !\n***')
+                print(f'Distance between fitted maximum and expected: {distance} eV')
+            max_distance = 30
+            if abs(distance) > max_distance:
+                msg = (
+                    f'align_spectra algorithm tried to shift the spectrum {distance} eV'
+                    f' which is more than the programmed limit: {max_distance} eV.\n'
+                    'If this is okay, you need to change this limit.'
+                    )
+                distance = 0
+                if verbose:
+                    print('***\nDismissing alignment algorithm !\n***')
+                    print(msg)
+                info.update({
+                    scan: {
+                        'x': None,
+                        'y': None,
+                        'xy': None,
+                        'region': key,
+                        'masses': masses,
+                        'limits': limits,
+                        'good': False,
+                        }
+                    })
+                continue
+                #raise ValueError(msg)
 
-        # Snap to nearest line
-        data.shifted[key] = data.x - distance
-        if plot_result:
-            plt.plot(
-                data.shifted[key],
-                data.y,
-                'b-',
-                label='Aligned raw data',
-                )
-            plt.plot(
-                data.shifted[key],
-                ys,
-                'c-',
-                label='Aligned and smoothed',
-                )
-            data.add_mass_lines(masses)
-            plt.legend()
+            # Snap to nearest line
+            shifted[key] = data.x - distance
+            if plot_result:
+                plt.plot(
+                    shifted[key],
+                    data.y,
+                    'b-',
+                    label='Aligned raw data',
+                    )
+                plt.plot(
+                    shifted[key],
+                    ys,
+                    'c-',
+                    label='Aligned and smoothed',
+                    )
+                data.add_mass_lines(masses)
+                plt.legend()
+            info.update({
+                scan: {
+                    'x': shifted[key],
+                    'y': smoothed[key],
+                    'xy': np.vstack((shifted[key], smoothed[key])).T,
+                    'region': key,
+                    'masses': masses,
+                    'limits': limits,
+                    'good': good,
+                    }
+                })
 
-    # Return a nd.array of modified xy data
-    ret = []
-    for data in iss_data:
-        if data.good:
-            ret.append((np.vstack((data.shifted[key], data.smoothed[key])).T))
-        else:
-            ret.append((0, 0))
+        # Return new data
+        return_data.append(info)
+    if plot_result:
+        plt.sca(old_ax)
+
+    # Don't return as a list if it only contains a single item
     if len(iss_data) == 1:
-        return ret[0]
+        return return_data[0]
     else:
-        return ret
+        return return_data
 
 class DataIterator:
     """Iterate through datasets in Data class.
     """
     def __init__(self, data):
         self._data = data
+        self._initial_index = data.default_scan
         self._index = 0
 
     def __next__(self):
@@ -932,6 +1343,8 @@ class DataIterator:
             self._data.default_scan = self._index
             self._index += 1
             return self._index - 1
+        # Restore original dataset before stopping iteration
+        self._data.default_scan = self._initial_index
         raise StopIteration
 
 class Data:
@@ -977,45 +1390,8 @@ Date: 2021 July 21
             }
 
         #----------------------------------------------------------------------
-        # Read data from textfile:
-        if filename.endswith('.txt'):
-            # Open filename with ISS data
-            f = open(filename, 'r')
-            lines = f.readlines()
-            f.close()
-            self.format = 'Text file'
-
-            start_points = [i for i, line in enumerate(lines) if line == 'Energy\tCounts\r\n']
-            self.scans = len(start_points)
-            if self.scans == 0:
-                raise ImportError('File apparently empty!')
-
-            if lines[0].lower().startswith('note'):
-                self.note = lines[0].split('=')[1].lstrip(' ')
-            # Copy data points
-            counter = 0
-            for start in start_points:
-                line = lines[start-4].split('\t')
-                for i, word in enumerate(line):
-                    if word.lower() == 'dwell':
-                        self.dwell[counter] = float(lines[start-3].split('\t')[i])
-                if not start == start_points[-1]:
-                    interval = range(start+1, start_points[counter+1]-4)
-                else:
-                    interval = range(start+1, len(lines))
-                self.energy[counter] = np.zeros(len(interval))
-                self.cps[counter] = np.zeros(len(interval))
-                counter_inner = 0
-                for index in interval:
-                    line = lines[index].rstrip().split('\t')
-                    self.energy[counter][counter_inner] = float(line[0])
-                    self.cps[counter][counter_inner] = float(line[1])
-                    counter_inner += 1
-                self.cps[counter] = self.cps[counter]/self.dwell[counter]
-                counter += 1
-        #----------------------------------------------------------------------
         # Read data from old VAMAS block file
-        elif filename.endswith('.vms'):
+        if filename.endswith('.vms'):
             # Open filename with ISS data
             f = open(filename, 'r')
             lines = f.readlines()

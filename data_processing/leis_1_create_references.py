@@ -11,7 +11,7 @@ from pyOER.settings import DATA_DIR, OMICRON_DIR
 if not DATA_DIR.exists() or not OMICRON_DIR.exists():
     raise ImportError((
         "DATA_DIR and OMICRON_DIR in pyOER/settings.py must point to valid"
-        + " paths for this script to be run."
+        " paths for this script to be run."
         ))
 
 # Overwrite existing files
@@ -19,11 +19,9 @@ overwrite = False
 
 # Datasets
 datapath = DATA_DIR / 'Thetaprobe'
-# Moved to .settings:
-#omicronpath = pathlib.Path('/home/jejsor/Dropbox/Characterizations/Ruthenium')
 
 # Reference
-filename = 'iss_reference'
+filename = 'iss_reference.pickle'
 
 # Create folder for organized data and metadata
 data_dest = (DATA_DIR / 'Data' / 'ISS' / 'organized_pickles')
@@ -106,7 +104,7 @@ datasets = {# setup: {peak: (path_to_file, default_scan)}
 }
 
 # Load experiments and save as references
-ref_data = {key: {} for key in ref_regions}
+ref_data = {setup: {} for setup in ref_regions}
 for setup, info in datasets.items():
     for key, (path, default_scan) in info.items():
         # Load data with parameters depending on the parent setup
@@ -134,104 +132,206 @@ for setup, info in datasets.items():
             masses = masses,
             key = label,
             )
+        xy_aligned = xy_aligned[default_scan]
         plt.show()
+        ranges = ref_regions[setup][label][:]
+        # Modify the O16 (thetaprobe) range
+        if setup == 'thetaprobe' and key == 'oxygen_16':
+            ranges[0] = 330
+            ranges[1] = 490
         background = iss.subtract_single_background(
-            xy_aligned,
-            ranges = [ref_regions[setup][label]],
+            xy_aligned['xy'],
+            ranges = [ranges],
             )
-        peak = xy_aligned[:, 1] - background
+        peak = xy_aligned['y'] - background
 
         # Save information in a dictionary, which will be dumped to a file for
         # future reference/use.
         ref_data[setup][mass] = {
-            'xy': xy_aligned,
+            'x': xy_aligned['x'],
+            'y': xy_aligned['y'],
+            'xy': xy_aligned['xy'],
             'background': background,
             'peak': peak,
             'area': simps(peak[np.isfinite(peak)]),
             'region': ref_regions[setup][label],
             'file': data.filename,
+            'scan': default_scan,
             'iss': data,
             }
 
-# Plots
-plt.figure('Reference 18-O')
+# Correct for O16 in Thetaprobe O18 reference
+x_common = np.linspace(0, 1000, num=1001)
+
 O16 = ref_data['thetaprobe'][16]
 O18 = ref_data['thetaprobe'][18]
-factor = 0.245 # manually subtract the O16 from O18 reference
-plt.plot(
-    O18['xy'][:, 0],
-    O18['xy'][:, 1] - O16['peak']*factor,
-    'm',
-    label = f'O(18) - {factor}*O(16)',
-    )
-plt.plot(
-    O18['xy'][:, 0],
-    O18['xy'][:, 1],
-    'g-',
-    label = 'O(18)',
-    )
-plt.plot(
-    O18['xy'][:, 0],
-    O18['background'],
-    'g-',
-    )
-plt.plot(
-    O16['xy'][:, 0],
-    O16['peak'],
-    label = 'O(16) peak',
-    )
+factor = 0.222 # manually subtract the O16 from O18 reference
 
 # Correct for O-16 in thetaprobe reference
 area = ref_data['thetaprobe'][18]['area']
-print(f'Area before correcting for O-16: {area}')
-peak = ref_data['thetaprobe'][18]['peak']
-peak -= factor * ref_data['thetaprobe'][16]['peak']
-ref_data['thetaprobe'][18]['area'] = simps(peak[np.isfinite(peak)])
-area = ref_data['thetaprobe'][18]['area']
-print(f'Area after (1): {area}')
+peak_18 = ref_data['thetaprobe'][18]['peak'].copy()
+peak_18 -= factor * iss.get_common_y(
+    O18['x'],
+    O16['x'],
+    O16['peak'],
+    )
+peak_18[np.where(O18['x'] < 403)] = 0 # Clean up left edge
 
-# Correction check
-plt.figure('Verify correction step - O(18)')
-plt.plot(
-    O18['xy'][:, 0],
-    O18['xy'][:, 1],
-    'g-',
-    label = 'Reference',
+# Correct for O-18 in thetaprobe O-16 reference
+peak_16 = O16['peak'].copy()
+factor_18 = 0.002
+peak_16 -= factor_18 * iss.get_common_y(
+    O16['x'],
+    O18['x'],
+    peak_18, # the peak subtracted the O-16 component
     )
-plt.plot(
-    O18['xy'][:, 0],
-    O18['background'],
-    'g:',
-    )
-# Components
+peak_16[np.where(O16['x'] < 345)] = 0 # Clean up left edge
+peak_16[np.where(peak_16 < 0)] = 0
 
-# Compute sum from components
-plt.plot(
-    O18['xy'][:, 0],
-    O18['background'] + O18['peak'],
-    'g-',
-    label = 'O(18)',
+# Apply corrected peaks
+O16['peak'] = peak_16
+O18['peak'] -= factor * iss.get_common_y(
+    O18['x'],
+    O16['x'],
+    O16['peak'],
     )
+O18['peak'][np.where(O18['x'] < 403)] = 0 # Clean up left edge
+O18['peak'][np.where(O18['peak'] < 0)] = 0
+
+# Update integrated areas
+O18['area'] = simps(O18['peak'][np.isfinite(O18['peak'])])
+O16['area'] = simps(O16['peak'][np.isfinite(O16['peak'])])
+print()
+
+# Plots
+plt.figure('Thetaprobe: Reference 18-O')
+plt.axvline(x=407.5, color='gray', linestyle='dotted')
+plt.axvline(x=452., color='gray', linestyle='dotted')
 plt.plot(
-    O18['xy'][:, 0],
-    O18['background'] + factor*O16['peak'],
+    O18['x'],
+    O18['peak'] + O18['background'],
+    'g-',
+    label = f'O(18) comp',
+    )
+
+plt.plot(
+    O16['x'],
+    (
+        O16['peak'] * factor
+        + iss.get_common_y(
+            O16['x'],
+            O18['x'],
+            O18['background'],
+            )
+        ),
     'r-',
-    label = 'O(16)',
+    label = 'O(16) comp',
     )
 plt.plot(
-    O18['xy'][:, 0],
-    O18['background'] + O18['peak'] + factor*O16['peak'],
-    'k:',
-    label = 'Sum',
+    O18['x'],
+    O18['y'],
+    'k-',
+    label = 'O(18) ref',
     )
-
+plt.plot(
+    O18['x'],
+    O18['background'],
+    'k:',
+    )
+plt.plot(
+    x_common,
+    (
+        iss.get_common_y(
+            x_common,
+            O16['x'],
+            O16['peak'] * factor,
+            )
+        + iss.get_common_y(
+            x_common,
+            O18['x'],
+            O18['background'],
+            )
+        + iss.get_common_y(
+            x_common,
+            O18['x'],
+            O18['peak'],
+            )
+        ),
+    'y:',
+    label = 'Total',
+    linewidth=2,
+    )
 plt.legend()
+a16 = O16['area']*factor
+a18 = O18['area']
+print('Thetaprobe O18 reference sample consists of:')
+print(f'\tO16: {a16/(a16+a18):.1%}')
+print(f'\tO18: {a18/(a16+a18):.1%}')
+print()
+
+plt.figure('Thetaprobe: Reference 16-O')
+plt.axvline(x=407.5, color='gray', linestyle='dotted')
+plt.axvline(x=452., color='gray', linestyle='dotted')
+plt.plot(
+    O16['x'],
+    O16['background'] + O16['peak'],
+    'r-',
+    label='O(16) comp',
+    )
+plt.plot(
+    O16['x'],
+    (
+        O16['background']
+         + iss.get_common_y(
+            O16['x'],
+            O18['x'],
+            O18['peak'] * factor_18,
+            )
+        ),
+    'g-',
+    label='O(18) comp',
+    )
+plt.plot(
+    O16['x'],
+    O16['y'],
+    'k-',
+    label = 'O(16) ref',
+    )
+plt.plot(
+    O16['x'],
+    O16['background'],
+    'k:',
+    )
+plt.plot(
+    O16['x'],
+    (
+        O16['background']
+        + O16['peak']
+        + iss.get_common_y(
+            O16['x'],
+            O18['x'],
+            O18['peak'] * factor_18,
+            )
+        ),
+    'y:',
+    label='Total',
+    linewidth=2,
+    )
+a16 = O16['area']
+a18 = O18['area']*factor_18
+print('Thetaprobe O16 reference sample consists of:')
+print(f'\tO16: {a16/(a16+a18):.1%}')
+print(f'\tO18: {a18/(a16+a18):.1%}')
+print()
+plt.legend()
+
+# Show plots
 plt.show()
 
 #1/0 ### EXIT without saving ###
 
 # Save data
-filepath = data_dest / (filename + '.pickle')
+filepath = data_dest / filename
 if not filepath.exists() or overwrite:
     with open(filepath, 'wb') as f:
         pickle.dump(ref_data, f, pickle.HIGHEST_PROTOCOL)

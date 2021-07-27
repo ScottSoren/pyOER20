@@ -122,3 +122,16 @@ Copied from: github.com/Ejler/DataTreatment/common_toolbox.py
         copy[-1] /= 3
         data = copy.copy()
     return data
+
+def dict_from_json(dictionary):
+    """Takes a dictionary and recursively int's every key where possible."""
+    new_dict = {}
+    for key, value in dictionary.items():
+        try:
+            new_key = int(key)
+        except ValueError:
+            new_key = key
+        if isinstance(value, dict):
+            value = dict_from_json(value)
+        new_dict[new_key] = value
+    return new_dict
