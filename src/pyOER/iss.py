@@ -87,13 +87,13 @@ class ISS:
         self.plot_list = []
         self.sample = sample
         self._meta = None
-        if sample is not None:
-            self.get_sample(sample)
         # All reference data
         self._ref = pickle.load(open(self.data_path / 'iss_reference.pickle', 'rb'))
         self._init_extras() # _background, _shifted
         self.fit_ratios = {}
         self.fit_coeffs = {}
+        if sample is not None:
+            self.get_sample(sample)
         if fit is not None:
             self.fit_with_reference(peaks=fit, plot=False)
 
@@ -315,13 +315,7 @@ Set to None for certain effect."""
             print('Timestamp type not understood')
             return
         list_ = [(key, self._active[key].date) for key in self._active.keys()]
-        if self.verbose:
-            print('Unsorted list of (key, datetime)')
-            print(list_)
         list_.sort(key=lambda x: x[1])
-        if self.verbose:
-            print('Sorted list of (key, datetime)')
-            print(list_)
         match = False
         for i, (key, date) in enumerate(list_):
             if timestamp < date:
@@ -539,26 +533,46 @@ Set to None for certain effect."""
         'selection' must be a list of keys matching 'iss_dict' returned by
         self.load_set.
         """
+        self.backup_active()
         if len(selection) == 0:
             # Plot all (sorted)
             selection = self.keys
-        plt.figure('iss autoplot')
-        self.labels
+        plt.figure(f'Raw leis data for: {self.sample}')
+
         if len(mass_lines) > 0:
             self.data.add_mass_lines(
                 mass_lines,
                 color='gray',
                 labels=False,
                 )
+        if isinstance(selection, int):
+            selection = [selection]
         for key in selection:
-            data = self._active[key]
-            plt.plot(data.x, data.y, label=f'{key} - {data.sample}')
+            self.active = key
             if self.verbose:
-                #TODO format
-                print(key, data.date, data.filename)
+                print(f'\nPlotting {self.sample}: {key}')
+                print(f'{self.data.date}    ({self.data.setup})')
+                print(f'Comment: {self.data.comment}')
+                print(f'Note(s):')
+                if isinstance(self.data.note, list):
+                    for note in self.data.note:
+                        print(f' - {note}')
+                elif isinstance(self.data.note, dict):
+                    for index, note in self.data.note.items():
+                        print(f' - {index}: {note}')
+                else:
+                        print(f' - {self.data.note}')
+            for i in self.data:
+                plt.plot(
+                    self.data.x,
+                    self.data.y,
+                    label=f'{key} - {self.sample} ({i})',
+                    )
+
         plt.legend()
         plt.xlabel('Energy (eV)')
         plt.ylabel('Counts per second')
+        self.restore_active()
         if show is True:
             plt.show()
 
@@ -979,28 +993,27 @@ Set to None for certain effect."""
         if show_plot is True:
             plt.show()
 
-    def plot_fit(self, index=0, labels=True, show=True):
+    def plot_fit(self, index=None, labels=True, show=True):
         """Visually verify the automatic fit to reference data"""
 
         # Temporarily change the active dataset
         self.backup_active()
-        self.active = index
+        if index is not None:
+            self.active = index
 
         # Make sure references have been fitted
-        if len(self.fit_ratios.keys()) == 0:
+        if len(self.meta('results').keys()) == 0:
             if self.verbose:
                 print('Calling method "fit_with_reference(peaks=[[16, 18]])')
             self.fit_with_reference(peaks=[[16, 18]])
 
         # Initialize figure
         plt.figure(
-            f'Peak Deconvolution _ {self.data.sample} - {index}'
+            f'Peak Deconvolution _ {self.sample} - {self.active, self.data.default_scan}'
             )
 
         # Compared x arrays are shifted with respect to each other.
         x_common = np.linspace(0, 1000, num=1001)
-        #num = 4 # repetitions/width for smooth function
-
         setup = self.data.setup
         ref1 = self._ref[setup][16]
         ref2 = self._ref[setup][18]
@@ -1012,7 +1025,7 @@ Set to None for certain effect."""
             'm-', label='Raw unaligned',
             )
         plt.plot(
-            self.data.shifted['oxygen'],
+            self.shifted('x'),
             self.data.y,
             'k-', label='Raw aligned',
             )
@@ -1020,15 +1033,15 @@ Set to None for certain effect."""
             x_common,
             get_common_y(
                 x_common,
-                x,
-                self.data.y,
+                self.shifted('x'),
+                self.shifted('y'),
                 ),
             'b-', label='Aligned+smoothed',
             )
         background = get_common_y(
             x_common,
-            self.data.shifted['oxygen'],
-            self._background[index],
+            self.background('x'),
+            self.background('y'),
             )
         plt.plot(
             x_common,
@@ -1038,13 +1051,13 @@ Set to None for certain effect."""
 
         y_ref1 = get_common_y(
             x_common,
-            ref1['xy'][:, 0],
-            ref1['peak'] * self.fit_coeffs[index][16],
+            ref1['x'],
+            ref1['peak'] * self.meta('c_16'),
             )
         y_ref2 = get_common_y(
             x_common,
-            ref2['xy'][:, 0],
-            ref2['peak'] * self.fit_coeffs[index][18],
+            ref2['x'],
+            ref2['peak'] * self.meta('c_18'),
             )
 
         # Total fit
@@ -1068,9 +1081,12 @@ Set to None for certain effect."""
         self.data.add_mass_lines([16, 18, 101], labels=labels)
 
         # Show
-        plt.title(self.data.sample)
+        plt.title(f'{self.sample}: {self.active}')
         plt.xlabel('Energy (eV)')
         plt.ylabel('Counts per second')
+        plt.xlim(300, 800)
+        mask = get_range(self.shifted('x'), 300, 800)
+        plt.ylim(0, max(self.shifted('y')[mask]))
         plt.legend()
         if show:
             plt.show()
