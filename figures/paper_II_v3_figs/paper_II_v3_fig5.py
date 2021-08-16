@@ -72,6 +72,7 @@ if True:  # fig 5b, with norm. activity, exchange, and diss. plotted against pot
     from paper_I_v5_fig5 import get_model_j_norm
 
     if False:  # calculate mean capacitance of Reshma1 samples.
+        from pyOER import all_activity_experiments
         cap_exp_list = [
             exp
             for exp in all_activity_experiments()
@@ -84,7 +85,7 @@ if True:  # fig 5b, with norm. activity, exchange, and diss. plotted against pot
     with open("../paper_I_v5_figs/fit_results.json") as f:
         fit_results = json.load(f)
     u_model = np.linspace(1.28, 1.5, 100)
-    j_model = get_model_j_norm(u=u_model, **fit_results)  # [A/F
+    j_model = get_model_j_norm(u=u_model, **fit_results)  # [A/F]
     n_dot_model = j_model / (4 * FARADAY_CONSTANT) * 1e9  # [nmol/s/F]
 
     fig5b, ax5b = plt.subplots()

@@ -163,6 +163,14 @@ if __name__ == "__main__":
     ax2b.set_yscale("log")
     ax2b.set_ylabel("OER current$_{cap}$ / (A F$^{-1}$)")
 
+    if True:  # a partial current density axis
+        ax1b = ax1.twinx()
+        j_O2_lim = [lim * 4 * FARADAY_CONSTANT * 1e-6 for lim in ax1.get_ylim()]
+        # ^ [nmol/s/cm^2] -> [mA/cm^2]
+        ax1b.set_ylim(j_O2_lim)
+        ax1b.set_yscale("log")
+        ax1b.set_ylabel("j$_{O2}$ / (mA cm$^{-2}$)")
+
     if True:  # a TOF axis
         ax2.set_ylabel("TOF / (s$^{-1}$)")
     else:  # no TOF axis

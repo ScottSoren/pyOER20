@@ -45,5 +45,5 @@ axes_b[1].set_xlabel("time / (s)")
 fig_b = axes_b[0].get_figure()
 fig_b.set_figheight(fig_b.get_figwidth())
 if forpublication:
-    fig_b.savefig("paper_II_v3_fig_1b.png")
-    fig_b.savefig("paper_II_v3_fig_1b.svg")
+    fig_b.savefig("paper_II_v3_fig1b.png")
+    fig_b.savefig("paper_II_v3_fig1b.svg")

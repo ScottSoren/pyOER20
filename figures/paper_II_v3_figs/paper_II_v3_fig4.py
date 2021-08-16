@@ -118,5 +118,5 @@ ax_t.set_xscale("log")
 ax_t.set_xlabel("lattice O per O$_2$")
 
 if forpublication:
-    fig3b.savefig("paper_II_fig4.png")
-    fig3b.savefig("paper_II_fig4.svg")
+    fig3b.savefig("paper_II_v3_fig4.png")
+    fig3b.savefig("paper_II_v3_fig4.svg")
