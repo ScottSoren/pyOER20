@@ -31,7 +31,6 @@ for exp in all_activity_experiments():
         fig.savefig(f"full plot of {exp}.svg")
 
     else:
-        continue
         ax = exp.plot_experiment()
         ax[1].set_title(str(exp.measurement))
 

@@ -135,7 +135,7 @@ if True:  # fig 2d, with the inset
         axes[1].set_title(str(exp))
 
     if True:  # inset
-        tspan_inset = [3500, 5000]
+        tspan_inset = [2600, 4000]
         x, y = exp.measurement.dataset.get_flux(
             exp.mdict["O2_M36"],
             tspan=tspan_inset,
@@ -144,16 +144,21 @@ if True:  # fig 2d, with the inset
         )
         t, V = exp.measurement.dataset.get_potential(tspan_inset)
 
-        from EC_MS import smooth
-
-        n_points = 15
-        y_smooth = smooth(y, n_points=n_points)  # 10-point moving average
-
         fig, ax = plt.subplots()
         ax2 = ax.twinx()
-        ax.plot(x, y, "g", alpha=0.2)
-        ax.plot(x[n_points:-n_points], y_smooth[n_points:-n_points], "g")
-        ax.set_ylim([3.3, 5.8])
+
+        if False:  # fade out original data, include smoothed data
+
+            from EC_MS import smooth
+
+            n_points = 15
+            y_smooth = smooth(y, n_points=n_points)  # 10-point moving average
+            ax.plot(x, y, "g", alpha=0.2)
+            ax.plot(x[n_points:-n_points], y_smooth[n_points:-n_points], "g")
+        else:  # plot original data without fading.
+            ax.plot(x, y, "g")
+            ax.set_ylim([2, 7])
+        # ax.set_ylim([3.3, 5.8])
         ax2.plot(t, V, "k")
         ax2.set_ylim(1.19, 1.65)
         ax.set_yticks([])

@@ -146,9 +146,10 @@ if __name__ == "__main__":
     fig = ax1.get_figure()
 
     if True:  # plot the experimental results with the colors (a bit slow):
-        tof_0 = (
-            j_norm_0 / STANDARD_SITE_DENSITY * STANDARD_SPECIFIC_CAPACITANCE / (4 * F)
-        )
+
+        tof_to_j_norm = STANDARD_SITE_DENSITY * (4 * F) / STANDARD_SPECIFIC_CAPACITANCE
+        tof_0 = j_norm_0 / tof_to_j_norm
+
         plot_all_activity_results(ax=ax1, result="tof", factor=1 / tof_0, takelog=True)
     elif True:  # plot all the experimental results black and white:
         ax1.plot(
@@ -162,8 +163,8 @@ if __name__ == "__main__":
 
     ax1.plot(u, np.log10(j_over_j0), linewidth=0.6, color="k")
 
-    ax1.set_xlabel("U$_{RHE}$ / [V]")
-    ax1.set_ylabel("log(j / j$_{RDS}^0$)")
+    ax1.set_xlabel("E vs RHE / (V)")
+    ax1.set_ylabel("log(j$_{O2, norm}$ / j$_{RDS}^0$)")
 
     if True:  # explanatory fig
 
@@ -177,18 +178,23 @@ if __name__ == "__main__":
         # ... and this matrix is the coverage of each individual state:
         thetas = theta_over_theta_i / np.sum(theta_over_theta_i, axis=0)
 
-        # ...and also the average number of electron transfers to get to the RDS:
+        # ...and also the expected Tafel slope
+        # # from the average number of electron transfers to get to the RDS:
         n_to_rds_vec = np.sum(
             [thetas[j] * state.n_to_rds for j, state in enumerate(states)], axis=0
         )
+        tafel_vec = R * T0 * np.log(10) / F / (n_to_rds_vec + 1 / 2) * 1e3
 
         for j, state in enumerate(states):
             ax2.plot(u, thetas[j], state.color)
-        ax3.plot(u, n_to_rds_vec, "r--")
+        ax3.plot(u, tafel_vec, "r--")
+        ax3.set_ylim(bottom=0)
+        ax3.set_yticks([0, 30, 60, 90, 120])
+        ax3.set_yticklabels(["0", "", "60", "", "120"])
 
         # ax2.set_xlabel("U$_{RHE}$ / [V]")
         ax2.set_ylabel("coverage")
-        ax3.set_ylabel("<n> before RDS")
+        ax3.set_ylabel("Tafel / (mV dec$^{-1}$)")
 
     if True:
         # delta G plot
@@ -201,7 +207,7 @@ if __name__ == "__main__":
 
         ax4.set_ylim(top=0.1)
 
-        ax4.set_xlabel("U vs RHE / [V]")
+        ax4.set_xlabel("E vs RHE / (V)")
         ax4.set_ylabel("$G^0 - G^0_{RDS}$ / [eV]")
 
     if True:  # wrong models

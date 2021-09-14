@@ -67,6 +67,10 @@ def plot_all_activity_results(
         potential = tof.potential
         f = tof.tof
 
+        if rate * 1e9 < 3e-5:
+            # This is the detection limit.
+            continue
+
         if for_model:
             if (
                 (potential > 1.45 and not tof.tof_type == "ec_activity")
@@ -161,7 +165,7 @@ if __name__ == "__main__":
     ]
     ax2b.set_ylim(norm_flux_lim)
     ax2b.set_yscale("log")
-    ax2b.set_ylabel("OER current$_{cap}$ / (A F$^{-1}$)")
+    ax2b.set_ylabel("j$_{O2, norm}$ / (A F$^{-1}$)")
 
     if True:  # a partial current density axis
         ax1b = ax1.twinx()
