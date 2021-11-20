@@ -13,5 +13,6 @@
     "rate_calc_kwargs": {},
     "description": "steady",
     "t_id": 230,
-    "amount": null
+    "amount": null,
+    "sample_name": null
 }

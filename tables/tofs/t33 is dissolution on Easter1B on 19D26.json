@@ -12,5 +12,7 @@
     "r_id": null,
     "rate_calc_kwargs": {},
     "description": "steady, 30 minutes",
-    "t_id": 33
+    "t_id": 33,
+    "amount": null,
+    "sample_name": null
 }

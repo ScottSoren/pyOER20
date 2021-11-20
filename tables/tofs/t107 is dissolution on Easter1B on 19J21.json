@@ -14,5 +14,7 @@
         "t_electrolysis": 600.0
     },
     "description": "composite full time",
-    "t_id": 107
+    "t_id": 107,
+    "amount": null,
+    "sample_name": null
 }

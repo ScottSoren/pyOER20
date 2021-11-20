@@ -12,5 +12,7 @@
     "r_id": null,
     "rate_calc_kwargs": {},
     "description": "composite full time",
-    "t_id": 106
+    "t_id": 106,
+    "amount": null,
+    "sample_name": null
 }

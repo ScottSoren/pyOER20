@@ -12,5 +12,7 @@
     "r_id": null,
     "rate_calc_kwargs": {},
     "description": "full time (20 min)",
-    "t_id": 26
+    "t_id": 26,
+    "amount": null,
+    "sample_name": null
 }

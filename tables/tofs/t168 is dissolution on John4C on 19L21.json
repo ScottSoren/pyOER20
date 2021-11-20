@@ -14,5 +14,7 @@
         "t_electrolysis": 480.0
     },
     "description": "next 8 min",
-    "t_id": 168
+    "t_id": 168,
+    "amount": null,
+    "sample_name": null
 }

@@ -1,7 +1,7 @@
 {
     "tof_type": "activity",
     "rate": 3.059083522233104e-10,
-    "tof": -0.17213929113019222,
+    "tof": -0.019789688109182576,
     "potential": null,
     "current": 0.00010004960082529412,
     "e_id": 12,
@@ -12,5 +12,7 @@
     "r_id": null,
     "rate_calc_kwargs": {},
     "description": "steady, 30 minutes",
-    "t_id": 31
+    "t_id": 31,
+    "amount": null,
+    "sample_name": null
 }

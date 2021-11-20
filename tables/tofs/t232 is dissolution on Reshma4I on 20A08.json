@@ -12,5 +12,7 @@
     "r_id": null,
     "rate_calc_kwargs": {},
     "description": "steady",
-    "t_id": 232
+    "t_id": 232,
+    "amount": null,
+    "sample_name": null
 }

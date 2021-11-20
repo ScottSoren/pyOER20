@@ -12,5 +12,7 @@
     "r_id": null,
     "rate_calc_kwargs": {},
     "description": "first 20 minutes",
-    "t_id": 17
+    "t_id": 17,
+    "amount": null,
+    "sample_name": null
 }

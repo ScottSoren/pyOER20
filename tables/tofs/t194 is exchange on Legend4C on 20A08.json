@@ -12,5 +12,7 @@
     "r_id": null,
     "rate_calc_kwargs": {},
     "description": "next 8 min",
-    "t_id": 194
+    "t_id": 194,
+    "amount": null,
+    "sample_name": null
 }

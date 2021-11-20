@@ -14,5 +14,7 @@
         "t_electrolysis": 60.0
     },
     "description": "first 1 min",
-    "t_id": 30
+    "t_id": 30,
+    "amount": null,
+    "sample_name": null
 }

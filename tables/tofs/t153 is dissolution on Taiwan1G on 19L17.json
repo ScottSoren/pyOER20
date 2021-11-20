@@ -14,5 +14,7 @@
         "t_electrolysis": 600.0
     },
     "description": "composite",
-    "t_id": 153
+    "t_id": 153,
+    "amount": null,
+    "sample_name": null
 }

@@ -1,7 +1,7 @@
 {
     "tof_type": "activity",
     "rate": 7.040706689173224e-11,
-    "tof": -0.08993533276011711,
+    "tof": -0.010339255922531815,
     "potential": null,
     "current": 2.981657168082083e-05,
     "e_id": 27,
@@ -12,5 +12,7 @@
     "r_id": null,
     "rate_calc_kwargs": {},
     "description": "composite full time",
-    "t_id": 91
+    "t_id": 91,
+    "amount": null,
+    "sample_name": null
 }

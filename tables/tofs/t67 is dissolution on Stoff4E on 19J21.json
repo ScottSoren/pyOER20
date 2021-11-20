@@ -14,5 +14,7 @@
         "t_electrolysis": 1800.0
     },
     "description": "full time",
-    "t_id": 67
+    "t_id": 67,
+    "amount": null,
+    "sample_name": null
 }
