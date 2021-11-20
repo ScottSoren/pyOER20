@@ -45,7 +45,9 @@ if False:  # set this to False after first time to run faster by loading collect
     )
     results_collection.save("results_collection.json")
 else:  # load tof collection
-    results_collection = StabilityResultsCollection.open("results_collection.json")
+    results_collection = StabilityResultsCollection.open(
+        "../paper_II_v3_figs/results_collection.json"
+    )
 
 sample_plot_specs = {
     "RT-RuO2": {"color": "#54bdebff", "marker": "o"},
@@ -103,20 +105,11 @@ ax3b.set_xlim(lims)
 ax3b.set_ylim(lims)
 ax3b.plot(lims, lims, "k--")
 
-ax3b.set_xlabel("lattice oxygen stability number")
+ax3b.set_xlabel("oxygen stability number")
 ax3b.set_ylabel("metal stability number")
 ax3b.set_xscale("log")
 ax3b.set_yscale("log")
 
-ax_r = ax3b.twinx()
-ax_r.set_yscale("log")
-ax_r.set_ylim([1 / y for y in ax3b.get_ylim()])
-ax_r.set_ylabel("dissolved metal ions per O$_2$")
-ax_t = ax3b.twiny()
-ax_t.set_xlim([1 / x for x in ax3b.get_xlim()])
-ax_t.set_xscale("log")
-ax_t.set_xlabel("lattice O per O$_2$")
-
 if forpublication:
-    fig3b.savefig("paper_II_v3_fig4.png")
-    fig3b.savefig("paper_II_v3_fig4.svg")
+    fig3b.savefig("paper_II_v4_fig4.png")
+    fig3b.savefig("paper_II_v4_fig4.svg")

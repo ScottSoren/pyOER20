@@ -363,6 +363,21 @@ class TurnOverFrequency:
             self.calc_current()
         return self._current
 
+    def get_tof_triplet(self):
+        act_tof = None
+        diss_tof = None
+        exc_tof = None
+        for tof in self.experiment.get_tofs():
+            if not tof.tspan == self.tspan:
+                continue
+            if tof.tof_type == "activity":
+                act_tof = tof
+            elif tof.tof_type == "dissolution":
+                diss_tof = tof
+            elif tof.tof_type == "exchange":
+                exc_tof = tof
+        return act_tof, diss_tof, exc_tof
+
     def calc_faradaic_efficiency(self, n_el=4, mol=None):
         rate = self.calc_rate(mol=mol) if mol else self.rate
         FE = rate * n_el * FARADAY_CONSTANT / self.current

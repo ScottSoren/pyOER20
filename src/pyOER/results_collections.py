@@ -162,8 +162,14 @@ class StabilityResultsCollection:
             tof_collection=self.tof_collection[key], layers=self.layers[1:]
         )
 
+    def __iter__(self):
+        yield from self.tof_collection
+
+    def keys(self):
+        yield from self
+
     def items(self):
-        for key in self.tof_collection:
+        for key in self:
             yield key, self[key]
 
     def get_sub_collection(self, **kwargs):
@@ -195,18 +201,27 @@ class StabilityResultsCollection:
             self_as_dict = json.load(f)
         return cls(**self_as_dict)
 
-    def get_stats(self, sample_type, current_point, tof_time):
-        """Return {type: [mean, standard deviation]} for types of stability numbers.
+    def get_coherent_results(self, sample_type, current_point, tof_time):
+        act = []
+        diss = []
+        exc = []
+        for t_id in self.tof_collection[sample_type][current_point][tof_time][
+            "activity"
+        ]:
+            act_tof, diss_tof, exc_tof = TurnOverFrequency.open(t_id).get_tof_triplet()
+            if not (act_tof and diss_tof and exc_tof):
+                continue
+            act.append(act_tof.rate)
+            diss.append(diss_tof.rate)
+            exc.append(exc_tof.rate)
+        return {
+            "activity": np.array(act),
+            "dissolution": np.array(diss),
+            "exchange": np.array(exc),
+        }
 
-        The types of stability numbers are "S_number" for OER / metal dissolution and
-        "S_number_lattice for OER / lattice oxygen evolution
+    def get_results(self, sample_type, current_point, tof_time):
 
-        Args:
-            sample_type (str): The type of sample, e.g. "RT-RuO2", "IrOx/Ir", etc.
-            current_point (str): The current in [mA/cm^2], e.g. "0.5", "0.15", etc.
-            tof_time (str): The part of the measurement. "start" or "steady".
-        """
-        stats = {sample_type: {current_point: {"S_number": {}, "S_number_lattice": {}}}}
         diss = np.array(
             [
                 TurnOverFrequency.open(t_id).rate
@@ -231,7 +246,25 @@ class StabilityResultsCollection:
                 ]
             ]
         )
+        return {"activity": act, "dissolution": diss, "exchange": exc}
 
+    def get_stats(self, sample_type, current_point, tof_time):
+        """Return {type: [mean, standard deviation]} for types of stability numbers.
+
+        The types of stability numbers are "S_number" for OER / metal dissolution and
+        "S_number_lattice for OER / lattice oxygen evolution
+
+        Args:
+            sample_type (str): The type of sample, e.g. "RT-RuO2", "IrOx/Ir", etc.
+            current_point (str): The current in [mA/cm^2], e.g. "0.5", "0.15", etc.
+            tof_time (str): The part of the measurement. "start" or "steady".
+        """
+        stats = {sample_type: {current_point: {"S_number": {}, "S_number_lattice": {}}}}
+
+        results = self.get_results(sample_type, current_point, tof_time)
+        diss = results["dissolution"]
+        exc = results["exchange"]
+        act = results["activity"]
         # get rid of all nan's and inf's!
         diss = diss[~np.isnan(diss)]
         diss = diss[~np.isinf(diss)]
