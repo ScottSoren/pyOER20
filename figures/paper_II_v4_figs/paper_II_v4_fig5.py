@@ -78,7 +78,7 @@ if True:  # fig 5b, with norm. activity, exchange, and diss. plotted against pot
     else:
         cap = 0.0017  # mean capacitance of Reshma1 samples in [F]
 
-    with open("../paper_I_v5_figs/fit_results.json") as f:
+    with open("../extras/paper_I_v5_figs/fit_results.json") as f:
         fit_results = json.load(f)
     u_model = np.linspace(1.28, 1.5, 100)
     j_model = get_model_j_norm(u=u_model, **fit_results)  # [A/F]

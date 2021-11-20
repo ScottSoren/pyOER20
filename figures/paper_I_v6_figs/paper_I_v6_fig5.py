@@ -15,7 +15,7 @@ from pyOER.constants import (
     STANDARD_SITE_DENSITY,
     STANDARD_SPECIFIC_CAPACITANCE,
 )
-from paper_I_v5_fig3 import plot_all_activity_results
+from paper_I_v6_fig3 import plot_all_activity_results
 from pyOER.modelling import get_states
 
 
@@ -164,7 +164,8 @@ if __name__ == "__main__":
     ax1.plot(u, np.log10(j_over_j0), linewidth=0.6, color="k")
 
     ax1.set_xlabel("E vs RHE / (V)")
-    ax1.set_ylabel("log(j$_{O2, norm}$ / j$_{RDS}^0$)")
+    # ax1.set_ylabel("log(j$_{O2, norm}$ / j$_{RDS}^0$)")
+    ax1.set_ylabel("log(j / j$^0$)")
 
     if True:  # explanatory fig
 
@@ -208,7 +209,7 @@ if __name__ == "__main__":
         ax4.set_ylim(top=0.1)
 
         ax4.set_xlabel("E vs RHE / (V)")
-        ax4.set_ylabel("$G^0 - G^0_{RDS}$ / [eV]")
+        ax4.set_ylabel("$G^0 - G^0_{RDS}$ / (eV)")
 
     if True:  # wrong models
         # if there was constant coverage of the RDS state,

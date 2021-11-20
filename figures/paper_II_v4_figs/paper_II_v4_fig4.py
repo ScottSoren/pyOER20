@@ -46,7 +46,7 @@ if False:  # set this to False after first time to run faster by loading collect
     results_collection.save("results_collection.json")
 else:  # load tof collection
     results_collection = StabilityResultsCollection.open(
-        "../paper_II_v3_figs/results_collection.json"
+        "../extras/paper_II_v3_figs/results_collection.json"
     )
 
 sample_plot_specs = {
