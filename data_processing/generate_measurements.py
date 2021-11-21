@@ -44,7 +44,7 @@ def read_metadata_from_path(path):
 
 def check_if_EC_MS_pickle(measurement):
     try:
-        measurement.load_dataset()
+        measurement.load_data()
     except (IOError, TypeError) as e:
         print(f"Not an EC_MS pickle: \n\t{measurement.old_data_path}\n\tError = {e}")
         return False
@@ -52,7 +52,7 @@ def check_if_EC_MS_pickle(measurement):
         return True
     finally:
         print("made it to the finally clause!")  # test
-        del measurement.dataset  # to SAVE memory
+        del measurement.meas  # to SAVE memory
 
 
 def main():

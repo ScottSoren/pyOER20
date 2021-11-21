@@ -98,7 +98,7 @@ def get_m_id_with_input(result, match_date=True):
         if measurement.sample_name == sample and (
             measurement.date == date or not match_date
         ):
-            measurement.plot_experiment()
+            measurement.plot()
             print("\n\n------ NOTES -------\n\n")
             measurement.print_notes()
             print(
@@ -280,7 +280,7 @@ for set, (data_pkl, samples_pkl) in {
             measurement = Measurement.open(m_id)
             print("\n\n------ NOTES -------\n\n")
             measurement.print_notes()
-            measurement.plot_experiment()
+            measurement.plot()
             print(
                 f"\n\nICPMS point description = '{description}'. "
                 + f"Dissolved {element} = {n_diss * 1e12} pmol.\n"

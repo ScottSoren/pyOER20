@@ -63,7 +63,7 @@ def input_timestamps_and_categorize(cal):
     )
 
     # sys.stdout = open(os.devnull, "w")
-    ax = cal.measurement.plot_experiment(verbose=False)
+    ax = cal.measurement.plot(verbose=False)
     # sys.stdout = sys.__stdout__
 
     ax[1].set_title(cal.name)

@@ -124,7 +124,7 @@ def plot_all_activity_results(
 
 def fix_bad_tof(tof):
     i = tof.id
-    tof.experiment.plot_experiment()
+    tof.experiment.plot()
     print(f"please fix or delete '{tof}' with tspan={tof.tspan}")
     plt.show()
     try:

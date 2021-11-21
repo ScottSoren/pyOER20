@@ -58,7 +58,7 @@ for m_id, tag in systematic_m_ids.items():
     m = Measurement.open(m_id)
     sample = m.sample_name
     date = m.date
-    dataset = m.dataset
+    dataset = m.meas
     tstamp = dataset.tstamp
     sample_type = get_sample_type(sample)
 

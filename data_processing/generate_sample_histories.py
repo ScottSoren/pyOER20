@@ -15,7 +15,7 @@ def generate_history(sample):
         if se:
             ax = se.plot_EC_MS_ICPMS()
         else:
-            ax = m.plot_experiment()
+            ax = m.plot()
         ax[1].set_title(m)
 
         m_str = "m" + str(m.id)

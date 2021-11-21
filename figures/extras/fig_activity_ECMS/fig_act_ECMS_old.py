@@ -48,16 +48,16 @@ for m_id, specs in measurements_to_plot.items():
     tspan = specs["tspan"]
     m = Measurement.open(m_id)
     if tspan:
-        m.cut_dataset(tspan=tspan, t_zero=tspan[0])
+        m.cut_meas(tspan=tspan, t_zero=tspan[0])
 
     if False:  # plot raw data
-        ax = m.plot_experiment()
+        ax = m.plot()
         ax[1].set_title(m.make_name())
 
     if "tspan_cal" in specs:
         F_cal = 0
         for mass in ["M32", "M34", "M36"]:
-            F_cal += m.dataset.point_calibration(
+            F_cal += m.meas.point_calibration(
                 tspan=specs["tspan_cal"],
                 t_bg=specs["tspan_bg"],
                 mol="O2",
@@ -65,7 +65,7 @@ for m_id, specs in measurements_to_plot.items():
                 n_el=4,
             ).F_cal
     else:
-        F_cal = cal_series.F_of_tstamp(m.dataset.tstamp)
+        F_cal = cal_series.F_of_tstamp(m.meas.tstamp)
 
     mols = {}
     for mass in ["M32", "M34", "M36"]:
@@ -74,16 +74,16 @@ for m_id, specs in measurements_to_plot.items():
         molecule.F_cal = F_cal
         mols[mass] = molecule
 
-    V_str, J_str = m.dataset.calibrate_EC(
+    V_str, J_str = m.meas.calibrate_EC(
         RE_vs_RHE=float(m.elog.field_data["RE_vs_RHE"]),
         A_el=0.196,
     )
     if "R_Ohm" in specs:
-        m.dataset.correct_ohmic_drop(specs["R_Ohm"])
+        m.meas.correct_ohmic_drop(specs["R_Ohm"])
 
     mess[name] = m
 
-    ax = m.plot_experiment(mols=mols, unit="pmol/cm^2")
+    ax = m.plot(mols=mols, unit="pmol/cm^2")
     # ax[1].set_title(name)
     ax[0].set_ylim([5e-1, 3e3])
     ax[0].set_ylabel("O$_2$ / [pmol s$^{-1}$cm$^{-2}]$")
@@ -94,7 +94,7 @@ for m_id, specs in measurements_to_plot.items():
     if False:  # text export
         save_as_text(
             f"fig_act_ECMS {name}.csv",
-            dataset=m.dataset.data,
+            dataset=m.meas.data,
             mols=list(mols.values()),
             cols=[V_str, J_str],
         )
@@ -102,7 +102,7 @@ for m_id, specs in measurements_to_plot.items():
 if True:  # inset to part b
     tspan_inset = [3140, 3320]
     m = mess["RT RuO2, H2(18)O"]
-    ax = m.dataset.plot_flux(
+    ax = m.meas.plot_flux(
         mols["M36"], tspan=tspan_inset, unit="pmol/s/cm^2", logplot=False
     )
     ax.set_xlabel("")

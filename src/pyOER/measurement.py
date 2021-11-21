@@ -6,7 +6,9 @@ import json
 import re
 import time
 import datetime
-from EC_MS import Dataset
+
+# from EC_MS import Dataset
+from ixdat import Measurement as Meas
 from .constants import MEASUREMENT_DIR, MEASUREMENT_ID_FILE, STANDARD_ELECTRODE_AREA
 from .tools import singleton_decorator, CounterWithFile, FLOAT_MATCH
 from .settings import DATA_DIR
@@ -49,7 +51,7 @@ class Measurement:
         analysis_date=None,
         old_data_path=None,
         new_data_path=None,
-        dataset=None,
+        meas=None,
         linked_measurements=None,
         elog_number=None,
         elog=None,
@@ -59,16 +61,16 @@ class Measurement:
     ):
         """Initiate Measurement object
 
-        Intended use is to load the dataset separately using Measurement.load_dataset()
+        Intended use is to load the meas separately using Measurement.load_data()
 
         Args:
             m_id (int): the unique id of the measurement
             name (str): the name of the measurement
             measurement_dir (Path-like): where to SAVE the measurement metadata
-            copied_at (float): the time at which the dataset was read
+            copied_at (float): the time at which the meas was read
             old_data_path (Path-like): path to file to load the raw data from pkl
             new_data_path (Path-like): path to file to SAVE the raw data as pkl
-            dataset (EC_MS.Dataset): the dataset
+            meas (ixdat.techniques.ECMSMeasurement): the ixdat object with the data
             linked_measurements (dict): measurements to link to this one
             kwargs (dict): gets added, not used. Here so that I can add extra stuff when
                 saving just to improve readability of the json
@@ -86,7 +88,7 @@ class Measurement:
         self.copied_at = copied_at  # will be replaced by time.time()
         self.old_data_path = old_data_path
         self.new_data_path = new_data_path
-        self._dataset = dataset  # dataset is a managed property
+        self._meas = meas  # meas is a managed property
         self.linked_measurements = linked_measurements
         self.extra_stuff = kwargs
         self.elog_number = elog_number
@@ -111,7 +113,7 @@ class Measurement:
             elog_number=self.elog_number,
             EC_tag=self.EC_tag,
             category=self.category,
-            # do not put the dataset into self_as_dict!
+            # do not put the meas into self_as_dict!
         )
         if self.copied_at:  # just for human-readability of measurement .json
             self_as_dict["copied_on"] = datetime.datetime.fromtimestamp(
@@ -130,7 +132,7 @@ class Measurement:
         with open(path_to_measurement, "w") as f:
             json.dump(self_as_dict, f, indent=4)
         if save_dataset:
-            self.save_dataset()
+            self.export_data()
 
     def save_with_rename(self, file_name=None):
         if "file_loaded_from" in self.extra_stuff:
@@ -220,11 +222,11 @@ class Measurement:
             return Sample(name=self.sample_name)
 
     @property
-    def dataset(self):
-        """The EC_MS dataset associated with the measurement"""
-        if not self._dataset:
-            self.load_dataset()
-        return self._dataset
+    def meas(self):
+        """The ixdat ECMSMeasurement associated with the measurement"""
+        if not self._meas:
+            self.load_data()
+        return self._meas
 
     @property
     def elog(self):
@@ -234,7 +236,7 @@ class Measurement:
 
     @property
     def tstamp(self):
-        return self.dataset.tstamp
+        return self.meas.tstamp
 
     def __gt__(self, other):
         return self.tstamp > other.tstamp
@@ -242,27 +244,28 @@ class Measurement:
     def __ge__(self, other):
         return self.tstamp >= other.tstamp
 
-    def load_dataset(self):
-        """load the dataset from the EC_MS pkl file"""
+    def load_data(self):
+        """load the ixdat meas from the EC_MS pkl file"""
         data_path = self.old_data_path  # Until fix_data_path is available.
-        self._dataset = Dataset(data_path, verbose=False)
-        if self._dataset.empty:
+        self._meas = Meas.read(data_path, reader="EC_MS")
+        if not self._meas.series_list:
             raise IOError(f"Dataset in {self.old_data_path} loaded empty.")
-        return self._dataset
+        return self._meas
 
-    def save_dataset(self):
-        """SAVE the dataset in the new data directory"""
+    def export_data(self):
+        """SAVE the meas in the new data directory"""
         name = self.name if self.name else self.make_name()
-        path_to_pkl = self.new_data_path / (name + ".pkl")
-        self.dataset.save(file_name=path_to_pkl)
+        path_to_pkl = self.new_data_path / (name + ".csv")
+        self.meas.export(file_name=path_to_pkl)
         self.copied_at = time.time()
 
-    def plot_experiment(self, *args, **kwargs):
-        """shortcut to self.dataset.plot_experiment"""
-        return self.dataset.plot_experiment(*args, **kwargs)
+    def plot(self, *args, **kwargs):
+        """shortcut to self.meas.plot"""
+        kwargs.update(legend=False)
+        return self.meas.plot_measurement(*args, **kwargs)
 
-    def cut_dataset(self, *args, **kwargs):
-        self._dataset = self.dataset.cut(*args, **kwargs)
+    def cut_meas(self, *args, **kwargs):
+        self._meas = self.meas.cut(*args, **kwargs)
 
     def open_elog(self):
         from .elog import ElogEntry

@@ -23,9 +23,9 @@ A_el = 0.196
 
 measurement = Measurement.open(10)
 
-dataset = measurement.dataset
+dataset = measurement.meas
 
-dataset.plot_experiment()
+dataset.plot()
 
 V_str, J_str = dataset.sync_metadata(RE_vs_RHE=0.715, A_el=0.196)
 O2 = dataset.point_calibration(mol="O2", mass="M32", tspan=[300, 350], n_el=4)

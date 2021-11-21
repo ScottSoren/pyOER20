@@ -38,7 +38,7 @@ for name, spec in data_specs.items():
     tspan_bg = spec["tspan_bg"]
 
     m = Measurement.open(m_id)
-    dataset = m.dataset
+    dataset = m.meas
     dataset.sync_metadata(RE_vs_RHE=0.715, A_el=A_el)
 
     O2 = dataset.point_calibration(
@@ -52,7 +52,7 @@ for name, spec in data_specs.items():
     t_I, I = subset.get_current(unit="A")
     I = I * 1e6 / A_el  # A to uA/cm^2
 
-    ax = subset.plot_experiment(
+    ax = subset.plot(
         mols=[[], [O2]],
         unit="pmol/s/cm^2",
         plotcurrent=False,
@@ -71,5 +71,5 @@ for name, spec in data_specs.items():
     ax[0].get_figure().savefig(name + ".png")
 
     if True:
-        ax = m.plot_experiment()
+        ax = m.plot()
         ax[1].set_title(name)

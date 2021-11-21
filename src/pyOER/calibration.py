@@ -148,6 +148,10 @@ class Calibration:
             self._measurement = Measurement.open(self.m_id)
         return self._measurement
 
+    @property
+    def meas(self):
+        return self.measurement.meas
+
     def make_name(self):
         c_id = self.id
         date = self.measurement.date
@@ -156,23 +160,11 @@ class Calibration:
         name = f"c{c_id} is a {category} cal with {sample} on {date}"
         return name
 
-    @property
-    def extraction(self):
-        """The EC_MS dataset for the calibration measurement as an Extraction object"""
-        if not self._extraction:
-            self._extraction = Extraction(
-                dataset=self.measurement.dataset,
-                tspan_ratio=self.tspan,
-                t_bg=self.t_bg,
-                electrolyte=self.isotope,
-            )
-        return self._extraction
-
     def calibration_curve(self, ax=None, **kwargs):
         """Calibrate O2 using EC_MS.Dataset.calibration_curve() and self.tspans"""
         F_O2 = 0
         for mass in ["M32", "M34", "M36"]:
-            O2, ax = self.extraction.calibration_curve(
+            O2, ax = self.meas.ecms_calibration_curve(
                 mol="O2",
                 mass=mass,
                 n_el=4,
@@ -190,7 +182,7 @@ class Calibration:
         """calibrate the O2 signal based on assumption of OER during self.tspan"""
         Y_cum = 0
         for mass in ["M32", "M34", "M36"]:
-            x, y = self.extraction.get_signal(
+            x, y = self.meas.grab_signal(
                 mass=mass,
                 tspan=self.tspan,
                 t_bg=self.t_bg,
@@ -198,7 +190,8 @@ class Calibration:
             )
             Y = np.trapz(y, x)
             Y_cum += Y
-        t, I = self.extraction.get_current(tspan=self.tspan, unit="A")
+        t, I = self.meas.grab("current", tspan=self.tspan)
+        I *= 1e-3  # from [mA] to [A]
         Q = np.trapz(I, t)
         n = Q / (4 * Chem.Far)
         F_O2 = Y_cum / n
@@ -209,7 +202,20 @@ class Calibration:
 
     def cal_alpha(self):
         """calibrate the isotope ratio based on OER during self.tspan"""
-        alpha = self.extraction.get_alpha()
+
+        if "16" in self.isotope:
+            x_34, y_34 = self.meas.grab_signal("M34", tspan=self.tspan)
+            x_32, y_32 = self.meas.grab_signal("M32", tspan=self.tspan)
+            beta = np.mean(y_34) / np.mean(y_32)
+            alpha = 2 / (2 + beta)
+        elif "18" in self.isotope:
+            x_34, y_34 = self.meas.grab_signal("M34", tspan=self.tspan)
+            x_36, y_36 = self.meas.grab_signal("M36", tspan=self.tspan)
+            gamma = np.mean(y_34) / np.mean(y_36)
+            alpha = gamma / (2 + gamma)
+        else:
+            alpha = None
+
         self.alpha = alpha
 
         return alpha
@@ -276,7 +282,7 @@ class CalibrationSeries:
         t_project_start = PROJECT_START_TIMESTAMP
         for calibration in self.calibrations():
 
-            t = calibration.measurement.dataset.tstamp - t_project_start
+            t = calibration.meas.tstamp - t_project_start
             F = calibration.F["O2"]
             time_vec = np.append(time_vec, t)
             F_vec = np.append(F_vec, F)
@@ -344,5 +350,5 @@ class CalibrationSeries:
         Args:
             measurement (Measurement): the measurement
         """
-        tstamp = measurement.dataset.tstamp
+        tstamp = measurement.meas.tstamp
         return self.F_of_tstamp(tstamp)

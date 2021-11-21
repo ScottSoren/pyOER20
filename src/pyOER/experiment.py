@@ -1,8 +1,8 @@
 """This module implements Experiments, which add analysis to types of Measurements
 
-All experiments should have a background-subtracted dataset (EC_MS.Dataset) with
-calibrated current and potential, and an mdict containing EC_MS.Molecule objects
-which correctly calibrate the MS data of the dataset.
+All experiments should have a background-subtracted ixdat ECMSMeasurement with
+calibrated current and potential, and a mdict containing ixdat MSCalResult objects
+which correctly calibrate the MS data of the meas.
 
 The StandardExperiment is a constant-potential OER (or composite thereof) with
 ICPMS-MS samples taken during the measurement. The sample is a labeled test sample or
@@ -17,7 +17,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib import gridspec
 
-from EC_MS import Molecule
+from ixdat.techniques.ec_ms import MSCalResult
 
 from .constants import (
     EXPERIMENT_DIR,
@@ -156,7 +156,7 @@ class Experiment:
         self.m_id = m_id
         self.experiment_type = experiment_type
         self.measurement = Measurement.open(m_id)
-        self._dataset = None
+        self._meas = None
         self.tspan_plot = tspan_plot
         self.tspan_bg = tspan_bg
         self.tspan_bg_current = tspan_bg_current
@@ -234,19 +234,20 @@ class Experiment:
         return cls.load(path_to_file)
 
     @property
-    def dataset(self):
-        if not self._dataset:
-            dataset = self.measurement.dataset
-            dataset.sync_metadata(
+    def meas(self):
+        """The ixdat measurement with the experimental data"""
+        if not self._meas:
+            meas = self.measurement.meas
+            meas.calibrate(
                 RE_vs_RHE=self.measurement.RE_vs_RHE,
                 A_el=0.196,
             )
             if self.measurement.R_Ohm:
-                dataset.correct_ohmic_drop(self.measurement.R_Ohm)
+                meas.correct_ohmic_drop(self.measurement.R_Ohm)
             if self.tspan_bg:
-                dataset.set_background(self.tspan_bg)
-            self._dataset = dataset
-        return self._dataset
+                meas.set_bg(self.tspan_bg)
+            self._meas = meas
+        return self._meas
 
     @property
     def beta(self):
@@ -301,8 +302,8 @@ class Experiment:
     def calc_alpha(self, tspan=None):
         """Return fraction ^{16}O in the electrolyte based on tspan with steady OER"""
         tspan = tspan or self.tspan_alpha
-        x_32, y_32 = self.dataset.get_signal(mass="M32", tspan=tspan)
-        x_34, y_34 = self.dataset.get_signal(mass="M34", tspan=tspan)
+        x_32, y_32 = self.meas.get_signal(mass="M32", tspan=tspan)
+        x_34, y_34 = self.meas.get_signal(mass="M34", tspan=tspan)
         gamma = np.mean(y_34) / np.mean(y_32)
         alpha = 2 / (2 + gamma)
         return alpha
@@ -311,8 +312,8 @@ class Experiment:
     def cap(self):
         """Capacitance in Farads"""
         if not self._cap:
-            cap_cv = self.dataset.cut(self.tspan_cap).as_cv()
-            self._cap = cap_cv.get_capacitance(V_DL=self.V_DL) * self.dataset.A_el
+            cap_cv = self.meas.cut(self.tspan_cap).as_cv()
+            self._cap = cap_cv.get_capacitance(V_DL=self.V_DL) * self.meas.A_el
             # Farad/cm^2 * cm^2
         return self._cap
 
@@ -329,10 +330,7 @@ class Experiment:
     def populate_mdict(self):
         """Fill in self.mdict with the EC-MS.Molecules O2_M32, O2_M34, and O2_M36"""
         for mass in ["M32", "M34", "M36"]:
-            m = Molecule("O2")
-            m.primary = mass
-            m.F_mat = None
-            m.F_cal = self.F
+            m = MSCalResult(mol="O2", mass=mass, F=self.F)
             self._mdict[f"O2_{mass}"] = m
 
     @property
@@ -348,9 +346,7 @@ class Experiment:
                 F = 0
                 for mass in self.mass_list:
                     try:
-                        x, y = self.dataset.get_signal(
-                            mass, tspan=self.tspan_F, unit="A"
-                        )
+                        x, y = self.meas.grab(mass, tspan=self.tspan_F)
                         I = calc_current(self, tspan=self.tspan_F)
                         F_M = np.mean(y) / (I / (4 * FARADAY_CONSTANT))
                         F += F_M
@@ -359,7 +355,7 @@ class Experiment:
             elif self.F_0:
                 F = self.F_0
             else:
-                F = calibration_series.F_of_tstamp(self.dataset.tstamp)
+                F = calibration_series.F_of_tstamp(self.meas.tstamp)
             self._F = F
         return self._F
 
@@ -373,10 +369,12 @@ class Experiment:
             self._alpha = alpha or STANDARD_ALPHA
         return self._alpha
 
-    def calc_flux(self, mol, tspan, **kwargs):
+    def calc_flux(self, mol, tspan, removebackground=True, **kwargs):
         """Return the flux for a calibrated mol (a key to self.mdict)"""
         m = self.mdict[mol]
-        return self.dataset.get_flux(m, tspan=tspan, **kwargs)
+        return self.meas.grab_flux(
+            m, tspan=tspan, removebackground=removebackground, **kwargs
+        )
 
     def get_tofs(self):
         """Return a list of TOFS from the experiment"""
@@ -390,20 +388,22 @@ class Experiment:
         return tofs
 
     def calc_background_current(self):
-        cap_cv = self.dataset.cut(self.tspan_cap).as_cv()
-        t, J = cap_cv.get_capacitance(V_DL=self.V_DL, out=["t", "J"])
-        J_bg = np.mean(J)
-        I_bg = J_bg * self.dataset.A_el * 1e-3
+        cap_cv = self.meas.cut(self.tspan_cap).as_cv()
+        sweep_1 = cap_cv.select_sweep(vspan=self.V_DL)
+        sweep_2 = cap_cv.select_sweep(vspan=[self.V_DL[-1], self.V_DL[0]])
+        I_1 = np.mean(sweep_1.grab("raw_current")[1]) * 1e-3  # [mA] -> [A]
+        I_2 = np.mean(sweep_2.grab("raw_current")[1]) * 1e-3  # [mA] -> [A]
+        I_bg = (I_1 + I_2) / 2  # the background current is the center of these two.
         return I_bg
 
     def correct_current(self):
         I_bg = self.calc_background_current()
-        I_str = self.dataset.I_str
-        J_str = self.dataset.J_str
-        A_el = self.dataset.data["A_el"]
-        print(f"subtracting {I_bg * 1e3 * A_el} from '{J_str}'")
-        self.dataset.data[I_str] = self.dataset.data[I_str] - I_bg * 1e3
-        self.dataset.data[J_str] = self.dataset.data[J_str] - I_bg * 1e3 / A_el
+        I_str = self.meas.I_str
+        J_str = self.meas.J_str
+        A_el = self.meas.A_el
+        print(f"subtracting {I_bg * 1e3 / A_el} from '{J_str}'")
+        self.meas.correct_data(I_str, self.meas[I_str].data - I_bg * 1e3)
+        self.meas.correct_data(J_str, self.meas[J_str].data - I_bg * 1e3 / A_el)
 
 
 class StandardExperiment(Experiment):
@@ -520,7 +520,7 @@ class StandardExperiment(Experiment):
 
         Args:
             tspan (list of float): The timespan for which to plot. Defaults to
-                self.tspan_plot, or finally to the dataset's tspan.
+                self.tspan_plot, or finally to the meas's tspan.
             highlight (bool): Whether to highlight the excess 18-O.
             showsamples (bool): Whether to draw vertical lines at ICPMS sampling times
             ylims (dict): Y-axes limits if not to use the matplotlib-determined. Keys
@@ -556,8 +556,8 @@ class StandardExperiment(Experiment):
         O2_M32 = self.mdict["O2_M32"]
         O2_M34 = self.mdict["O2_M34"]
         O2_M36 = self.mdict["O2_M36"]
-        axes = self.dataset.plot_experiment(
-            mols=[[O2_M34, O2_M36], [O2_M32]],
+        axes = self.meas.plot(
+            mol_lists=[[O2_M34, O2_M36], [O2_M32]],
             logplot=False,
             tspan=tspan,
             ax=axes,
@@ -576,8 +576,8 @@ class StandardExperiment(Experiment):
         axes[1].set_xlabel("time / (s)")
         # colorax(ax[0], O2_M34.get_color(), lr='left')
 
-        x32, y32 = self.dataset.get_flux(O2_M32, unit=unit, tspan=tspan)
-        x34, y34 = self.dataset.get_flux(O2_M34, unit=unit, tspan=tspan)
+        x32, y32 = self.meas.get_flux(O2_M32, unit=unit, tspan=tspan)
+        x34, y34 = self.meas.get_flux(O2_M34, unit=unit, tspan=tspan)
 
         if highlight:  # highlight the labeled lattice oxygen evolution
             y34_interp = np.interp(x32, x34, y34)
@@ -668,12 +668,10 @@ class ActExperiment(Experiment):
         """
         tspan = tspan or self.tspan_plot
         mols = list(self.mdict.values())
-        axes = self.dataset.plot_experiment(
-            mols=mols, tspan=tspan, unit=unit, logplot=False
-        )
+        axes = self.meas.plot(mols=mols, tspan=tspan, unit=unit, logplot=False)
         if highlights:
             if self.tspan_F:
-                self.dataset.plot_flux(
+                self.meas.plot_flux(
                     mols=mols,
                     tspan=self.tspan_F,
                     ax=axes[0],
@@ -682,11 +680,11 @@ class ActExperiment(Experiment):
                     logplot=False,
                 )
             if self.tspan_cap and (tspan == "all" or not tspan):
-                cap_cv = self.dataset.cut(self.tspan_cap).as_cv()
+                cap_cv = self.meas.cut(self.tspan_cap).as_cv()
                 t, J = cap_cv.get_capacitance(V_DL=self.V_DL, out=["t", "J"])
                 axes[2].fill_between(t, J, np.zeros(t.shape), color="0.5", alpha=0.3)
             for tof in self.tofs:
-                self.dataset.plot_flux(
+                self.meas.plot_flux(
                     mols=mols,
                     tspan=tof.tspan,
                     ax=axes[0],
@@ -707,9 +705,9 @@ class ActExperiment(Experiment):
         if not axes:
             fig, ax1 = plt.subplots()
             ax2 = ax1.twinx()
-            ax1.set_xlabel(self.dataset.V_str)
+            ax1.set_xlabel(self.meas.V_str)
             ax1.set_ylabel("Faradaic efficiency / [%]")
-            ax2.set_ylabel(self.dataset.J_str)
+            ax2.set_ylabel(self.meas.J_str)
         else:
             ax1, ax2 = axes
 
@@ -729,11 +727,11 @@ class ActExperiment(Experiment):
                 FEs[potential][mol].append(tof.calc_faradaic_efficiency(mol=mol) * 100)
 
         for potential, current_list in currents.items():
-            current_density = np.mean(current_list) * 1e3 / self.dataset.A_el
+            current_density = np.mean(current_list) * 1e3 / self.meas.A_el
             ax2.plot(potential, current_density, "ko")
             cum_FE = 0
             for mol, FE_list in FEs[potential].items():
-                color = self.mdict[mol].get_color()
+                color = self.mdict[mol].color
                 FE = np.mean(FE_list)
                 if len(FE_list) > 1:
                     FE_std = np.std(FE_list)

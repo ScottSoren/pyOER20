@@ -15,12 +15,12 @@ else:
 
 e1 = Experiment.open(33)
 
-e1.measurement.dataset.sync_metadata(
+e1.measurement.meas.sync_metadata(
     RE_vs_RHE=e1.measurement.RE_vs_RHE,
     A_el=0.196,
 )
 
-axes_b = e1.measurement.plot_experiment(
+axes_b = e1.measurement.plot(
     tspan="all",
     masses=[
         # "M4", "M18",

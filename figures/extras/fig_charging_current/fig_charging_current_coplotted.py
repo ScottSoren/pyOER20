@@ -52,10 +52,10 @@ for name, spec in data_specs.items():
 
     m = Measurement.open(m_id)
     if False:
-        ax = m.plot_experiment()
+        ax = m.plot()
         ax[1].set_title(name)
 
-    dataset = m.dataset
+    dataset = m.meas
     dataset.sync_metadata(RE_vs_RHE=0.715, A_el=A_el, E_str="control/V")
 
     O2 = dataset.point_calibration(
@@ -71,7 +71,7 @@ for name, spec in data_specs.items():
 
     O2.color = color
 
-    ax = subset.plot_experiment(
+    ax = subset.plot(
         mols=[[], [O2]],
         unit="pmol/s/cm^2",
         plotcurrent=False,

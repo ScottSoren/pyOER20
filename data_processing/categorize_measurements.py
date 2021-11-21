@@ -66,7 +66,7 @@ def main():
         )
         try:
             # sys.stdout = open(os.devnull, "w")
-            measurement.plot_experiment(verbose=False)
+            measurement.plot(verbose=False)
             # sys.stdout = sys.__stdout__
             plt.show()  # script hangs here until plot is closed.
         except (KeyError, SystemExit) as e:

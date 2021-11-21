@@ -44,7 +44,7 @@ for m in all_measurements():
     if not "exchange" in categories:
         continue
     m.print_notes()
-    m.plot_experiment()
+    m.plot()
     print(
         f"Notes for {m} are above. Close the plot when you know to what degree "
         + "this is a systematic measurement."

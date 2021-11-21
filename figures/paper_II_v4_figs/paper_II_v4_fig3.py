@@ -16,9 +16,7 @@ else:
 
 lines = []
 
-for panel, e_id in {
-    "a": 33, "b": 41   # 5, 39
-}.items():
+for panel, e_id in {"a": 33, "b": 41}.items():  # 5, 39
 
     e = StandardExperiment.open(e_id)
 

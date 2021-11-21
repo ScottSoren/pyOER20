@@ -12,7 +12,7 @@ for exp in all_activity_experiments():
         break
 
     if "o" in exp.experiment_type:
-        ax = exp.measurement.plot_experiment(
+        ax = exp.measurement.plot(
             tspan="all",
             mols=[[exp.mdict["O2_M34"], exp.mdict["O2_M36"]], [exp.mdict["O2_M32"]]],
             logplot=False,
@@ -23,15 +23,15 @@ for exp in all_activity_experiments():
         fig.savefig(f"full plot of {exp}.svg")
 
     elif "l" in exp.experiment_type:
-        exp.dataset.reset()
-        ax = exp.plot_experiment(tspan="all")
+        exp.meas.reset()
+        ax = exp.plot(tspan="all")
         ax[1].set_title(str(exp.measurement))
         fig = ax[0].get_figure()
         fig.savefig(f"full plot of {exp}.png")
         fig.savefig(f"full plot of {exp}.svg")
 
     else:
-        ax = exp.plot_experiment()
+        ax = exp.plot()
         ax[1].set_title(str(exp.measurement))
 
         fig = ax[0].get_figure()

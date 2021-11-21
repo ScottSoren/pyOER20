@@ -28,9 +28,9 @@ if True:  # fig 2a, Reshma1 in 16-O electrolyte
 
     if True:  # activity plot (fig 2a)
         # exp.correct_current()
-        exp.measurement.dataset.reset()  # so that background is not subtracted
-        exp.measurement.cut_dataset(tspan=[1700, 5400], t_zero="start")
-        axes = exp.measurement.plot_experiment(
+        exp.measurement.meas.reset()  # so that background is not subtracted
+        exp.measurement.cut_meas(tspan=[1700, 5400], t_zero="start")
+        axes = exp.measurement.plot(
             mols=list(exp.mdict.values()), unit="pmol/s/cm^2", removebackground=False
         )
         axes[0].set_ylabel("O$_2$ / (pmol s$^{-1}$cm$^{-2}_{geo})$")
@@ -59,9 +59,9 @@ if True:  # fig 2b, Reshma1 in 18-O electrolyte  (wierd FE)
 
     if True:  # activity plot (fig 2a)
         # exp.correct_current()
-        exp.measurement.dataset.reset()  # so that background is not subtracted
-        exp.measurement.cut_dataset(tspan=exp.tspan_plot, t_zero="start")
-        axes = exp.measurement.plot_experiment(
+        exp.measurement.meas.reset()  # so that background is not subtracted
+        exp.measurement.cut_meas(tspan=exp.tspan_plot, t_zero="start")
+        axes = exp.measurement.plot(
             mols=list(exp.mdict.values()), unit="pmol/s/cm^2", removebackground=False
         )
         axes[0].set_ylabel("O$_2$ / (pmol s$^{-1}$cm$^{-2}_{geo})$")
@@ -96,9 +96,9 @@ if True:  # fig 2c, Reshma1 in 18-O electrolyte  (sensible FE)
             axes[1].set_title(str(exp))
 
     if True:  # activity plot (fig 2a)
-        exp.measurement.dataset.reset()
-        exp.measurement.cut_dataset(tspan=exp.tspan_plot, t_zero="start")
-        axes = exp.measurement.plot_experiment(
+        exp.measurement.meas.reset()
+        exp.measurement.cut_meas(tspan=exp.tspan_plot, t_zero="start")
+        axes = exp.measurement.plot(
             mols=list(exp.mdict.values()), unit="pmol/s/cm^2", removebackground=False
         )
         if not forpublication:
@@ -106,15 +106,15 @@ if True:  # fig 2c, Reshma1 in 18-O electrolyte  (sensible FE)
 
 if True:  # fig 2d, with the
     exp = Experiment.open(71)
-    exp.measurement.plot_experiment(
+    exp.measurement.plot(
         mols=[exp.mdict["O2_M36"], exp.mdict["O2_M34"]],
         unit="pmol/s/cm^2",
         removebackground=True,
         tspan=[0, 5000],
         logplot=False,
     )  # garbage plot
-    exp.measurement.dataset.reset()
-    axes = exp.measurement.plot_experiment(
+    exp.measurement.meas.reset()
+    axes = exp.measurement.plot(
         mols=[exp.mdict["O2_M34"], exp.mdict["O2_M36"]],
         unit="pmol/s/cm^2",
         removebackground=False,
@@ -136,13 +136,13 @@ if True:  # fig 2d, with the
 
     if True:  # inset
         tspan_inset = [3500, 5000]
-        x, y = exp.measurement.dataset.get_flux(
+        x, y = exp.measurement.meas.get_flux(
             exp.mdict["O2_M36"],
             tspan=tspan_inset,
             removebackground=False,
             unit="pmol/s/cm^2",
         )
-        t, V = exp.measurement.dataset.get_potential(tspan_inset)
+        t, V = exp.measurement.meas.get_potential(tspan_inset)
 
         from EC_MS import smooth
 

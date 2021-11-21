@@ -311,7 +311,9 @@ if __name__ == "__main__":
 
         if True:  # a partial current density axis
             ax3b = ax3.twinx()
-            j_O2_lim = [lim / 0.196 * 4 * FARADAY_CONSTANT * 1e-6 for lim in ax3.get_ylim()]
+            j_O2_lim = [
+                lim / 0.196 * 4 * FARADAY_CONSTANT * 1e-6 for lim in ax3.get_ylim()
+            ]
             # ^ [nmol/s] * [1/cm^2] * [C/mol] * [mA/nA] -> [mA/cm^2]
             ax3b.set_ylim(j_O2_lim)
             ax3b.set_yscale("log")

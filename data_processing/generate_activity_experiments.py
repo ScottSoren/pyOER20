@@ -23,13 +23,13 @@ if False:  # get the experiments
                 f"Delete that manually and run again if you want to redo it."
             )
         m.print_notes()
-        m.plot_experiment()
+        m.plot()
         print(f"\n\nclose plot when you can tell if {m} is a good expeirment")
         plt.show()
         yn = input(f"enter 'n' if {m} is not a good experiment")
         if yn == "n":
             continue
-        m.plot_experiment()
+        m.plot()
         print("close the plot when ready to enter tspan_bg")
         plt.show()
         tspan_bg_str = input("enter tspan_bg as two numbers separated by a comma.")
@@ -38,14 +38,14 @@ if False:  # get the experiments
             if tspan_bg_str
             else None
         )
-        m.plot_experiment()
+        m.plot()
         print("close the plot when ready to enter tspan_F")
         plt.show()
         tspan_F_str = input("enter tspan_F as two numbers separated by a comma.")
         tspan_F = (
             [float(t_str) for t_str in tspan_F_str.split(",")] if tspan_F_str else None
         )
-        m.plot_experiment()
+        m.plot()
         print("close the plot when ready to enter tspan_cap")
         plt.show()
         tspan_cap_str = input("enter tspan_cap as two numbers separated by a comma.")
@@ -76,7 +76,7 @@ else:  # just use the loaded experiments
 if False:  # save the tspan_cap's!!! And sub-category and tspan_plot, forgotten above.
     for exp in defined_experiments:
         exp.measurement.print_notes()
-        exp.plot_experiment(tspan="all")
+        exp.plot(tspan="all")
         print(
             f"close the plot of '{exp}' (notes above) when ready to enter tspan_cap.\n"
             f"defaults to: {exp.tspan_cap}"
@@ -86,7 +86,7 @@ if False:  # save the tspan_cap's!!! And sub-category and tspan_plot, forgotten 
         if answer:
             tspan_cap = [float(t) for t in answer.split(",")] if answer else None
             exp.tspan_cap = tspan_cap
-        exp.plot_experiment(tspan="all")
+        exp.plot(tspan="all")
         print(
             f"close the plot of '{exp}' when ready to enter tspan_plot.\n"
             f"Defaults to: {exp.tspan_plot}"
@@ -99,7 +99,7 @@ if False:  # save the tspan_cap's!!! And sub-category and tspan_plot, forgotten 
         if answer:
             tspan_plot = [float(t) for t in answer.split(",")]
             exp.tspan_plot = tspan_plot
-        exp.plot_experiment()
+        exp.plot()
         print(EXPERIMENT_TAGS)
         print("Close plot when ready to enter experiment category (see above).")
         plt.show()
@@ -120,7 +120,7 @@ if True:  # get the TOFs
         exp.measurement.print_notes()
         answer = 1
         if True:  # a chance to edit the plot.
-            exp.plot_experiment(tspan="all")
+            exp.plot(tspan="all")
             for item in [
                 "experiment_type",
                 "tspan_bg",
@@ -138,7 +138,7 @@ if True:  # get the TOFs
             exp = ActExperiment.open(exp.id)  # update the experiment.
         while answer:
             exp.load_tofs()
-            exp.plot_experiment()
+            exp.plot()
             print(
                 f"close the plot of '{exp}' when ready to enter one or more TOF tspan "
                 f"(or blank to go on)."

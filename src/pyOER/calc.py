@@ -6,8 +6,8 @@ def calc_OER_rate(experiment, tspan, mol=None):
     rate = 0
     mol_list = [mol] if mol else experiment.mol_list
     for mol in mol_list:
-        x, y = experiment.calc_flux(mol, tspan=tspan, unit="mol/s")
-        rate += np.mean(y)
+        x, y = experiment.calc_flux(mol, tspan=tspan)
+        rate += np.mean(y)  # mean flux in [mol/s]
 
     return rate
 
@@ -66,16 +66,18 @@ def calc_exchange_rate(experiment, tspan):
 
 def calc_potential(experiment, tspan):
     """Return the average potential vs RHE in [V] during the experiment over tspan"""
-    t, U = experiment.dataset.get_potential(tspan=tspan)
+    t, U = experiment.meas.get_potential(tspan=tspan)
     return np.mean(U)
 
 
 def calc_current(experiment, tspan):
     """Return the average current in [A] during the experiment over tspan"""
-    t, I = experiment.dataset.get_current(tspan=tspan, unit="A")
+    t, I = experiment.meas.grab(experiment.meas.I_str, tspan=tspan)
+    I *= 1e-3  # [mA] -> [A]
     tspan_bg = experiment.tspan_bg_current
     if tspan_bg:
-        t_bg, I_bg = experiment.dataset.get_current(tspan_bg, unit="A")
+        t_bg, I_bg = experiment.meas.grab(experiment.meas.I_str, tspan=tspan_bg)
+        I_bg *= 1e-3  # [mA] -> [A]
         I_bg = np.mean(I_bg)
     elif experiment.tspan_cap:
         I_bg = experiment.calc_background_current()

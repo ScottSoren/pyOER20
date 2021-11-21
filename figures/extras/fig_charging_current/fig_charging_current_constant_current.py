@@ -26,8 +26,8 @@ for se, t_offset, color in (
 
     tspan = [t + t_offset for t in tspan_0]
     x, y = se.calc_flux("O2_M32", tspan=tspan, unit="pmol/s")
-    t_V, V = se.dataset.get_potential(tspan=tspan)
-    t_J, J = se.dataset.get_current(tspan=tspan, unit="mA/cm^2")
+    t_V, V = se.meas.get_potential(tspan=tspan)
+    t_J, J = se.meas.get_current(tspan=tspan, unit="mA/cm^2")
 
     axes[0].plot(x - t_offset, y, color=color)
     axes[1].plot(t_V - t_offset, V, color=color)
