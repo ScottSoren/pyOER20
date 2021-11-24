@@ -15,19 +15,20 @@ else:
 
 e1 = Experiment.open(33)
 
-e1.measurement.meas.sync_metadata(
+e1.measurement.meas.calibrate(
     RE_vs_RHE=e1.measurement.RE_vs_RHE,
     A_el=0.196,
 )
 
 axes_b = e1.measurement.plot(
-    tspan="all",
-    masses=[
+    tspan=None,
+    mass_list=[
         # "M4", "M18",
         "M28",
         "M32",
         "M34",
         "M36",
+        # "M40",  # yup, moves with M36.
         "M44",
         "M46",
         "M48",

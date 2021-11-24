@@ -59,14 +59,14 @@ def calc_dissolution_rate(experiment, tspan, t_electrolysis=None):
 def calc_exchange_rate(experiment, tspan):
     """Return the average rate of lattice O incorporation in O2 in [mol/s] over tspan"""
     beta = experiment.beta
-    x_32, y_32 = experiment.calc_flux("O2_M32", tspan=tspan, unit="mol/s")
-    x_34, y_34 = experiment.calc_flux("O2_M34", tspan=tspan, unit="mol/s")
+    x_32, y_32 = experiment.calc_flux("O2_M32", tspan=tspan)
+    x_34, y_34 = experiment.calc_flux("O2_M34", tspan=tspan)
     return np.mean(y_34) - np.mean(y_32) * beta
 
 
 def calc_potential(experiment, tspan):
     """Return the average potential vs RHE in [V] during the experiment over tspan"""
-    t, U = experiment.meas.get_potential(tspan=tspan)
+    t, U = experiment.meas.grab("potential", tspan=tspan)
     return np.mean(U)
 
 

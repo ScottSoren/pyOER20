@@ -2,7 +2,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 
 from pyOER import Measurement
-from EC_MS import CyclicVoltammagram, Chem
+from ixdat.constants import FARADAY_CONSTANT
 
 forpublication = True
 if forpublication:  # for the publication figure
@@ -23,18 +23,20 @@ A_el = 0.196
 
 measurement = Measurement.open(10)
 
-dataset = measurement.meas
+meas = measurement.meas
 
-dataset.plot()
+meas.plot()
 
-V_str, J_str = dataset.sync_metadata(RE_vs_RHE=0.715, A_el=0.196)
-O2 = dataset.point_calibration(mol="O2", mass="M32", tspan=[300, 350], n_el=4)
-cv = CyclicVoltammagram(dataset=dataset, tspan=[6370, 6700], t_zero="start")
+V_str = meas.calibrate_RE(RE_vs_RHE=0.715)
+J_str = meas.normalize_current(A_el=0.196)
 
-axes = cv.plot_experiment(
-    mols=[O2],
+O2 = meas.ecms_calibration(mol="O2", mass="M32", tspan=[300, 350], n_el=4)
+cv = meas.cut(tspan=[6370, 6700], t_zero="start").as_cv()
+
+axes = cv.plot_measurement(
+    mol_list=[O2],
     logplot=False,
-    t_bg=[0, 20],
+    tspan_bg=[0, 20],
     # J_str="cycle"
 )
 axes[0].set_ylabel("O$_2$ / (pmol s$^{-1}$cm$^{-2}_{geo})$")
@@ -50,12 +52,13 @@ if forpublication:
 
 cv1 = cv.cut(tspan=[86, 172])
 
-v, j = cv1[V_str], cv1[J_str]
+t, v = cv1.grab(V_str)
+j = cv1.grab_for_t(J_str, t)
 
 fig, ax = plt.subplots()
 ax.plot(v, j, "b")
 
-x, y = cv1.get_flux(O2, unit="mol/s", t_bg=[90, 100])
+x, y = cv1.grab_flux(O2, tspan_bg=[90, 100])
 
 if False:  # use the integral and a modeled shape
     n_dot_O2 = np.trapz(y, x)  # in mol
@@ -76,10 +79,9 @@ if False:  # use the integral and a modeled shape
         zero_O2_model = np.zeros(v_O2_model.shape)
         ax.fill_between(v_O2_model, j_O2_model, zero_O2_model, color="k", alpha=0.5)
 else:  # use the measured signal
-    t, V = cv1.get_potential()
-    j_O2_model = y * 4 * Chem.Far * 1e3 / A_el  # in mA/cm^2
+    j_O2_model = y * 4 * FARADAY_CONSTANT * 1e3 / A_el  # in mA/cm^2
     dt_O2 = 5  # oxygen delay in s
-    v_O2_model = np.interp(x - dt_O2, t, V)
+    v_O2_model = np.interp(x - dt_O2, t, v)
     zero_O2_model = np.zeros(v_O2_model.shape)
     mask_increasing = np.logical_and(
         v_O2_model > np.append(v_O2_model[1:], v_O2_model[-1] - 1), v_O2_model > 1

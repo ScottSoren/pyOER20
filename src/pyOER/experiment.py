@@ -527,7 +527,7 @@ class StandardExperiment(Experiment):
                 are 0-4 as in list below. ylims defaults to self.plot_specs["ylims"]
                 Specifying axes[0].ylim automatically specifies axes[3].ylim according
                 to self.beta
-            unit (str): unit for MS data axes
+            unit (str): unit for MS data axes. Options are "pmol/s/cm^2" or "mol/s".
         Returns list of Axes:
             0: The minority-isotope signals (^{18}O2 and ^{16}O^{18}O fluxes)
             1: The electrochemical potential
@@ -547,7 +547,7 @@ class StandardExperiment(Experiment):
         # the list of axes for the EC-MS data:
         axes = [plt.subplot(gs[1:3, 0])]
         axes += [plt.subplot(gs[3, 0])]
-        axes += [axes[-1].twinx()]
+        axes += [axes[1].twinx(), axes[0].twinx()]
 
         fig = plt.gcf()
         fig.set_figwidth(8)
@@ -560,24 +560,26 @@ class StandardExperiment(Experiment):
             mol_lists=[[O2_M34, O2_M36], [O2_M32]],
             logplot=False,
             tspan=tspan,
-            ax=axes,
-            endpoints=10,
-            verbose=False,
+            axes=axes,
             unit=unit,
+            legend=False,
         )
+        # get the flux in mol/s
+        x32, y32 = self.meas.grab_flux(O2_M32, tspan=tspan, removebackground=True)
+        x34, y34 = self.meas.grab_flux(O2_M34, tspan=tspan, removebackground=True)
         if unit == "pmol/s/cm^2":
             axes[0].set_ylabel("$^{18}$O flux / \n (pmol s$^{-1}$cm$^{-2}$)")
             axes[-1].set_ylabel("$^{16}$O$_2$ flux / \n (pmol s$^{-1}$cm$^{-2}$)")
+            y32 = y32 * 1e12 / self.meas.A_el  # pmol/s/cm^2
+            y34 = y34 * 1e12 / self.meas.A_el  # pmol/s/cm^2
         else:
+            unit = "mol/s"
             axes[0].set_ylabel("$^{18}$O / (" + unit + ")")
             axes[-1].set_ylabel("$^{16}$O$_2$ / (" + unit + ")")
         axes[1].set_ylabel("U vs RHE / (V)")
         axes[2].set_ylabel("J / (mA cm$^{-2}$)")
         axes[1].set_xlabel("time / (s)")
         # colorax(ax[0], O2_M34.get_color(), lr='left')
-
-        x32, y32 = self.meas.get_flux(O2_M32, unit=unit, tspan=tspan)
-        x34, y34 = self.meas.get_flux(O2_M34, unit=unit, tspan=tspan)
 
         if highlight:  # highlight the labeled lattice oxygen evolution
             y34_interp = np.interp(x32, x34, y34)

@@ -63,8 +63,8 @@ if True:  # fig 5b, with norm. activity, exchange, and diss. plotted against pot
 
     paper_I_figs_path = Path("../paper_I_v5_figs").absolute().resolve()
     sys.path.append(str(paper_I_figs_path))
-    from paper_I_v5_fig3 import plot_all_activity_results
-    from paper_I_v5_fig5 import get_model_j_norm
+    from paper_I_v6_fig3 import plot_all_activity_results
+    from paper_I_v6_fig5 import get_model_j_norm
 
     if False:  # calculate mean capacitance of Reshma1 samples.
         from pyOER import all_activity_experiments
