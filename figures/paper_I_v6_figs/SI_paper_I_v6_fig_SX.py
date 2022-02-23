@@ -6,7 +6,7 @@ from pyOER.constants import STANDARD_SITE_DENSITY, STANDARD_SPECIFIC_CAPACITANCE
 from paper_I_v6_fig3 import plot_all_activity_results
 from paper_I_v6_fig5 import get_model_j_norm
 
-if True: # equilibrium shift calculation.
+if True:  # equilibrium shift calculation.
 
     p0 = STANDARD_PRESSURE  # standard pressure of 1 bar / [Pa]
     K_H = 76923  # O2 henry's-law constant / [Pa/(mol/m^3)]
@@ -15,8 +15,8 @@ if True: # equilibrium shift calculation.
 
     D = 2.1e-5  # O2 diffusion constant in water / [m^2/s]
     L = 100e-6   # working distance / [m]
-    n_dot_lim = 1e-12  # limiting O2 flux of 1 pmol/s / [mol/s]
     A_el = 0.196e-4  # Area of electrode / [m^2]
+    n_dot_lim = 2e-13  # limiting O2 flux of 0.2 pmol/s / [mol/s]
     c_lim = n_dot_lim / A_el * L / D
     print(f"concentration at surface with {n_dot_lim} mol/s O2 generation: {c_lim} mM")
 
@@ -48,8 +48,12 @@ ax_lin.plot([E0, E0], [min(j_total), max(j_total)], "0.5")
 
 plot_all_activity_results(ax=ax_lin, result="tof", factor=tof_to_j_norm)
 
+ax_lin_tof = ax_lin.twinx()
+ax_lin_tof.set_ylim([lim / tof_to_j_norm for lim in ax_lin.get_ylim()])
+
 ax_lin.set_xlabel("E vs RHE (V)")
 ax_lin.set_ylabel("j$_{norm}$ / (A F$^{-1}$)")
+ax_lin_tof.set_ylabel("TOF / (s$^{-1}$)")
 fig_lin.savefig("SI_paper_I_v6_figSX_lin.svg")
 
 fig_log, ax_log = plt.subplots()
@@ -65,8 +69,13 @@ ax_log.plot([E0, E0], [min(j_total_abs[mask]), max(j_total_abs[mask])], "0.5")
 
 plot_all_activity_results(ax=ax_log, result="tof", factor=tof_to_j_norm)
 
+ax_log_tof = ax_log.twinx()
+ax_log_tof.set_yscale("log")
+ax_log_tof.set_ylim([lim / tof_to_j_norm for lim in ax_log.get_ylim()])
+
 ax_log.set_xlabel("E vs RHE (V)")
 ax_log.set_ylabel("abs(j$_{norm})$ / (A F$^{-1}$)")
+ax_log_tof.set_ylabel("abs(TOF) / (s$^{-1}$)")
 fig_log.savefig("SI_paper_I_v6_figSX_log.svg")
 
 ax_log.set_xlim([E0 - eta_max / 15, E0 + eta_max / 15])
