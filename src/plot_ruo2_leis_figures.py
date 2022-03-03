@@ -7,12 +7,13 @@ from pyOER.iss import get_common_y
 from pyOER.tools import get_range
 
 forpublication = True
-tex = True
+tex = False
 if forpublication:  # for the publication figure
     import matplotlib as mpl
 
     mpl.rcParams["figure.figsize"] = (3.25, 2.75)
-    plt.rc('text', usetex=tex)  # crashingly slow
+    if tex:
+        plt.rc('text', usetex=tex)  # crashingly slow
     plt.rc("font", family="sans-serif")
     plt.rc("font", size=8)
     plt.rc("lines", linewidth=0.6)
@@ -31,7 +32,7 @@ colors = {
 description = [
     ('As-prepared', 640),
     ('After OER', 640),
-    (r'OER \& Sputtered', 620),
+    (r'OER \& Sputtered', 620) if tex else ('OER & Sputtered', 570),
     ]
 for key, color in colors.items():
     r, g, b = color
@@ -201,14 +202,14 @@ for sample in samples:
         ax.text(
             380,
             val1,
-            (f'{handle.meta("O16"):.1f}' + r'\,\%' if tex else f'{handle.meta("O16"):.1%}'),
+            (f'{handle.meta("O16"):.1f}' + r'\,\%' if tex else f'{handle.meta("O16")/100:.1%}'),
             horizontalalignment='right',
             verticalalignment='bottom',
             )
         ax.text(
             495,
             val1,
-            (f'{handle.meta("O18"):.1f}' + r'\,\%' if tex else f'{handle.meta("O18"):.1%}'),
+            (f'{handle.meta("O18"):.1f}' + r'\,\%' if tex else f'{handle.meta("O18")/100:.1%}'),
             horizontalalignment='left',
             verticalalignment='bottom',
             )
@@ -223,8 +224,8 @@ for sample in samples:
 
         i += 1
 
-    ax.set_xlabel('Kinetic energy (eV)')
-    ax.set_ylabel('Signal (kcounts/s)')
+    ax.set_xlabel('kinetic energy / (eV)')
+    ax.set_ylabel('counts / ($10^3$ s$^{-1}$)')
     ax.set_xlim(300, 800)
     ax.set_ylim(0, ylim[sample])
 

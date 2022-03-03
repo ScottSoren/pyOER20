@@ -4,12 +4,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 forpublication = True
-tex = True
+tex = False
 if forpublication:  # for the publication figure
     import matplotlib as mpl
 
     mpl.rcParams["figure.figsize"] = (3.25, 2.75)
-    plt.rc('text', usetex=tex)  # crashingly slow
+    if tex:
+        plt.rc('text', usetex=tex)  # crashingly slow
     plt.rc("font", family="sans-serif")
     plt.rc("font", size=8)
     plt.rc("lines", linewidth=0.6)
@@ -360,13 +361,22 @@ fig_total = plt.figure('Total results')
 ax_total = plt.gca()
 
 xticks = [0, 1, 2]#-1, -2, -3]
-xlabels = ['Before OER', 'After OER', 'OER \& Sputtered']
+xlabels = [
+    'Before OER',
+    'After OER',
+    'OER \& Sputtered',
+    ] if tex else [
+    'Before OER',
+    'After OER',
+    'OER & Sputtered',
+    ]
 
 for ax in [ax_individual, ax_total]:
     ax.set_xticks(xticks)
     ax.set_xticklabels(xlabels, rotation=15)
     ax.set_yticks([0, 25, 50, 75, 100])
-    ax.set_ylabel(r'$^{16}$O content ($\%$)')
+    ylabel = r'$^{16}$O content / ($\%$)' if tex else '$^{16}$O content / (%)'
+    ax.set_ylabel(ylabel)
     ax.set_ylim(0, 80)
     ax.set_xlim(-0.1, 2.4)
     #ax_individual.set_ylim(0, 100)
