@@ -76,3 +76,62 @@ def fit_exponential(t, y, zero_time_axis=False):
     #    pars = [tau, y0, y1]
 
     return pars
+
+def get_range(x, lim1, lim2):
+    """Return the index range of x between lim1 and lim2.
+---
+Copied from: github.com/Ejler/DataTreatment/common_toolbox.py
+"""
+    index1 = np.where(x <= lim2)[0]
+    index2 = np.where(x >= lim1)[0]
+    index = np.intersect1d(index1, index2)
+    if len(index) == 0:
+        print('"get_range" didn\'t find any data within the limits!')
+    return index
+
+def smooth(data, num=1):
+    """Average `data` with `num` neighbors.
+---
+Copied from: github.com/Ejler/DataTreatment/common_toolbox.py
+"""
+    if len(data) == 0:
+        print('Empty data! ', len(data))
+        return data
+    smoothed_data = np.zeros(len(data))
+    smoothed_data[num:-num] = data[2*num:]
+    for i in range(2*num):
+        smoothed_data[num:-num] += data[i:-2*num+i]
+        if i < num:
+            smoothed_data[i] = sum(data[0:i+num+1])/len(data[0:i+num+1])
+            smoothed_data[-1-i] = sum(data[-1-i-num:])/len(data[-1-i-num:])
+    smoothed_data[num:-num] = smoothed_data[num:-num]/(2*num+1)
+    return smoothed_data
+
+def weighted_smooth(data, num=1):
+    """I[n] = 1/4(I[n-1] + 2I[n] + I[n+1]
+---
+Copied from: github.com/Ejler/DataTreatment/common_toolbox.py
+"""
+    for iteration in range(num):
+        copy = np.zeros(data.shape)
+        copy += data*2
+        copy[1:] += data[:-1]
+        copy[:-1] += data[1:]
+        copy[1:-1] /= 4
+        copy[0] /= 3
+        copy[-1] /= 3
+        data = copy.copy()
+    return data
+
+def dict_from_json(dictionary):
+    """Takes a dictionary and recursively int's every key where possible."""
+    new_dict = {}
+    for key, value in dictionary.items():
+        try:
+            new_key = int(key)
+        except ValueError:
+            new_key = key
+        if isinstance(value, dict):
+            value = dict_from_json(value)
+        new_dict[new_key] = value
+    return new_dict

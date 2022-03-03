@@ -12,6 +12,7 @@
 *.npy
 *.png
 *.svg
+*.pickle
 
 # link
 *.lnk
